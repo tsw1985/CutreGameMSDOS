@@ -1,90 +1,61 @@
-/* BMP HAndler */
-#include "header/bmp.h"
-#include <stdio.h>
-#include <stdio.h>
-#include <conio.h>
-#include <dos.h>
-#include <alloc.h>
+//BITMAP LOADER BY TSW 2012. V2.0 with VESA MODE
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Code for Borland Turbo C++ 3.0
+//----------------------------------------------
 
+#include <iostream.h>
+#include <stdio.h>
+#include <stdlib.h>   //LIBRERIAS
+#include <conio.h>
+#include <string.h>
+#include <dos.h>
+
+
+void carga_total(char *fichero);
+void lee_datos(long lugar);
+unsigned char *vga = (unsigned char *) MK_FP(0xA000,0); //defino puntero FAR ( con segmento y desplazamiento ) 
+                                                        //que apunta a la MEMORIA DE VIDEO 0xA000
 
 FILE *archivo = NULL;
-unsigned char *vga = (unsigned char *) MK_FP(0xA000,0); 
-unsigned char *buffer_bmp = NULL;
-unsigned char *buffer_bmp_reverted = NULL;
+void main(){
 
+	//La llamada la hago varias veces para comprobar la velocidad
+	//de carga entre imagen e imagen.
 
-
-void hello_bmp(){
-	printf("helloooo BMPPPPo noooo\n");
+   cout << "BITMAP LOADER 2.0\n";
+   cout << "Pulse una tecla para empezar la carga ...\n";
+   getch();
+   carga_total("c:\\ibiza.bmp");
+   getch();
+   carga_total("c:\\ibiza.bmp");
 }
 
-
-void revert_bmp(char *buffer){
-	
-	unsigned char temp_linea[320];  // buffer temporal para una linea
-    int y;
-    unsigned char *linea_superior;
-    unsigned char *linea_inferior;
-    
-    for(y = 0; y < HEIGHT / 2; y++) {
-	    
-        linea_superior = buffer + (y * WIDTH);
-        linea_inferior = buffer + ((HEIGHT - 1 - y) * WIDTH);
-        
-        // Guardar linea superior en temp
-        memcpy(temp_linea, linea_superior, WIDTH);
-        
-        // Copiar linea inferior a superior
-        memcpy(linea_superior, linea_inferior, WIDTH);
-        
-        // Copiar temp (ex-superior) a inferior
-        memcpy(linea_inferior, temp_linea, WIDTH);
-    }
-	
-}
-
-void load_back_ground_game(char *fichero)
+void carga_total(char *fichero)
 {
-	
-	unsigned char valor;
-	unsigned char r,v,a,c;
-	unsigned int cuenta_colores = 0;
-	int i,banco = 0;
-	long lugar = 1078; //me situo justo donde empiezan los datos del dibujo
+
 	char *fil = fichero;
-	
 	archivo = fopen(fil,"rb"); //binario
 	if(archivo == NULL )
 		printf("ERROR GRAVE !!! NO SE HA PODIDO ABRIR EL ARCHIVO!!!\n");
 
-	
-	//Create buffer bmp
-	buffer_bmp = (char*)malloc(65535 * sizeof(char*));
-	if(buffer_bmp == NULL){
-		printf("Error creating buffer_bmp\n");	
-    }
-    
-    //Create buffer reverted
-    buffer_bmp_reverted = (char*)malloc(65535 * sizeof(char*));
-	if(buffer_bmp_reverted == NULL){
-		printf("Error creating buffer_bmp_reverted\n");	
-    }
-	
-	//Fill ALL file data into buffer_bmp ( not reverted ) 
-    fread(buffer_bmp,65535,1,archivo);
-    
-    //now revert the BMP data because the BMP data in original is reverted
-    revert_bmp(buffer_bmp);
-    
-    
 
-	
+	unsigned char valor;
+	unsigned char r,v,a,c;
+	unsigned int cuenta_colores;
+	cuenta_colores = 0;
+    //Elijo tipo de resolucion en modo VESA
+	asm{
+	  mov ax,4F02h
+      mov bx,107h
+      int 10h
+	}
+
+
 	//Me situo justo donde empieza la paleta de colores
 	fseek(archivo,54L,SEEK_SET); //--- numero colores bmp
-                                 // Voy leyendo de 4 en 4 bytes, el nº 4 nulo, solo valen
+                                 // Voy leyendo de 4 en 4 bytes, el nÂº 4 nulo, solo valen
                                  // los 3 primeros ( mira la documentacion del bmp )
 
-	                                 
    do{
 
   		fread(&valor,1,1,archivo);
@@ -111,9 +82,16 @@ void load_back_ground_game(char *fichero)
 	}while(cuenta_colores <= 255);
 
 
+    int banco = 0;
+	long lugar = 1078; //me situo justo donde empiezan los datos del dibujo
+					   //los colores.
+                       //En este caso la resolucion pide 20 bancos de memoria 
+                       //creo que es 1300x1200 dividido entre 65535 = 20
+                       //no me acuerdo que resolucion , busca resoluciones VESA, te apareceran
+                       //los valores disponibles
 
 	
-   for ( i = 0; i < 20 ; i++) //pues de 0 a 20 bancos
+   for ( int i = 0; i < 20 ; i++) //pues de 0 a 20 bancos
    {
 
       asm{            //cambio de banco ...0,1,2,3... 20
@@ -129,23 +107,15 @@ void load_back_ground_game(char *fichero)
       lugar = lugar + 65535; //en el archivo me voy moviendo de 65535 en
       //65535 , para el siguiente banco
    }
-   
 
    fclose(archivo);
-   free(buffer_bmp);
-   
 }
 
 
 void lee_datos(long lugar){
-	
 
   	fseek(archivo,lugar,SEEK_SET); //me situo en el sitio indicado
-	
-  	//fread(vga,65535,1,archivo);    //escribo en la memoria de video 65535 bytes
-	fread(vga,65535,1,buffer_bmp);    //escribo en la memoria de video 65535 bytes
-	
+	fread(vga,65535,1,archivo);    //escribo en la memoria de video 65535 bytes
 								   //desde donde diga el puntero del archivo.
 								   //la funcion fread permite eso.
-							   
 }

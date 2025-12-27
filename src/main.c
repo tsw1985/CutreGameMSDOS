@@ -13,18 +13,7 @@ int a = 0;
 int main(){
 
 	set_vga_320_200_mode();
-	load_back_ground_game("c:\\cutre.bmp");
-	
-	
-	//hola();
-	//hello_bmp();
-	//carga_total("c:\\ibiza.bmp");
-
-    //hello_util();
-    
-	/*for(i= 0; i < 3 ; i++) {
-    	printf("Cargando mapa 320x200\n");
-	}*/
+	load_background_game("c:\\cutre.bmp");
 	
 	getch();
 	return 0;

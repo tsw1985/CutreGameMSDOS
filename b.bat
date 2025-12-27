@@ -1,2 +1,3 @@
 del c:\code\tanks\bin\game.exe
-make
+del c:\code\tanks\error.log
+make > error.log

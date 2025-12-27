@@ -2,11 +2,15 @@ MAKE Version 3.6  Copyright (c) 1991 Borland International
 
 Available memory 97906688 bytes
 
-        tcc -c -O2 -mh -Iheader -obin\main.obj src\main.c
+        tcc -c -O2 -mh -Iheader -obin\bmp.obj src\bmp.c 
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
-src\main.c:
+src\bmp.c:
+Warning src\bmp.c 218: 'lugar' is assigned a value that is never used in function load_background_game
+Warning src\bmp.c 218: 'palleta_index' is assigned a value that is never used in function load_background_game
+Warning src\bmp.c 218: 'i' is assigned a value that is never used in function load_background_game
+Warning src\bmp.c 218: 'cuenta_colores' is assigned a value that is never used in function load_background_game
 
-        Available memory 4093240
+        Available memory 4062800
         tcc -mh -ebin\game.exe  bin\main.obj  bin\util.obj  bin\video.obj  bin\bmp.obj  
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 Turbo Link  Version 5.0 Copyright (c) 1992 Borland International

@@ -7,10 +7,8 @@
 
 #include <stdio.h>
 
-void hello_bmp();
 void init_buffers();
 void load_background_game(char *fichero);
-void lee_datos(long lugar);
 void revert_bmp(char *bmp_data);
 void load_pallete_data(char *buffer_data_dest, FILE *file);
 void write_pallete_data_into_dac(char *pallete_data);
@@ -19,7 +17,6 @@ void paint_image_data_to_vga(char *buffer_image_data);
 
 
 
-//defino puntero FAR ( con segmento y desplazamiento ) 
 
 
 

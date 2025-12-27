@@ -17,12 +17,6 @@ unsigned char *buffer_palleta_data = NULL;
 
 
 
-
-void hello_bmp(){
-	printf("helloooo BMPPPPo noooo\n");
-}
-
-
 void revert_bmp(char *buffer){
 	
 	unsigned char temp_linea[320];  // buffer temporal para una linea
@@ -49,40 +43,58 @@ void revert_bmp(char *buffer){
 
 void write_pallete_data_into_dac(char *pallete_data){
 	
-	unsigned int pallete_data_index = 0;
 	unsigned int buffer_data_index = 0;
 	unsigned int cuenta_colores = 0;
-	unsigned char r,v,a,c;
+	unsigned char r,v,a;
 	
-	for(pallete_data_index = 0 ; pallete_data_index <= 255 ; pallete_data_index++){
+	for(cuenta_colores = 0 ; cuenta_colores <= 255 ; cuenta_colores++){
 		
-		// BLUE	
-		a = pallete_data[pallete_data_index];
-		pallete_data_index++;
+		a = pallete_data[buffer_data_index++];  // Blue
+		v = pallete_data[buffer_data_index++];  // Green
+		r = pallete_data[buffer_data_index++];  // Red
 
-		// GREEN	
-		v = pallete_data[pallete_data_index];
-		pallete_data_index++;
-
-		// RED
-		r = pallete_data[pallete_data_index];
-		pallete_data_index++;
-	
-
-		// EMPTY but we must read. Pallete data is 4 bytes by 4 bytes	
-		pallete_data_index++;
-
-       outportb(0x3c8,cuenta_colores); //envio cada color al puerto de la VGA. Al DAC
-  	   outportb(0x3c9,r);  //r
-  	   outportb(0x3c9,v);  //v
-  	   outportb(0x3c9,a);  //a
-  	   
+		outportb(0x3c8, cuenta_colores);
+  	   	outportb(0x3c9, r);
+  	   	outportb(0x3c9, v);
+  	   	outportb(0x3c9, a);
 	}
-    
-	
 }
 
+void load_pallete_data(char *buffer_data_dest , FILE *archivo){
+	
+	int buffer_data_index = 0;
+	unsigned char valor;
+	unsigned char r,v,a;
+	unsigned int cuenta_colores = 0;  // <- INICIALIZAR A 0
+	
+	//point to starting pallete_data info in file
+	fseek(archivo, 54L, SEEK_SET);
+	
+	do{
+		// BLUE	
+  		fread(&valor,1,1,archivo);
+		a = (valor/4);
+		buffer_data_dest[buffer_data_index++] = a;  // <- usar buffer_data_index
 
+		// GREEN	
+		fread(&valor,1,1,archivo);
+		v = (valor/4);
+		buffer_data_dest[buffer_data_index++] = v;
+
+		// RED
+		fread(&valor,1,1,archivo);
+		r = (valor/4);
+		buffer_data_dest[buffer_data_index++] = r;
+
+		// EMPTY but we must read
+		fread(&valor,1,1,archivo);
+
+   		cuenta_colores++;
+    
+	}while(cuenta_colores <= 255);
+}
+
+/*
 void load_pallete_data(char *buffer_data_dest , FILE *archivo){
 	
 	int buffer_data_index = 0;
@@ -98,31 +110,32 @@ void load_pallete_data(char *buffer_data_dest , FILE *archivo){
 		// BLUE	
   		fread(&valor,1,1,archivo);
 		a = (valor/4);
-		buffer_data_dest[buffer_data_index] = a;
-		buffer_data_index++;
+		//buffer_data_dest[buffer_data_index] = a;
+		buffer_data_dest[cuenta_colores] = a;
 
 		// GREEN	
 		fread(&valor,1,1,archivo);
 		v = (valor/4);
-		buffer_data_dest[buffer_data_index] = v;
-		buffer_data_index++;
+		//buffer_data_dest[buffer_data_index] = v;
+		buffer_data_dest[cuenta_colores] = v;
+
 
 		// RED
 		fread(&valor,1,1,archivo);
 		r = (valor/4);
-		buffer_data_dest[buffer_data_index] = r;
-		buffer_data_index++;
+		//buffer_data_dest[buffer_data_index] = r;
+		buffer_data_dest[cuenta_colores] = r;
+
 
 		// EMPTY but we must read. Pallete data is 4 bytes by 4 bytes	
 		fread(&valor,1,1,archivo);
-		buffer_data_index++;
 
    		cuenta_colores = cuenta_colores + 1;
     
 	}while(cuenta_colores <= 255);
 	
 }
-
+*/
 
 void load_image_data_from_file(char *buffer_data_dest, FILE *file){
 
@@ -133,7 +146,6 @@ void load_image_data_from_file(char *buffer_data_dest, FILE *file){
 }
 
 void paint_image_data_to_vga(char *buffer_image_data){
-	//fread(vga,65535,1,buffer_image_data);    //escribo en la memoria de video 65535 bytes	
 	memcpy(vga,buffer_image_data,65535);
 }
 
@@ -203,23 +215,4 @@ void load_background_game(char *fichero)
    free(buffer_palleta_data);
    fclose(archivo);
    
-}
-
-
-void lee_datos(long lugar){
-	
-	int image_data_index = 0;	
-  	//fseek(archivo,lugar,SEEK_SET); //me situo en el sitio indicado
-  	//fread(vga,65535,1,archivo);    //escribo en la memoria de video 65535 bytes
-  	
-  	for(image_data_index = lugar; image_data_index <= 64457 ; image_data_index++){
-	  	  	
-	}
-  	
-  	
-	fread(vga,65535,1,buffer_bmp);    //escribo en la memoria de video 65535 bytes
-	
-								   //desde donde diga el puntero del archivo.
-								   //la funcion fread permite eso.
-							   
 }

@@ -94,48 +94,6 @@ void load_pallete_data(char *buffer_data_dest , FILE *archivo){
 	}while(cuenta_colores <= 255);
 }
 
-/*
-void load_pallete_data(char *buffer_data_dest , FILE *archivo){
-	
-	int buffer_data_index = 0;
-	unsigned char valor;
-	unsigned char r,v,a,c;
-	unsigned int cuenta_colores;
-	
-	//point to starting pallete_data info in file
-	fseek(archivo, 54L, SEEK_SET);
-	
-	do{
-
-		// BLUE	
-  		fread(&valor,1,1,archivo);
-		a = (valor/4);
-		//buffer_data_dest[buffer_data_index] = a;
-		buffer_data_dest[cuenta_colores] = a;
-
-		// GREEN	
-		fread(&valor,1,1,archivo);
-		v = (valor/4);
-		//buffer_data_dest[buffer_data_index] = v;
-		buffer_data_dest[cuenta_colores] = v;
-
-
-		// RED
-		fread(&valor,1,1,archivo);
-		r = (valor/4);
-		//buffer_data_dest[buffer_data_index] = r;
-		buffer_data_dest[cuenta_colores] = r;
-
-
-		// EMPTY but we must read. Pallete data is 4 bytes by 4 bytes	
-		fread(&valor,1,1,archivo);
-
-   		cuenta_colores = cuenta_colores + 1;
-    
-	}while(cuenta_colores <= 255);
-	
-}
-*/
 
 void load_image_data_from_file(char *buffer_data_dest, FILE *file){
 
@@ -192,8 +150,8 @@ void load_background_game(char *fichero)
 	//Fill ALL file data into buffer_bmp ( not reverted ) 
     fread(buffer_bmp,65535,1,archivo);
     
-    //now revert the BMP data because the BMP data in original is reverted
-    //revert_bmp(buffer_bmp);
+    
+    
     
     
     //First step is load the PALLETE_DATA of image
@@ -204,6 +162,9 @@ void load_background_game(char *fichero)
 	
 	// Load the image data
 	load_image_data_from_file(buffer_image_data, archivo);
+	
+	//now revert the BMP data because the BMP data in original is reverted
+    revert_bmp(buffer_image_data);
 	
 	// Paint the image in video memory
 	paint_image_data_to_vga(buffer_image_data);

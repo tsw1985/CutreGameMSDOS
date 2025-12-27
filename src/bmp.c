@@ -4,11 +4,12 @@
 #include <stdio.h>
 #include <conio.h>
 #include <dos.h>
+#include <alloc.h>
 
 
 FILE *archivo = NULL;
 unsigned char *vga = (unsigned char *) MK_FP(0xA000,0); 
-
+unsigned char *buffer_bmp = NULL;
 
 void hello_bmp(){
 	printf("helloooo BMPPPPo noooo\n");
@@ -19,6 +20,10 @@ void hello_bmp(){
 
 void load_back_ground_game(char *fichero)
 {
+	
+	
+	
+	
 	unsigned char valor;
 	unsigned char r,v,a,c;
 	unsigned int cuenta_colores = 0;
@@ -30,19 +35,16 @@ void load_back_ground_game(char *fichero)
 	if(archivo == NULL )
 		printf("ERROR GRAVE !!! NO SE HA PODIDO ABRIR EL ARCHIVO!!!\n");
 
-
 	
-
-
-	
-    //Elijo tipo de resolucion en modo VESA
-    
-	/*asm{
-	  mov ax,4F02h
-      mov bx,107h
-      int 10h
+	//Create buffer bmp
+	buffer_bmp = (char*)malloc(64000 * sizeof(char*));
+	if(buffer_bmp == NULL){
+		printf("Error creating buffer_bmp\n");	
+    }else{
+	    printf("OK creating buffer_bmp\n");	
 	}
-	*/
+	
+	
 
 
 	//Me situo justo donde empieza la paleta de colores
@@ -104,6 +106,7 @@ void load_back_ground_game(char *fichero)
    
 
    fclose(archivo);
+   free(buffer_bmp);
    
 }
 

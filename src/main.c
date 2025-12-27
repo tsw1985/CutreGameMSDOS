@@ -12,9 +12,8 @@ int a = 0;
 
 int main(){
 
-	set_vga_320_200_mode();
+	//set_vga_320_200_mode();
 	load_back_ground_game("c:\\cutre.bmp");
-	printf("Cutre GAME MSDOS VERSION\n");
 	
 	
 	//hola();

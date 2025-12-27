@@ -1,0 +1,1 @@
+Put nasm in c:\nasm , the otherwise the makefile do not compile the asm obj files

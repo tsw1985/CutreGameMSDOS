@@ -4,6 +4,8 @@
 
 #define WIDTH 320
 #define HEIGHT 200
+#define IMAGE_DATA_SIZE 64456
+#define PALLETA_DATA_SIZE 309
 
 #include <stdio.h>
 

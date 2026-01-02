@@ -1,5 +1,5 @@
 /* BMP HAndler */
-#include "header/bmp.h"
+#include "header\bmp.h"
 #include <stdio.h>
 #include <conio.h>
 #include <dos.h>
@@ -116,12 +116,12 @@ void init_buffers(){
     }
     
     //Create buffer image data
-    buffer_image_data = (char*)malloc(64456 * sizeof(char*));
+    buffer_image_data = (char*)malloc(IMAGE_DATA_SIZE * sizeof(char*));
 	if(buffer_image_data == NULL){
 		printf("Error creating buffer_image_data\n");	
     }
     
-    buffer_palleta_data = (char*)malloc(309 * sizeof(char*));
+    buffer_palleta_data = (char*)malloc(PALLETA_DATA_SIZE * sizeof(char*));
 	if(buffer_palleta_data == NULL){
 		printf("Error creating buffer_palleta_data\n");	
     }
@@ -133,10 +133,7 @@ void load_background_game(char *fichero)
 	
 	unsigned char valor;
 	unsigned char r,v,a,c;
-	unsigned int cuenta_colores = 0;
-	int i = 0;
-	int palleta_index = 0;
-	long lugar = 1078; //me situo justo donde empiezan los datos del dibujo
+
 	char *fil = fichero;
 	
 	archivo = fopen(fil,"rb"); //binario
@@ -149,10 +146,6 @@ void load_background_game(char *fichero)
 	
 	//Fill ALL file data into buffer_bmp ( not reverted ) 
     fread(buffer_bmp,65535,1,archivo);
-    
-    
-    
-    
     
     //First step is load the PALLETE_DATA of image
 	load_pallete_data(buffer_palleta_data , archivo);    

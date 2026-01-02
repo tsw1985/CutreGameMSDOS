@@ -24,10 +24,22 @@ bin\util.obj: src\util.c
 	$(CC) -c $(CFLAGS) -obin\util.obj src\util.c	
 	
 		
-# BMP HANLDER	
 bin\bmp.obj: src\bmp.c
 	@if not exist bin mkdir bin
 	$(CC) -c $(CFLAGS) -obin\bmp.obj src\bmp.c		
+	
+
+bin\players.obj: src\players.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\players.obj src\players.c
+	
+	
+bin\gameloop.obj: src\gameloop.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\gameloop.obj src\gameloop.c
+	
+	
+	
 
 	
 ################################################	
@@ -44,6 +56,8 @@ $(TARGET): \
 	bin\util.obj \
 	bin\video.obj \
 	bin\bmp.obj \
+	bin\players.obj \
+	bin\gameloop.obj \
 	
 	
 	$(LD) $(LDFLAGS) -ebin\game.exe \
@@ -51,6 +65,8 @@ $(TARGET): \
 		bin\util.obj \
 		bin\video.obj \
 		bin\bmp.obj \
+		bin\players.obj \
+		bin\gameloop.obj \
 		
 
 clean:

@@ -38,6 +38,8 @@ bin\gameloop.obj: src\gameloop.c
 	@if not exist bin mkdir bin
 	$(CC) -c $(CFLAGS) -obin\gameloop.obj src\gameloop.c
 	
+
+	
 	
 	
 

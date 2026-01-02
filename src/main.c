@@ -19,13 +19,19 @@ int a = 0;
 
 int main(){
 
-	//set_vga_320_200_mode();
-	//load_background_game("c:\\cutre.bmp");
+	set_vga_320_200_mode();
 	
-	init_game_loop();
+	//Load original background
+	load_background_game("c:\\cutre.bmp");
+
+	
+	//init_game_loop();
 	
 	
 	getch();
+	delete_buffers();
+	close_files();
+	
 	return 0;
 }
 

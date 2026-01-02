@@ -6,15 +6,15 @@
 #include <alloc.h>
 
 
-FILE *archivo = NULL;
+FILE *background_image_game = NULL;
 unsigned char *vga = (unsigned char *) MK_FP(0xA000,0); 
 unsigned char *buffer_bmp = NULL;
 unsigned char *buffer_bmp_reverted = NULL;
-
-
 unsigned char *buffer_image_data = NULL;
 unsigned char *buffer_palleta_data = NULL;
 
+//SPRITES BUFFER
+unsigned char *buffer_sprites_data = NULL;
 
 
 void revert_bmp(char *buffer){
@@ -71,6 +71,7 @@ void load_pallete_data(char *buffer_data_dest , FILE *archivo){
 	fseek(archivo, 54L, SEEK_SET);
 	
 	do{
+		
 		// BLUE	
   		fread(&valor,1,1,archivo);
 		a = (valor/4);
@@ -96,11 +97,9 @@ void load_pallete_data(char *buffer_data_dest , FILE *archivo){
 
 
 void load_image_data_from_file(char *buffer_data_dest, FILE *file){
-
 		//set where the image data beggin
 		fseek(file, 1078L , SEEK_SET);
 		fread(buffer_data_dest,65535,1,file);
-	
 }
 
 void paint_image_data_to_vga(char *buffer_image_data){
@@ -121,40 +120,45 @@ void init_buffers(){
 		printf("Error creating buffer_image_data\n");	
     }
     
+    //Create buffer pallete data
     buffer_palleta_data = (char*)malloc(PALLETA_DATA_SIZE * sizeof(char*));
 	if(buffer_palleta_data == NULL){
 		printf("Error creating buffer_palleta_data\n");	
     }
+    
+    //
+    buffer_sprites_data = (char*)malloc(65535 * sizeof(char*));
+	if(buffer_sprites_data == NULL){
+		printf("Error creating buffer_sprites_data\n");	
+    }
 	
 }
 
-void load_background_game(char *fichero)
+void load_background_game(char *_file)
 {
 	
 	unsigned char valor;
 	unsigned char r,v,a,c;
-
-	char *fil = fichero;
 	
-	archivo = fopen(fil,"rb"); //binario
-	if(archivo == NULL ){
-		printf("ERROR GRAVE !!! NO SE HA PODIDO ABRIR EL ARCHIVO!!!\n");
+	background_image_game = fopen(_file,"rb"); //binario
+	if(background_image_game == NULL ){
+		printf("ERROR!!! I can not open the backound image file\n");
 	}
 	
 	// Create all buffers	
 	init_buffers();
 	
 	//Fill ALL file data into buffer_bmp ( not reverted ) 
-    fread(buffer_bmp,65535,1,archivo);
+    fread(buffer_bmp,65535,1,background_image_game);
     
     //First step is load the PALLETE_DATA of image
-	load_pallete_data(buffer_palleta_data , archivo);    
+	load_pallete_data(buffer_palleta_data , background_image_game);
 	
 	//Set the pallete data into the VGA DAC
 	write_pallete_data_into_dac(buffer_palleta_data);
 	
 	// Load the image data
-	load_image_data_from_file(buffer_image_data, archivo);
+	load_image_data_from_file(buffer_image_data, background_image_game);
 	
 	//now revert the BMP data because the BMP data in original is reverted
     revert_bmp(buffer_image_data);
@@ -162,11 +166,18 @@ void load_background_game(char *fichero)
 	// Paint the image in video memory
 	paint_image_data_to_vga(buffer_image_data);
 	
+   
+}
 
-   
-   free(buffer_bmp);
-   free(buffer_image_data);
-   free(buffer_palleta_data);
-   fclose(archivo);
-   
+void close_files(){
+	fclose(background_image_game);
+}
+
+void delete_buffers(){
+	
+	free(buffer_bmp);
+    free(buffer_image_data);
+    free(buffer_palleta_data);
+    
+	
 }

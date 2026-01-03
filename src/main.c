@@ -14,23 +14,22 @@ extern set_vga_320_200_mode();
 	GAME FOLDER IN BACK UP : CutreGameMSDOS
 
 */
-int i = 0;
-int a = 0;
+
 
 int main(){
 
 	set_vga_320_200_mode();
 	
 	//Load original background
-	load_background_game("c:\\cutre.bmp");
-
+	bmp_load_background_game("c:\\cutre.bmp");
+	bmp_load_sprites_images("c:\\sprites.bmp");
 	
 	//init_game_loop();
 	
 	
 	getch();
-	delete_buffers();
-	close_files();
+	bmp_delete_buffers();
+	bmp_close_files();
 	
 	return 0;
 }

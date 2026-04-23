@@ -5,19 +5,16 @@
 #include <dos.h>
 #include <alloc.h>
 
-
+//FILES
 FILE *file_background_image_game = NULL;
 FILE *file_sprites_game = NULL;
 
 
-
+//BUFFERS
 unsigned char *vga = (unsigned char *) MK_FP(0xA000,0); 
 unsigned char *buffer_original_background_bmp = NULL;
-unsigned char *buffer_bmp_reverted = NULL;
-unsigned char *buffer_image_data = NULL;
+unsigned char *buffer_background_image_data = NULL;
 unsigned char *buffer_palleta_data = NULL;
-
-//SPRITES BUFFER
 unsigned char *buffer_sprites_data = NULL;
 
 
@@ -95,7 +92,7 @@ void bmp_load_pallete_data(char *buffer_data_dest , FILE *_file){
 
 
 void bmp_load_image_data_from_file(char *buffer_data_dest, FILE *file){
-		//set where the image data beggin
+		//set where the image data begin
 		fseek(file, 1078L , SEEK_SET);
 		fread(buffer_data_dest,65535,1,file);
 }
@@ -113,9 +110,9 @@ void bmp_init_buffers(){
     }
     
     //Create buffer image data
-    buffer_image_data = (char*)malloc(IMAGE_DATA_SIZE * sizeof(char*));
-	if(buffer_image_data == NULL){
-		printf("Error creating buffer_image_data\n");	
+    buffer_background_image_data = (char*)malloc(IMAGE_DATA_SIZE * sizeof(char*));
+	if(buffer_background_image_data == NULL){
+		printf("Error creating buffer_background_image_data\n");	
     }
     
     //Create buffer pallete data
@@ -124,7 +121,7 @@ void bmp_init_buffers(){
 		printf("Error creating buffer_palleta_data\n");	
     }
     
-    //
+    //Create buffer sprites data
     buffer_sprites_data = (char*)malloc(65535 * sizeof(char*));
 	if(buffer_sprites_data == NULL){
 		printf("Error creating buffer_sprites_data\n");	
@@ -132,9 +129,9 @@ void bmp_init_buffers(){
 	
 }
 
+
 void bmp_load_background_game(char *_file)
 {
-	
 	
 	file_background_image_game = fopen(_file,"rb"); //binario
 	if(file_background_image_game == NULL ){
@@ -142,7 +139,7 @@ void bmp_load_background_game(char *_file)
 	}
 	
 	// Create all buffers	
-	bmp_init_buffers();
+	//bmp_init_buffers();
 	
 	//Fill ALL file data into buffer_bmp ( not reverted ) 
     fread(buffer_original_background_bmp,65535,1,file_background_image_game);
@@ -153,20 +150,18 @@ void bmp_load_background_game(char *_file)
 	//Set the pallete data into the VGA DAC
 	bmp_write_pallete_data_into_dac(buffer_palleta_data);
 	
-	// Load the image data
-	bmp_load_image_data_from_file(buffer_image_data, file_background_image_game);
+	// Load the background_image data
+	bmp_load_image_data_from_file(buffer_background_image_data, file_background_image_game);
 	
 	//now revert the BMP data because the BMP data in original is reverted
-    bmp_revert_bmp(buffer_image_data);
+    bmp_revert_bmp(buffer_background_image_data);
 	
 	// Paint the image in video memory
-	bmp_paint_image_data_to_vga(buffer_image_data);
+	bmp_paint_image_data_to_vga(buffer_background_image_data);
    
 }
 
-
-
-void bmp_load_sprites_images(char *_file_sprites_game){
+void bmp_load_sprites_images(char *_file_sprites_game, struct player *player){
 	
 	file_sprites_game	= fopen(_file_sprites_game,"rb"); //binario
 	if(file_sprites_game == NULL ){
@@ -176,10 +171,86 @@ void bmp_load_sprites_images(char *_file_sprites_game){
 	// Load the sprites data . Full sprites image
 	bmp_load_image_data_from_file(buffer_sprites_data,_file_sprites_game);
 	
-	//now revert the BMP data because the BMP data in original is reverted
+	// Revert the BMP data because the BMP data in original is reverted
     bmp_revert_bmp(buffer_sprites_data);
+    
+    // Load sprites of tank 1
+    bmp_load_sprite_tank(buffer_sprites_data, &player, 0, 0, 17,15);
+    
 	
 }
+
+//============================================================
+//	This function is to load the Sprite ( Images of Tank ) in the Player 1 structure
+//============================================================
+void bmp_load_sprite_tank(char *sprites_buffer,
+                                    struct player *player, 
+                                    int y, 
+                                    int x , 
+                                    unsigned int sprite_width,  
+                                    unsigned int sprite_height){
+	
+	bmp_extract_sprite(&sprites_buffer, y, x, sprite_width, sprite_height, &player->sprite);
+}
+
+
+void bmp_extract_sprite(unsigned char *sprite_sheet,  
+                          unsigned int src_x, 
+                          unsigned int src_y,
+                          unsigned int sprite_width,  
+                          unsigned int sprite_height,
+                          unsigned char *sprite_dest)
+{
+	
+	
+    unsigned int y, x;
+    unsigned int src_offset, dest_offset;
+    
+    for(y = 0; y < sprite_height; y++) {
+        for(x = 0; x < sprite_width; x++) {
+    
+            src_offset = ((src_y + y) * 320) + (src_x + x);
+            
+                dest_offset = (y * sprite_width) + x;
+            
+                sprite_dest[dest_offset] = sprite_sheet[src_offset];
+        }
+    }
+    
+}
+
+
+void draw_sprite_to_buffer(unsigned char *sprite,      
+			                         unsigned int sprite_width,   
+			                         unsigned int sprite_height,  
+			                         unsigned int dest_x,         
+			                         unsigned int dest_y,        
+			                         unsigned char *dest_buffer)
+{
+    unsigned int y, x;
+    unsigned int src_offset, dest_offset;
+    unsigned char pixel;
+    
+    for(y = 0; y < sprite_height; y++) {
+        for(x = 0; x < sprite_width; x++) {
+        
+            // Posicion en el sprite (sprite_width de ancho)
+            src_offset = (y * sprite_width) + x;
+            
+            // Posicion en el buffer destino (320 de ancho)
+            dest_offset = ((dest_y + y) * 320) + (dest_x + x);
+            
+            pixel = sprite[src_offset];
+            
+            // Copiar pixel (con transparencia: color 0 = transparente)
+            if(pixel != 0) {
+                dest_buffer[dest_offset] = pixel;
+            }
+        }
+    }
+}
+
+
 
 
 void bmp_close_files(){
@@ -189,7 +260,7 @@ void bmp_close_files(){
 void bmp_delete_buffers(){
 	
 	free(buffer_original_background_bmp);
-    free(buffer_image_data);
+    free(buffer_background_image_data);
     free(buffer_palleta_data);
     free(buffer_sprites_data);
 	

@@ -23,14 +23,34 @@ void bmp_paint_image_data_to_vga(char *buffer_image_data);
 
 
 //LOAD SPRITES
-void bmp_load_sprites_images(char *file);
-void bmp_load_tank_1(char *sprites_buffer,struct player *player_1, int y, int x);
-void bmp_load_tank_2(char *sprites_buffer,struct player *player_2, int y, int x);
-void bmp_draw_tank_1(char *game_buffer , struct player *player_1);
-void bmp_draw_tank_2(char *game_buffer , struct player *player_2);
+void bmp_load_sprites_images(char *file,struct player *player);
 
+void bmp_load_sprite_tank(char *sprites_buffer,
+                                    struct player *player, 
+                                    int y, 
+                                    int x , 
+                                    unsigned int sprite_width,  
+                                    unsigned int sprite_height);
 
+                                    
+void bmp_draw_tank(char *game_buffer , struct player *player_1);
 
-
+void bmp_extract_sprite(unsigned char *sprite_sheet,  
+                                 unsigned int src_x, 
+                                 unsigned int src_y,
+                                 unsigned int sprite_width,  
+                                 unsigned int sprite_height,
+                                 unsigned char *sprite_dest);
+                                 
+void draw_sprite_to_buffer(unsigned char *sprite,      
+			                         unsigned int sprite_width,   
+			                         unsigned int sprite_height,  
+			                         unsigned int dest_x,         
+			                         unsigned int dest_y,        
+			                         unsigned char *dest_buffer);
+                                 
+                                 
+                                 
+                                 
 
 #endif

@@ -98,6 +98,7 @@ void bmp_fill_buffer_with_image_data_from_file(char *buffer_data_dest, FILE *fil
 }
 
 void bmp_paint_image_data_to_vga(char *buffer_image_data){
+	memset(vga,0,65535);
 	memcpy(vga,buffer_image_data,65535);
 }
 
@@ -133,6 +134,7 @@ void bmp_init_buffers(){
     memset(buffer_background_image_data,0,IMAGE_DATA_SIZE);
     memset(buffer_palleta_data,0,PALLETA_DATA_SIZE);
     memset(buffer_sprites_data,0,65535);
+    
     
 	
 }
@@ -175,15 +177,13 @@ void bmp_fill_sprites_in_buffer(char *_file_sprites_game){
 	}
 	
 	// Load the sprites data . Full sprites image
-	bmp_fill_buffer_with_image_data_from_file(buffer_sprites_data,_file_sprites_game);
-	
-	//fclose(file_sprites_game);
-	
+	bmp_fill_buffer_with_image_data_from_file(buffer_sprites_data , file_sprites_game);
+
 }
 
 void bmp_extract_sprite(unsigned char *sprite_sheet,  
-                          unsigned int src_y, 
-                          unsigned int src_x,
+                          unsigned int src_x, 
+                          unsigned int src_y,
                           unsigned int sprite_width,  
                           unsigned int sprite_height,
                           unsigned char *sprite_dest)
@@ -210,8 +210,8 @@ void bmp_extract_sprite(unsigned char *sprite_sheet,
 void draw_sprite_to_buffer(unsigned char *sprite,      
 			                         unsigned int sprite_width,   
 			                         unsigned int sprite_height,  
-			                         unsigned int dest_y,         
-			                         unsigned int dest_x,        
+			                         unsigned int dest_x,         
+			                         unsigned int dest_y,        
 			                         unsigned char *dest_buffer)
 {
     unsigned int y, x;

@@ -2,15 +2,18 @@
 #define PLAYERS
 
 
-#define TANK_WIDTH 17
-#define TANK_HEIGHT 15
+#define TANK_WIDTH 18
+#define TANK_HEIGHT 18
 
 	struct player{
 		
 		unsigned int position_y;
 		unsigned int position_x;
 		unsigned int wins;
-		char *sprite;
+		char *sprite_tank_up;
+		char *sprite_tank_down;
+		char *sprite_tank_left;
+		char *sprite_tank_right;
 		// to do : animation
 	};
 

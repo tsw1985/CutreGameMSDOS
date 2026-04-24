@@ -80,32 +80,29 @@ void init_graphics(){
 	
 	// Extract sprites from sprites.bmp
 	bmp_fill_sprites_in_buffer("c:\\sprites.bmp");
-	// Revert the sprites sheet	
-	bmp_revert_bmp(buffer_sprites_data);
+    bmp_revert_bmp(buffer_sprites_data);
 	
 	// Extract the background_image data from background file
 	bmp_fill_buffer_with_image_data_from_file(buffer_background_image_data, file_background_image_game);
     bmp_revert_bmp(buffer_background_image_data);
 
-	bmp_fill_buffer_with_image_data_from_file(buffer_sprites_data, file_sprites_game);
-    bmp_revert_bmp(buffer_sprites_data);
-    
-	// Put Sprite in background buffer
-	bmp_extract_sprite(buffer_sprites_data, 0,0, 18,17, player1.sprite);
-
 	
-	draw_sprite_to_buffer(player1.sprite, 
-	                              18, 
-	                              17, 
+    // Fill player 1 with animation TANK_UP and
+	bmp_extract_sprite(buffer_sprites_data, 2,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_up);
+
+	// Put Sprite in background buffer
+	draw_sprite_to_buffer(player1.sprite_tank_up, 
+	                              TANK_WIDTH, 
+	                              TANK_HEIGHT, 
 	                              player1.position_x, 
 	                              player1.position_y, 
 	                              buffer_background_image_data);
 	                              
 	                              
+	                              
 	// 8 - Paint the background image in video memory
 	bmp_paint_image_data_to_vga(buffer_background_image_data);
-	//bmp_paint_image_data_to_vga(buffer_sprites_data);
-	
+
 }
 
 

@@ -33,7 +33,7 @@ int main(){
 	
 	player_free(&player1);
 	bmp_delete_buffers();
-	bmp_close_files();
+	//bmp_close_files();
 		
 	
 	return 0;
@@ -43,45 +43,68 @@ int main(){
 
 void init_graphics(){
 	
-	// 1 - Create all buffers	
+	//============================================	
+	// First Stage:
+	// 
+	// 	Create buffers and initialize them.
+	// 	Create a original copy of the file (bmp_fill_background_in_main_buffer)
+	// 	Extract pallete colors information
+	// 	Write this pallete color information into DAC
+	//============================================	
+	
+	
+	//  Create all buffers	
 	bmp_init_buffers();
-	
-	// 2 - Extract Pallete and info from main file . Background map
-	bmp_fill_background_in_buffer("c:\\cutre.bmp");
-	
-	// 5 - Set the pallete data into the VGA DAC
+	// Save a original copy of map file
+	// This create a backup of the original file in a buffer
+	bmp_fill_background_in_main_buffer("c:\\cutre.bmp");
+	// Extract the pallete colors to save it un DAC
+	bmp_extract_pallete_from_file("c:\\cutre.bmp");
+	// Set the pallete data into the VGA DAC
 	bmp_write_pallete_data_into_dac(buffer_palleta_data);
+
 	
-	// 3 - Extract sprites from sprites.bmp
+	//============================================	
+	// Second stage :
+	// 
+	// 	Load the sprites sheet and revert it
+	//		
+	//		Fill "buffer_background_image_data" with image data from 
+	//		file "file_background_image_game" ( cutre.bmp)
+	//
+	//		Fill "buffer_sprites_data" with the sprites from "file_sprites_game" ( sprites.bmp)
+	//		Extract a sprite from "buffer_sprites_data" and save it sprites player list
+	//		Add this sprite under buffer_background_image_data
+	//		Show the final result in screen
+	//============================================	
+	
+	// Extract sprites from sprites.bmp
 	bmp_fill_sprites_in_buffer("c:\\sprites.bmp");
-	
-	// 4 - Revert the sprites sheet	
+	// Revert the sprites sheet	
 	bmp_revert_bmp(buffer_sprites_data);
 	
-	// 6 - Extract the background_image data from background file
-	bmp_get_image_data_from_file(buffer_background_image_data, file_background_image_game);
-	// 7 - Now revert the BMP data because the BMP data in original is reverted
+	// Extract the background_image data from background file
+	bmp_fill_buffer_with_image_data_from_file(buffer_background_image_data, file_background_image_game);
     bmp_revert_bmp(buffer_background_image_data);
 
-	bmp_get_image_data_from_file(buffer_sprites_data, file_sprites_game);
+	bmp_fill_buffer_with_image_data_from_file(buffer_sprites_data, file_sprites_game);
     bmp_revert_bmp(buffer_sprites_data);
     
-	
-	// 9 - Put Sprite in background buffer
-	//bmp_extract_sprite(buffer_sprites_data, 10,10, 15,17, &player1.sprite);
+	// Put Sprite in background buffer
+	bmp_extract_sprite(buffer_sprites_data, 0,0, 18,17, player1.sprite);
 
-	/*	
-	draw_sprite_to_buffer(&player1.sprite, 
+	
+	draw_sprite_to_buffer(player1.sprite, 
+	                              18, 
 	                              17, 
-	                              15, 
 	                              player1.position_x, 
 	                              player1.position_y, 
 	                              buffer_background_image_data);
-	                              */
+	                              
 	                              
 	// 8 - Paint the background image in video memory
-	//bmp_paint_image_data_to_vga(buffer_background_image_data);
-	bmp_paint_image_data_to_vga(buffer_sprites_data);
+	bmp_paint_image_data_to_vga(buffer_background_image_data);
+	//bmp_paint_image_data_to_vga(buffer_sprites_data);
 	
 }
 

@@ -7,6 +7,27 @@ Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 src\main.c:
 
         Available memory 4087696
+        tcc -c -O2 -mh -Iheader -obin\util.obj src\util.c 
+Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
+src\util.c:
+
+        Available memory 4107456
+        nasm -f obj src\video.asm -o bin\video.obj
+        tcc -c -O2 -mh -Iheader -obin\bmp.obj src\bmp.c 
+Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
+src\bmp.c:
+
+        Available memory 4056752
+        tcc -c -O2 -mh -Iheader -obin\players.obj src\players.c
+Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
+src\players.c:
+
+        Available memory 4112976
+        tcc -c -O2 -mh -Iheader -obin\gameloop.obj src\gameloop.c
+Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
+src\gameloop.c:
+
+        Available memory 4101800
         tcc -mh -ebin\game.exe  bin\main.obj  bin\util.obj  bin\video.obj  bin\bmp.obj  bin\players.obj  bin\gameloop.obj  
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 Turbo Link  Version 5.0 Copyright (c) 1992 Borland International

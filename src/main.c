@@ -26,11 +26,8 @@ int main(){
 	setup_screen();
 	init_players();
 	init_graphics();
-
 	
-	
-   getch();
-	
+    getch();
 	player_free(&player1);
 	bmp_delete_buffers();
 	//bmp_close_files();
@@ -78,28 +75,73 @@ void init_graphics(){
 	//		Show the final result in screen
 	//============================================	
 	
+	// ============================
 	// Extract sprites from sprites.bmp
+	// ============================
 	bmp_fill_sprites_in_buffer("c:\\sprites.bmp");
     bmp_revert_bmp(buffer_sprites_data);
 	
+    // ============================
 	// Extract the background_image data from background file
+	// ============================
 	bmp_fill_buffer_with_image_data_from_file(buffer_background_image_data, file_background_image_game);
     bmp_revert_bmp(buffer_background_image_data);
 
-	
+	// ============================
     // Fill player 1 with animation TANK_UP and
+    // ============================
 	bmp_extract_sprite(buffer_sprites_data, 2,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_up);
+	
+	// ============================
+    // Fill player 1 with animation TANK_DOWN and
+    // ============================
+	bmp_extract_sprite(buffer_sprites_data, 37,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_down);
+	
+	// ============================
+    // Fill player 1 with animation TANK_LEFT and
+    // ============================
+	bmp_extract_sprite(buffer_sprites_data, 56,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_left);
+	
+	// ============================
+    // Fill player 1 with animation TANK_RIGHT and
+    // ============================
+	bmp_extract_sprite(buffer_sprites_data, 20,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right);
 
+	
+	
 	// Put Sprite in background buffer
+	/*
 	draw_sprite_to_buffer(player1.sprite_tank_up, 
 	                              TANK_WIDTH, 
 	                              TANK_HEIGHT, 
 	                              player1.position_x, 
 	                              player1.position_y, 
+	                              buffer_background_image_data);*/
+	                              	                              
+	                              
+	draw_sprite_to_buffer(player1.sprite_tank_down, 
+	                              TANK_WIDTH, 
+	                              TANK_HEIGHT, 
+	                              300, 
+	                              0, 
 	                              buffer_background_image_data);
 	                              
+	/*draw_sprite_to_buffer(player1.sprite_tank_left, 
+	                              TANK_WIDTH, 
+	                              TANK_HEIGHT, 
+	                              80, 
+	                              30, 
+	                              buffer_background_image_data);*/
 	                              
 	                              
+	/*draw_sprite_to_buffer(player1.sprite_tank_right, 
+	                              TANK_WIDTH, 
+	                              TANK_HEIGHT, 
+	                              40, 
+	                              100, 
+	                              buffer_background_image_data);*/
+	                              
+	                              	                              
 	// 8 - Paint the background image in video memory
 	bmp_paint_image_data_to_vga(buffer_background_image_data);
 
@@ -117,7 +159,6 @@ void init_players(){
 	
 	// Init Player 1
 	player_init(&player1);
-	
 	printf("-- PLAYER 1 Y COORD %d\n",player1.position_y);
 	printf("-- PLAYER 1 X COORD %d\n",player1.position_x);	
 

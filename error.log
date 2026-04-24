@@ -22,7 +22,7 @@ src\bmp.c:
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 src\players.c:
 
-        Available memory 4112976
+        Available memory 4111660
         tcc -c -O2 -mh -Iheader -obin\gameloop.obj src\gameloop.c
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 src\gameloop.c:

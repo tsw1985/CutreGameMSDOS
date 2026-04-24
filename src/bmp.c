@@ -182,11 +182,11 @@ void bmp_fill_sprites_in_buffer(char *_file_sprites_game){
 }
 
 void bmp_extract_sprite(unsigned char *sprite_sheet,  
-                          unsigned int src_x, 
-                          unsigned int src_y,
-                          unsigned int sprite_width,  
-                          unsigned int sprite_height,
-                          unsigned char *sprite_dest)
+	                             unsigned int src_x, 
+	                          	 unsigned int src_y,
+	                          	 unsigned int sprite_width,  
+	                          	 unsigned int sprite_height,
+	                          	 unsigned char *sprite_dest)
 {
 	
 	

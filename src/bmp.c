@@ -10,9 +10,9 @@ FILE *file_background_image_game = NULL;
 FILE *file_sprites_game = NULL;
 
 
-//BUFFERS
-unsigned char *vga = (unsigned char *) MK_FP(0xA000,0); 
-unsigned char *buffer_original_background_bmp = NULL;
+// INIT Global variables with EXTERN in bmp.h
+unsigned char *vga = (unsigned char *) MK_FP(0xA000,0);
+unsigned char *buffer_original_background_bmp = NULL; // Buffer with original IMAGE
 unsigned char *buffer_background_image_data = NULL;
 unsigned char *buffer_palleta_data = NULL;
 unsigned char *buffer_sprites_data = NULL;
@@ -91,7 +91,7 @@ void bmp_load_pallete_data(char *buffer_data_dest , FILE *_file){
 }
 
 
-void bmp_load_image_data_from_file(char *buffer_data_dest, FILE *file){
+void bmp_fill_buffer_with_image_data_from_file(char *buffer_data_dest, FILE *file){
 		//set where the image data begin
 		fseek(file, 1078L , SEEK_SET);
 		fread(buffer_data_dest,65535,1,file);
@@ -103,6 +103,7 @@ void bmp_paint_image_data_to_vga(char *buffer_image_data){
 
 void bmp_init_buffers(){
 	
+		
 	//Create buffer bmp
 	buffer_original_background_bmp = (char*)malloc(65535 * sizeof(char*));
 	if(buffer_original_background_bmp == NULL){
@@ -126,11 +127,21 @@ void bmp_init_buffers(){
 	if(buffer_sprites_data == NULL){
 		printf("Error creating buffer_sprites_data\n");	
     }
+    
+    // Fill with 0 all buffers
+    memset(buffer_original_background_bmp,0,65535);
+    memset(buffer_background_image_data,0,IMAGE_DATA_SIZE);
+    memset(buffer_palleta_data,0,PALLETA_DATA_SIZE);
+    memset(buffer_sprites_data,0,65535);
+    
 	
 }
 
-
-void bmp_load_background_game(char *_file)
+//===========================================================
+// Save original file in: buffer_original_background_bmp and fill pallete data
+// in his buffer
+//===========================================================
+void bmp_fill_background_in_main_buffer(char *_file)
 {
 	
 	file_background_image_game = fopen(_file,"rb"); //binario
@@ -138,65 +149,41 @@ void bmp_load_background_game(char *_file)
 		printf("ERROR!!! I can not open the backound image file\n");
 	}
 	
-	// Create all buffers	
-	//bmp_init_buffers();
-	
 	//Fill ALL file data into buffer_bmp ( not reverted ) 
     fread(buffer_original_background_bmp,65535,1,file_background_image_game);
-    
-    //First step is load the PALLETE_DATA of image
-	bmp_load_pallete_data(buffer_palleta_data , file_background_image_game);
-	
-	//Set the pallete data into the VGA DAC
-	bmp_write_pallete_data_into_dac(buffer_palleta_data);
-	
-	// Load the background_image data
-	bmp_load_image_data_from_file(buffer_background_image_data, file_background_image_game);
-	
-	//now revert the BMP data because the BMP data in original is reverted
-    bmp_revert_bmp(buffer_background_image_data);
-	
-	// Paint the image in video memory
-	bmp_paint_image_data_to_vga(buffer_background_image_data);
-   
 }
 
-void bmp_load_sprites_images(char *_file_sprites_game, struct player *player){
+
+void bmp_extract_pallete_from_file(char *_file){
+	file_background_image_game = fopen(_file,"rb"); //binario
+	if(file_background_image_game == NULL ){
+		printf("ERROR!!! I can not open the backound image file\n");
+	}
 	
-	file_sprites_game	= fopen(_file_sprites_game,"rb"); //binario
+	//First step is load the PALLETE_DATA of image
+	bmp_load_pallete_data(buffer_palleta_data , file_background_image_game);
+	//fclose(file_background_image_game);
+	
+}
+
+
+void bmp_fill_sprites_in_buffer(char *_file_sprites_game){
+	
+	file_sprites_game	= fopen(_file_sprites_game,"rb");
 	if(file_sprites_game == NULL ){
 		printf("ERROR!!! I can not open file_sprites_game file\n");
 	}
 	
 	// Load the sprites data . Full sprites image
-	bmp_load_image_data_from_file(buffer_sprites_data,_file_sprites_game);
+	bmp_fill_buffer_with_image_data_from_file(buffer_sprites_data,_file_sprites_game);
 	
-	// Revert the BMP data because the BMP data in original is reverted
-    bmp_revert_bmp(buffer_sprites_data);
-    
-    // Load sprites of tank 1
-    bmp_load_sprite_tank(buffer_sprites_data, &player, 0, 0, 17,15);
-    
+	//fclose(file_sprites_game);
 	
 }
-
-//============================================================
-//	This function is to load the Sprite ( Images of Tank ) in the Player 1 structure
-//============================================================
-void bmp_load_sprite_tank(char *sprites_buffer,
-                                    struct player *player, 
-                                    int y, 
-                                    int x , 
-                                    unsigned int sprite_width,  
-                                    unsigned int sprite_height){
-	
-	bmp_extract_sprite(&sprites_buffer, y, x, sprite_width, sprite_height, &player->sprite);
-}
-
 
 void bmp_extract_sprite(unsigned char *sprite_sheet,  
-                          unsigned int src_x, 
-                          unsigned int src_y,
+                          unsigned int src_y, 
+                          unsigned int src_x,
                           unsigned int sprite_width,  
                           unsigned int sprite_height,
                           unsigned char *sprite_dest)
@@ -223,8 +210,8 @@ void bmp_extract_sprite(unsigned char *sprite_sheet,
 void draw_sprite_to_buffer(unsigned char *sprite,      
 			                         unsigned int sprite_width,   
 			                         unsigned int sprite_height,  
-			                         unsigned int dest_x,         
-			                         unsigned int dest_y,        
+			                         unsigned int dest_y,         
+			                         unsigned int dest_x,        
 			                         unsigned char *dest_buffer)
 {
     unsigned int y, x;
@@ -255,6 +242,7 @@ void draw_sprite_to_buffer(unsigned char *sprite,
 
 void bmp_close_files(){
 	fclose(file_background_image_game);
+	fclose(file_sprites_game);
 }
 
 void bmp_delete_buffers(){

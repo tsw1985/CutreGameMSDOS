@@ -2,6 +2,11 @@ MAKE Version 3.6  Copyright (c) 1991 Borland International
 
 Available memory 97906688 bytes
 
+        tcc -c -O2 -mh -Iheader -obin\main.obj src\main.c
+Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
+src\main.c:
+
+        Available memory 4087696
         tcc -mh -ebin\game.exe  bin\main.obj  bin\util.obj  bin\video.obj  bin\bmp.obj  bin\players.obj  bin\gameloop.obj  
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 Turbo Link  Version 5.0 Copyright (c) 1992 Borland International

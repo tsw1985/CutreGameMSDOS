@@ -3,8 +3,8 @@
 
 void player_init(struct player *_player){
 	
-	_player->position_y = 140;
-	_player->position_x = 150;
+	_player->position_y = 121;
+	_player->position_x = 140;
 	_player->sprite = (char*)malloc( (TANK_WIDTH * TANK_HEIGHT) * sizeof(char*));
 	if(_player->sprite == NULL){
 		printf("Error creating player_buffer_sprites_data\n");	

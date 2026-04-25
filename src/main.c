@@ -1,8 +1,20 @@
 #include <stdio.h>
 #include <conio.h>
+#include <dos.h>
 #include "header\util.h"
 #include "header\bmp.h"
 #include "header\players.h"
+
+#define KEY_UP 72
+#define KEY_DOWN 80
+#define KEY_LEFT 75
+#define KEY_RIGHT 77
+#define KEY_SCAPE 27
+#define MOVE_UP 1
+#define MOVE_DOWN 2
+#define MOVE_LEFT 3
+#define MOVE_RIGHT 4
+
 
 // asm function
 extern void hola();
@@ -15,27 +27,76 @@ extern set_vga_320_200_mode();
 void setup_screen();
 void init_graphics();
 void init_players();
+int get_key_pressed();
+void wait_retrace();
+void update_game();
+void move_sprite();
 
 /*  Players */
 struct player player1;
+struct player player2;
 
+//=====================
+// Frame counter:
+//
+// This variable is used to count how many retraces are in screen
+
+//=====================
+int frame_counter;
 
 int main(){
 
+	unsigned int key_pressed = 0;
+	
 	// Init Players and buffers	
 	setup_screen();
 	init_players();
 	init_graphics();
 	
-    getch();
+	//main loop
+    do{
+	    
+	    if( kbhit()){
+			key_pressed = get_key_pressed();
+			printf("TECLA PULSADA %d\n",key_pressed);	
+			
+			// 2. actualizar logica del juego
+    		update_game();
+
+    		// 3. dibujar en buffer de RAM
+    		//draw_to_buffer();
+
+    		// 4. esperar al retrazo vertical
+    		wait_retrace();
+
+    		// 5. copiar buffer a memoria de video
+    		//copy_buffer_to_vram();
+    		
+    	}
+    	
+    }while(key_pressed != KEY_SCAPE);
+    
+    
 	player_free(&player1);
 	bmp_delete_buffers();
-	//bmp_close_files();
+	bmp_close_files();
 		
 	
 	return 0;
 }
 
+void update_game(){
+	
+	frame_counter++;
+    if (frame_counter >= 5) {
+        frame_counter = 0;
+        move_sprite();
+    }
+}
+
+void move_sprite(){
+	
+}
 
 
 void init_graphics(){
@@ -110,13 +171,13 @@ void init_graphics(){
 	
 	
 	// Put Sprite in background buffer
-	/*
+	
 	draw_sprite_to_buffer(player1.sprite_tank_up, 
 	                              TANK_WIDTH, 
 	                              TANK_HEIGHT, 
 	                              player1.position_x, 
 	                              player1.position_y, 
-	                              buffer_background_image_data);*/
+	                              buffer_background_image_data);
 	                              	                              
 	                              
 	draw_sprite_to_buffer(player1.sprite_tank_down, 
@@ -126,20 +187,20 @@ void init_graphics(){
 	                              0, 
 	                              buffer_background_image_data);
 	                              
-	/*draw_sprite_to_buffer(player1.sprite_tank_left, 
+	draw_sprite_to_buffer(player1.sprite_tank_left, 
 	                              TANK_WIDTH, 
 	                              TANK_HEIGHT, 
 	                              80, 
 	                              30, 
-	                              buffer_background_image_data);*/
+	                              buffer_background_image_data);
 	                              
 	                              
-	/*draw_sprite_to_buffer(player1.sprite_tank_right, 
+	draw_sprite_to_buffer(player1.sprite_tank_right, 
 	                              TANK_WIDTH, 
 	                              TANK_HEIGHT, 
 	                              40, 
 	                              100, 
-	                              buffer_background_image_data);*/
+	                              buffer_background_image_data);
 	                              
 	                              	                              
 	// 8 - Paint the background image in video memory
@@ -164,4 +225,33 @@ void init_players(){
 
 	
 	
+}
+
+
+int get_key_pressed() {
+    int key;
+    
+    //if the pressed key is extended the first value is 0
+    key = getch(); 
+    if(key == 0 || key == 224) {
+        key = getch();  
+        switch(key) {
+            case KEY_UP:     
+            	 return MOVE_UP;
+            case KEY_DOWN: 
+            	 return MOVE_DOWN;
+            case KEY_LEFT:
+            	 return MOVE_LEFT;
+            case KEY_RIGHT:
+            	 return MOVE_RIGHT;
+        }
+    }
+    
+    return key;  // Normal key
+}
+
+void wait_retrace(void)
+{
+    while (inp(0x3DA) & 0x08);   // wait current retrace
+    while (!(inp(0x3DA) & 0x08)); // wait to start next retrace
 }

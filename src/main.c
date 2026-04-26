@@ -14,6 +14,7 @@
 #define MOVE_DOWN 2
 #define MOVE_LEFT 3
 #define MOVE_RIGHT 4
+#define SCREEN_SIZE 64000
 
 
 // asm function
@@ -29,8 +30,9 @@ void init_graphics();
 void init_players();
 int get_key_pressed();
 void wait_retrace();
-void update_game();
-void move_sprite();
+void update_game(int direction);
+void move_sprite(int direction);
+void draw_to_buffer();
 
 /*  Players */
 struct player player1;
@@ -54,29 +56,26 @@ int main(){
 	init_graphics();
 	
 	//main loop
+	
     do{
 	    
 	    if( kbhit()){
 			key_pressed = get_key_pressed();
-			printf("TECLA PULSADA %d\n",key_pressed);	
-			
-			// 2. actualizar logica del juego
-    		update_game();
-
-    		// 3. dibujar en buffer de RAM
-    		//draw_to_buffer();
-
-    		// 4. esperar al retrazo vertical
-    		wait_retrace();
-
-    		// 5. copiar buffer a memoria de video
-    		//copy_buffer_to_vram();
-    		
-    	}
-    	
+			//printf("TECLA PULSADA %d\n",key_pressed);	
+		}
+		// 2. Update logic game
+   		update_game(key_pressed);
+  		// 3. Double buffering
+   		draw_to_buffer();
+   		// 4. Wait vertial retrace
+   		wait_retrace();
+   		// 5. Show new map in screen
+   		bmp_paint_image_data_to_vga(buffer_background_image_data);
     }while(key_pressed != KEY_SCAPE);
     
     
+    
+    //getch();
 	player_free(&player1);
 	bmp_delete_buffers();
 	bmp_close_files();
@@ -85,16 +84,40 @@ int main(){
 	return 0;
 }
 
-void update_game(){
+void update_game(int direction){
 	
 	frame_counter++;
     if (frame_counter >= 5) {
         frame_counter = 0;
-        move_sprite();
+        move_sprite(direction);
     }
 }
 
-void move_sprite(){
+void move_sprite(int direction){
+	
+	if (direction == MOVE_UP){
+		player1.position_y--;
+	}else if (direction == MOVE_DOWN){
+		player1.position_y++;
+	}else if (direction == MOVE_LEFT){
+		player1.position_x--;
+	}else if (direction == MOVE_RIGHT){
+		player1.position_x++;
+	}
+}
+
+void draw_to_buffer(){
+	
+	// Copy again original map to current buffer to show in screen
+	memcpy(buffer_background_image_data,buffer_original_background_bmp,SCREEN_SIZE);
+	
+	// Pul the tank in new position
+	draw_sprite_to_buffer(player1.sprite_tank_up, 
+	                              TANK_WIDTH, 
+	                              TANK_HEIGHT, 
+	                              player1.position_x, 
+	                              player1.position_y, 
+	                              buffer_background_image_data);	
 	
 }
 
@@ -179,7 +202,8 @@ void init_graphics(){
 	                              player1.position_y, 
 	                              buffer_background_image_data);
 	                              	                              
-	                              
+
+	/*                              	                              	
 	draw_sprite_to_buffer(player1.sprite_tank_down, 
 	                              TANK_WIDTH, 
 	                              TANK_HEIGHT, 
@@ -201,10 +225,11 @@ void init_graphics(){
 	                              40, 
 	                              100, 
 	                              buffer_background_image_data);
+	                              */
 	                              
 	                              	                              
 	// 8 - Paint the background image in video memory
-	bmp_paint_image_data_to_vga(buffer_background_image_data);
+	//bmp_paint_image_data_to_vga(buffer_background_image_data);
 
 }
 

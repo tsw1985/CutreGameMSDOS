@@ -5,16 +5,19 @@
 #include "header\bmp.h"
 #include "header\players.h"
 
-#define KEY_UP 72
-#define KEY_DOWN 80
-#define KEY_LEFT 75
-#define KEY_RIGHT 77
-#define KEY_SCAPE 27
-#define MOVE_UP 1
-#define MOVE_DOWN 2
-#define MOVE_LEFT 3
-#define MOVE_RIGHT 4
-#define SCREEN_SIZE 64000
+#define PIXEL_TO_MOVE 		1
+#define FRAMES_COUNTER	1
+
+#define KEY_UP 					72
+#define KEY_DOWN 				80
+#define KEY_LEFT 				75
+#define KEY_RIGHT 				77
+#define KEY_SCAPE 			27
+#define MOVE_UP 				1
+#define MOVE_DOWN 			2
+#define MOVE_LEFT 			3
+#define MOVE_RIGHT 			4
+#define SCREEN_SIZE 			64000
 
 
 // asm function
@@ -87,7 +90,8 @@ int main(){
 void update_game(int direction){
 	
 	frame_counter++;
-    if (frame_counter >= 5) {
+	// 3
+    if (frame_counter >= FRAMES_COUNTER) {
         frame_counter = 0;
         move_sprite(direction);
     }
@@ -95,14 +99,19 @@ void update_game(int direction){
 
 void move_sprite(int direction){
 	
+	
 	if (direction == MOVE_UP){
-		player1.position_y--;
+		//player1.position_y--;
+		player1.position_y = player1.position_y - PIXEL_TO_MOVE;
 	}else if (direction == MOVE_DOWN){
-		player1.position_y++;
+		//player1.position_y++;
+		player1.position_y = player1.position_y + PIXEL_TO_MOVE;
 	}else if (direction == MOVE_LEFT){
-		player1.position_x--;
+		//player1.position_x--;
+		player1.position_x = player1.position_x - PIXEL_TO_MOVE;
 	}else if (direction == MOVE_RIGHT){
-		player1.position_x++;
+		//player1.position_x++;
+		player1.position_x = player1.position_x + PIXEL_TO_MOVE;
 	}
 }
 
@@ -169,7 +178,6 @@ void init_graphics(){
 	// Extract the background_image data from background file
 	// ============================
 	bmp_fill_buffer_with_image_data_from_file(buffer_background_image_data, file_background_image_game);
-    bmp_revert_bmp(buffer_background_image_data);
 
 	// ============================
     // Fill player 1 with animation TANK_UP and
@@ -193,8 +201,7 @@ void init_graphics(){
 
 	
 	
-	// Put Sprite in background buffer
-	
+	// Put Sprite in background buffer . Set player in position
 	draw_sprite_to_buffer(player1.sprite_tank_up, 
 	                              TANK_WIDTH, 
 	                              TANK_HEIGHT, 
@@ -203,7 +210,7 @@ void init_graphics(){
 	                              buffer_background_image_data);
 	                              	                              
 
-	/*                              	                              	
+	/*	                              	                              	
 	draw_sprite_to_buffer(player1.sprite_tank_down, 
 	                              TANK_WIDTH, 
 	                              TANK_HEIGHT, 
@@ -226,10 +233,6 @@ void init_graphics(){
 	                              100, 
 	                              buffer_background_image_data);
 	                              */
-	                              
-	                              	                              
-	// 8 - Paint the background image in video memory
-	//bmp_paint_image_data_to_vga(buffer_background_image_data);
 
 }
 

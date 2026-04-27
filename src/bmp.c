@@ -8,7 +8,7 @@
 //FILES
 FILE *file_background_image_game = NULL;
 FILE *file_sprites_game = NULL;
-#define SCREEN_SIZE 64000
+
 
 // INIT Global variables with EXTERN in bmp.h
 unsigned char *vga = (unsigned char *) MK_FP(0xA000,0);
@@ -112,7 +112,7 @@ void bmp_init_buffers(){
     }
     
     //Create buffer image data
-    buffer_background_image_data = (char*)malloc(IMAGE_DATA_SIZE);
+    buffer_background_image_data = (char*)malloc(SCREEN_SIZE);
 	if(buffer_background_image_data == NULL){
 		printf("Error creating buffer_background_image_data\n");	
     }
@@ -151,19 +151,7 @@ void bmp_fill_background_in_main_buffer(char *_file)
     bmp_revert_bmp(buffer_original_background_bmp);
 }
 
-/*
-void bmp_fill_background_in_main_buffer(char *_file){
-    file_background_image_game = fopen(_file,"rb");
-    if(file_background_image_game == NULL ){
-        printf("ERROR!!! I can not open the background image file\n");
-        return;
-    }
 
-    fseek(file_background_image_game, 1078L, SEEK_SET);
-    fread(buffer_original_background_bmp, SCREEN_SIZE, 1, file_background_image_game);
-
-    bmp_revert_bmp(buffer_original_background_bmp);
-}*/
 
 
 void bmp_extract_pallete_from_file(char *_file){

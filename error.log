@@ -6,7 +6,7 @@ Available memory 97906688 bytes
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 src\main.c:
 
-        Available memory 4061012
+        Available memory 4059908
         tcc -c -O2 -mh -Iheader -obin\util.obj src\util.c 
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 src\util.c:

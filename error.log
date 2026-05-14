@@ -17,12 +17,12 @@ src\util.c:
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 src\bmp.c:
 
-        Available memory 4057264
+        Available memory 4056160
         tcc -c -O2 -mh -Iheader -obin\players.obj src\players.c
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 src\players.c:
 
-        Available memory 4111660
+        Available memory 4108252
         tcc -c -O2 -mh -Iheader -obin\gameloop.obj src\gameloop.c
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 src\gameloop.c:

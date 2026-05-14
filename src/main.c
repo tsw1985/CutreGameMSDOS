@@ -5,8 +5,8 @@
 #include "header\bmp.h"
 #include "header\players.h"
 
-#define PIXEL_TO_MOVE 		1
-#define FRAMES_COUNTER	1
+#define PIXEL_TO_MOVE 		3
+#define FRAMES_COUNTER	3
 
 #define KEY_UP 					72
 #define KEY_DOWN 				80
@@ -66,14 +66,20 @@ int main(){
 			key_pressed = get_key_pressed();
 			//printf("TECLA PULSADA %d\n",key_pressed);	
 		}
+		
 		// 2. Update logic game
    		update_game(key_pressed);
-  		// 3. Double buffering
+  		
+   		// 3. Double buffering
    		draw_to_buffer();
+
    		// 4. Wait vertial retrace
    		wait_retrace();
+   		
    		// 5. Show new map in screen
    		bmp_paint_image_data_to_vga(buffer_background_image_data);
+   		
+   		
     }while(key_pressed != KEY_SCAPE);
     
     

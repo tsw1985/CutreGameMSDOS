@@ -95,10 +95,26 @@ int main(){
 
 void update_game(int direction){
 	
+	//Animation
+	player1.speed_counter = player1.speed_counter + 1;
+	
+	
 	frame_counter++;
 	// 3
     if (frame_counter >= FRAMES_COUNTER) {
         frame_counter = 0;
+        
+        // increment speed
+		if (player1.speed_counter >= player1.speed_total){
+			player1.speed_counter = 0;
+			
+			player1.current_frame = player1.current_frame + 1;
+			if(player1.current_frame >= player1.total_frames){
+				player1.current_frame = 0;
+			}
+			
+		}
+        
         move_sprite(direction);
     }
 }
@@ -125,14 +141,32 @@ void draw_to_buffer(){
 	
 	// Copy again original map to current buffer to show in screen
 	memcpy(buffer_background_image_data,buffer_original_background_bmp,SCREEN_SIZE);
+
 	
-	// Pul the tank in new position
-	draw_sprite_to_buffer(player1.sprite_tank_up, 
+	if ( player1.current_frame == 0){
+		// Put the tank in new position
+		draw_sprite_to_buffer(player1.sprite_tank_up, 
 	                              TANK_WIDTH, 
 	                              TANK_HEIGHT, 
 	                              player1.position_x, 
 	                              player1.position_y, 
-	                              buffer_background_image_data);	
+	                              buffer_background_image_data);		
+	
+    }else if ( player1.current_frame == 1){
+	    
+	    // Put the tank in new position
+		draw_sprite_to_buffer(player1.sprite_tank_up_2, 
+	                              TANK_WIDTH, 
+	                              TANK_HEIGHT, 
+	                              player1.position_x, 
+	                              player1.position_y, 
+	                              buffer_background_image_data);		
+	    
+	    
+	}
+	
+		
+	
 	
 }
 
@@ -188,7 +222,10 @@ void init_graphics(){
 	// ============================
     // Fill player 1 with animation TANK_UP and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data, 2,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_up);
+	bmp_extract_sprite(buffer_sprites_data,  2, 6 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_up);
+	bmp_extract_sprite(buffer_sprites_data, 75, 6 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_up_2);
+	
+	
 	
 	// ============================
     // Fill player 1 with animation TANK_DOWN and

@@ -2,12 +2,12 @@
 #ifndef BMP_HANDLER
 #define BMP_HANDLER
 
-#define WIDTH 320
-#define HEIGHT 200
+#define WIDTH 						320
+#define HEIGHT 						200
 
-#define IMAGE_DATA_SIZE 	64000 
-#define SCREEN_SIZE 			64000
-#define PALLETA_DATA_SIZE 309
+#define IMAGE_DATA_SIZE 		64000 
+#define SCREEN_SIZE 				64000
+#define PALLETA_DATA_SIZE 	309
 
 #include <stdio.h>
 #include "header\players.h"

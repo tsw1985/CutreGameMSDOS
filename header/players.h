@@ -10,6 +10,16 @@
 		unsigned int position_y;
 		unsigned int position_x;
 		unsigned int wins;
+		unsigned int current_frame;
+		
+		//Animations
+		unsigned int frame_counter;
+		unsigned int total_frames;
+		
+		//Animation Speed
+		unsigned int speed_counter;
+		unsigned int speed_total;  // This is the "delay"
+		
 		
 		char *sprite_tank_up;
 		char *sprite_tank_up_2;

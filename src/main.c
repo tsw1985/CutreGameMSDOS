@@ -5,7 +5,7 @@
 #include "header\bmp.h"
 #include "header\players.h"
 
-#define PIXEL_TO_MOVE 		3
+#define PIXEL_TO_MOVE 		2
 #define FRAMES_COUNTER	3
 
 #define KEY_UP 					72
@@ -18,6 +18,13 @@
 #define MOVE_LEFT 			3
 #define MOVE_RIGHT 			4
 #define SCREEN_SIZE 			64000
+
+// Directions
+#define DIRECTION_UP          0
+#define DIRECTION_DOWN     1
+#define DIRECTION_LEFT       2
+#define DIRECTION_RIGHT     3
+
 
 
 // asm function
@@ -112,7 +119,6 @@ void update_game(int direction){
 			if(player1.current_frame >= player1.total_frames){
 				player1.current_frame = 0;
 			}
-			
 		}
         
         move_sprite(direction);
@@ -120,7 +126,6 @@ void update_game(int direction){
 }
 
 void move_sprite(int direction){
-	
 	
 	if (direction == MOVE_UP){
 		//player1.position_y--;
@@ -145,7 +150,7 @@ void draw_to_buffer(){
 	
 	if ( player1.current_frame == 0){
 		// Put the tank in new position
-		draw_sprite_to_buffer(player1.sprite_tank_up, 
+		draw_sprite_to_buffer(player1.sprite_tank_right, 
 	                              TANK_WIDTH, 
 	                              TANK_HEIGHT, 
 	                              player1.position_x, 
@@ -155,7 +160,7 @@ void draw_to_buffer(){
     }else if ( player1.current_frame == 1){
 	    
 	    // Put the tank in new position
-		draw_sprite_to_buffer(player1.sprite_tank_up_2, 
+		draw_sprite_to_buffer(player1.sprite_tank_right_2, 
 	                              TANK_WIDTH, 
 	                              TANK_HEIGHT, 
 	                              player1.position_x, 
@@ -226,21 +231,23 @@ void init_graphics(){
 	bmp_extract_sprite(buffer_sprites_data, 75, 6 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_up_2);
 	
 	
-	
 	// ============================
     // Fill player 1 with animation TANK_DOWN and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data, 37,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_down);
+	bmp_extract_sprite(buffer_sprites_data, 37  ,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_down);
+	bmp_extract_sprite(buffer_sprites_data, 110 ,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_down_2);
 	
 	// ============================
     // Fill player 1 with animation TANK_LEFT and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data, 56,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_left);
+	bmp_extract_sprite(buffer_sprites_data, 56  ,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_left);
+	bmp_extract_sprite(buffer_sprites_data, 129,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_left_2);
 	
 	// ============================
     // Fill player 1 with animation TANK_RIGHT and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data, 20,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right);
+	bmp_extract_sprite(buffer_sprites_data, 20 ,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right);
+	bmp_extract_sprite(buffer_sprites_data, 93 ,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right_2);
 
 	
 	

@@ -11,6 +11,7 @@
 		unsigned int position_x;
 		unsigned int wins;
 		unsigned int current_frame;
+		unsigned int current_direction;
 		
 		//Animations
 		unsigned int frame_counter;

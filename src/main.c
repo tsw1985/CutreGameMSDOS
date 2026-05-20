@@ -16,10 +16,10 @@
 #define SCREEN_SIZE 			64000
 
 // Keyboards Directions
-#define DIRECTION_UP          0
-#define DIRECTION_DOWN     1
-#define DIRECTION_LEFT       2
-#define DIRECTION_RIGHT     3
+#define DIRECTION_UP			0
+#define DIRECTION_DOWN	1
+#define DIRECTION_LEFT		2
+#define DIRECTION_RIGHT		3
 
 // Keyboard hardware ports
 #define KEY_BUFFER 0x60
@@ -35,6 +35,7 @@
 // The scan codes are 128 .
 // Create a array with 128 positions. If 
 unsigned char keys[128] = {0};
+
 
 // function pointer to save the old keyboard handler
 void interrupt far (*old_kbd_handler)();
@@ -69,19 +70,20 @@ int frame_counter;
 // Install our custom interruption vector
 void install_kbd()   { 
 	old_kbd_handler = getvect(IRQ_KEYBOARD); 
-	setvect(9, new_kbd_handler); 
+	setvect(IRQ_KEYBOARD, new_kbd_handler); 
 }
 
 void uninstall_kbd() { 
-	setvect(9, old_kbd_handler); 
+	setvect(IRQ_KEYBOARD, old_kbd_handler); 
 }
+
 
 void interrupt far new_kbd_handler() {
 
 	unsigned char scancode;
 
     asm {
-        in  al, 0x60      /* Read scan code by 0x60 Hardware Port */
+	    in  al, 0x60      /* Read scan code by 0x60 Hardware Port */
         mov scancode, al
     }
 
@@ -135,8 +137,6 @@ int main(){
 	    	move_sprite(MOVE_RIGHT);
 		}
 		
-    	 continue_game:
-    	 
 		// 2. Update logic game
    		update_game(0);
   		
@@ -153,8 +153,6 @@ int main(){
     }while(!keys[KEY_ESC]);
     
     
-    
-    //getch();
 	player_free(&player1);
 	bmp_delete_buffers();
 	bmp_close_files();
@@ -179,10 +177,8 @@ void update_game(int direction){
 			player1.speed_counter = 0;
 			
 			//check if player is moving
+			//If player is in moving, then change frames
 			if(player1.is_moving == 1){
-				
-				
-				//If player is in moving, then change frames
 				
 				player1.current_frame = player1.current_frame + 1;
 				if(player1.current_frame >= player1.total_frames){
@@ -202,18 +198,15 @@ void update_game(int direction){
 void move_sprite(int direction){
 	
 	if (direction == MOVE_UP){
-		//player1.position_y--;
 		player1.position_y = player1.position_y - PIXEL_TO_MOVE;
 	}else if (direction == MOVE_DOWN){
-		//player1.position_y++;
 		player1.position_y = player1.position_y + PIXEL_TO_MOVE;
 	}else if (direction == MOVE_LEFT){
-		//player1.position_x--;
 		player1.position_x = player1.position_x - PIXEL_TO_MOVE;
 	}else if (direction == MOVE_RIGHT){
-		//player1.position_x++;
 		player1.position_x = player1.position_x + PIXEL_TO_MOVE;
 	}
+	
 }
 
 void draw_to_buffer(){
@@ -221,6 +214,9 @@ void draw_to_buffer(){
 	// Copy again original map to current buffer to show in screen
 	memcpy(buffer_background_image_data,buffer_original_background_bmp,SCREEN_SIZE);
 
+	
+	/* DRAW FRAME of each animation list*/
+	
 	
 	if ( player1.current_frame == 0){
 		// Put the tank in new position
@@ -243,10 +239,7 @@ void draw_to_buffer(){
 	    
 	    
 	}
-	
-		
-	
-	
+
 }
 
 
@@ -367,16 +360,9 @@ void setup_screen(){
 }
 
 void init_players(){
-
-	printf("Players Initialization ... !!\n");
-	
+	//printf("Players Initialization ... !!\n");
 	// Init Player 1
 	player_init(&player1);
-	printf("-- PLAYER 1 Y COORD %d\n",player1.position_y);
-	printf("-- PLAYER 1 X COORD %d\n",player1.position_x);	
-
-	
-	
 }
 
 void wait_retrace(void)

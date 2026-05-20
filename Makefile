@@ -1,5 +1,5 @@
 # Makefile para Borland Turbo C 3.0 con NASM
-# Basado en el patrÃ³n de Makefile.bor de zlib
+# Basado en el patrón de Makefile.bor de zlib
 
 # Configuracion para Turbo C
 MODEL = -mh

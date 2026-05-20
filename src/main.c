@@ -8,41 +8,51 @@
 #define PIXEL_TO_MOVE 		2
 #define FRAMES_COUNTER	3
 
-#define KEY_UP 					72
-#define KEY_DOWN 				80
-#define KEY_LEFT 				75
-#define KEY_RIGHT 				77
-#define KEY_SCAPE 			27
 #define MOVE_UP 				1
 #define MOVE_DOWN 			2
 #define MOVE_LEFT 			3
 #define MOVE_RIGHT 			4
+
 #define SCREEN_SIZE 			64000
 
-// Directions
+// Keyboards Directions
 #define DIRECTION_UP          0
 #define DIRECTION_DOWN     1
 #define DIRECTION_LEFT       2
 #define DIRECTION_RIGHT     3
 
+// Keyboard hardware ports
+#define KEY_BUFFER 0x60
 
+// Scan codes
+#define KEY_UP			0x48
+#define KEY_DOWN		0x50
+#define KEY_LEFT		0x4B
+#define KEY_RIGHT		0x4D
+#define KEY_ESC			0x01
+#define IRQ_KEYBOARD	9
 
-// asm function
+// The scan codes are 128 .
+// Create a array with 128 positions. If 
+unsigned char keys[128] = {0};
+
+// function pointer to save the old keyboard handler
+void interrupt far (*old_kbd_handler)();
+void interrupt far new_kbd_handler();
+
 extern void hola();
+extern void reset_pic();
+
 extern set_vga_320_200_mode();
-
-/* 
-	GAME FOLDER IN BACK UP : CutreGameMSDOS
-*/
-
 void setup_screen();
 void init_graphics();
 void init_players();
-int get_key_pressed();
 void wait_retrace();
 void update_game(int direction);
 void move_sprite(int direction);
 void draw_to_buffer();
+void update_keyboard();
+void process_input();
 
 /*  Players */
 struct player player1;
@@ -56,9 +66,45 @@ struct player player2;
 //=====================
 int frame_counter;
 
-int main(){
+// Install our custom interruption vector
+void install_kbd()   { 
+	old_kbd_handler = getvect(IRQ_KEYBOARD); 
+	setvect(9, new_kbd_handler); 
+}
 
-	unsigned int key_pressed = 0;
+void uninstall_kbd() { 
+	setvect(9, old_kbd_handler); 
+}
+
+void interrupt far new_kbd_handler() {
+
+	unsigned char scancode;
+
+    asm {
+        in  al, 0x60      /* Read scan code by 0x60 Hardware Port */
+        mov scancode, al
+    }
+
+    // When a key is pressed, the scancode is between 0 and 128
+    // When a key is released the scancode is > 128.
+    if (scancode & 0x80){ // if bit 7 is 1 , means key released
+    	// is need substract 128 to access to the correct index and set a 0
+        keys[scancode - 128] = 0;  /* Set to 0 like key released */
+	}else{
+        keys[scancode] = 1;          /* Set to 1 like pressed key */
+    }
+
+    /* Reset 8042 Controller and weak PIC */
+    reset_pic();
+    
+}
+
+
+
+int main(){
+	
+	// Instal custom Vector ( INT 9 ) keyboard
+	install_kbd();
 	
 	// Init Players and buffers	
 	setup_screen();
@@ -69,13 +115,30 @@ int main(){
 	
     do{
 	    
-	    if( kbhit()){
-			key_pressed = get_key_pressed();
-			//printf("TECLA PULSADA %d\n",key_pressed);	
+		if (keys[KEY_UP]){
+			player1.is_moving = 1;
+       		move_sprite(MOVE_UP);
+       }
+       
+    	if (keys[KEY_DOWN]){
+	    	player1.is_moving = 1;
+	    	move_sprite(MOVE_DOWN);
+	    }
+	     
+    	if (keys[KEY_LEFT]){    
+	    	player1.is_moving = 1;
+	    	move_sprite(MOVE_LEFT);
+    	}
+    	
+    	if (keys[KEY_RIGHT]){ 
+	    	player1.is_moving = 1;
+	    	move_sprite(MOVE_RIGHT);
 		}
 		
+    	 continue_game:
+    	 
 		// 2. Update logic game
-   		update_game(key_pressed);
+   		update_game(0);
   		
    		// 3. Double buffering
    		draw_to_buffer();
@@ -87,7 +150,7 @@ int main(){
    		bmp_paint_image_data_to_vga(buffer_background_image_data);
    		
    		
-    }while(key_pressed != KEY_SCAPE);
+    }while(!keys[KEY_ESC]);
     
     
     
@@ -95,7 +158,8 @@ int main(){
 	player_free(&player1);
 	bmp_delete_buffers();
 	bmp_close_files();
-		
+
+	uninstall_kbd();  /* NEVER REMOVE  */		
 	
 	return 0;
 }
@@ -104,7 +168,6 @@ void update_game(int direction){
 	
 	//Animation
 	player1.speed_counter = player1.speed_counter + 1;
-	
 	
 	frame_counter++;
 	// 3
@@ -115,15 +178,26 @@ void update_game(int direction){
 		if (player1.speed_counter >= player1.speed_total){
 			player1.speed_counter = 0;
 			
-			player1.current_frame = player1.current_frame + 1;
-			if(player1.current_frame >= player1.total_frames){
-				player1.current_frame = 0;
+			//check if player is moving
+			if(player1.is_moving == 1){
+				
+				
+				//If player is in moving, then change frames
+				
+				player1.current_frame = player1.current_frame + 1;
+				if(player1.current_frame >= player1.total_frames){
+					player1.current_frame = 0;
+				}	
+				
+				// set to 0 player
+				player1.is_moving = 0;
+				
 			}
 		}
-        
-        move_sprite(direction);
     }
+    
 }
+
 
 void move_sprite(int direction){
 	
@@ -303,29 +377,6 @@ void init_players(){
 
 	
 	
-}
-
-
-int get_key_pressed() {
-    int key;
-    
-    //if the pressed key is extended the first value is 0
-    key = getch(); 
-    if(key == 0 || key == 224) {
-        key = getch();  
-        switch(key) {
-            case KEY_UP:     
-            	 return MOVE_UP;
-            case KEY_DOWN: 
-            	 return MOVE_DOWN;
-            case KEY_LEFT:
-            	 return MOVE_LEFT;
-            case KEY_RIGHT:
-            	 return MOVE_RIGHT;
-        }
-    }
-    
-    return key;  // Normal key
 }
 
 void wait_retrace(void)

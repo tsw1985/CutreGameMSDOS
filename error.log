@@ -5,8 +5,9 @@ Available memory 97906688 bytes
         tcc -c -O2 -mh -Iheader -obin\main.obj src\main.c
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 src\main.c:
+Warning src\main.c 194: Parameter 'direction' is never used in function update_game
 
-        Available memory 4058884
+        Available memory 4057276
         tcc -c -O2 -mh -Iheader -obin\util.obj src\util.c 
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 src\util.c:

@@ -8,6 +8,14 @@
 #define PIXEL_TO_MOVE 		2
 #define FRAMES_COUNTER	3
 
+
+// The main loop runs once per vertical retrace (see wait_retrace()), and
+// VGA mode 13h (320x200, 256 colors) refreshes at approximately 70 Hz.
+// So waiting for 70 loop iterations is roughly one second. This is only
+// approximate, since it depends on the real refresh rate of the video
+// card being used, not on an actual clock.
+#define LOG_INTERVAL_FRAMES 70
+
 #define MOVE_UP 				1
 #define MOVE_DOWN 			2
 #define MOVE_LEFT 			3
@@ -67,6 +75,15 @@ struct player player2;
 //=====================
 int frame_counter;
 
+//=====================
+// Log frame counter:
+//
+// This variable is separate from frame_counter above, so that throttling
+// the debug log does not affect the speed of the animation. It counts how
+// many loop iterations have passed since the last time we wrote to the log.
+//=====================
+int log_frame_counter;
+
 // Install our custom interruption vector
 void install_kbd()   { 
 	old_kbd_handler = getvect(IRQ_KEYBOARD); 
@@ -104,6 +121,16 @@ void interrupt far new_kbd_handler() {
 
 
 int main(){
+
+	// Buffer used to build the text of each log line before sending it to tanks_log()
+	char log_message_text[64];
+
+	// Start each run with a fresh, empty log file, instead of mixing
+	// lines from this run with lines left over from the previous run
+	tanks_log_clear();
+
+	tanks_log("Starting game ...");
+
 	
 	// Instal custom Vector ( INT 9 ) keyboard
 	install_kbd();
@@ -148,8 +175,28 @@ int main(){
    		
    		// 5. Show new map in screen
    		bmp_paint_image_data_to_vga(buffer_background_image_data);
-   		
-   		
+
+
+   		// 6. Log the current direction, but only once every LOG_INTERVAL_FRAMES
+   		//    frames, so we do not flood tanks.log thousands of times per second
+   		log_frame_counter = log_frame_counter + 1;
+   		if (log_frame_counter >= LOG_INTERVAL_FRAMES){
+   			log_frame_counter = 0;
+
+   			if (player1.current_direction == MOVE_UP){
+   				sprintf(log_message_text, "Direction: UP");
+   			}else if (player1.current_direction == MOVE_DOWN){
+   				sprintf(log_message_text, "Direction: DOWN");
+   			}else if (player1.current_direction == MOVE_LEFT){
+   				sprintf(log_message_text, "Direction: LEFT");
+   			}else{
+   				sprintf(log_message_text, "Direction: RIGHT");
+   			}
+
+   			tanks_log(log_message_text);
+   		}
+
+
     }while(!keys[KEY_ESC]);
     
     
@@ -196,49 +243,89 @@ void update_game(int direction){
 
 
 void move_sprite(int direction){
-	
+
+	// Remember facing direction so draw_to_buffer() can pick the right sprite
+	player1.current_direction = direction;
+
 	if (direction == MOVE_UP){
-		player1.position_y = player1.position_y - PIXEL_TO_MOVE;
+		if (player1.position_y >= PIXEL_TO_MOVE){
+			player1.position_y = player1.position_y - PIXEL_TO_MOVE;
+		}else{
+			player1.position_y = 0;
+		}
 	}else if (direction == MOVE_DOWN){
-		player1.position_y = player1.position_y + PIXEL_TO_MOVE;
+		if (player1.position_y + PIXEL_TO_MOVE <= HEIGHT - TANK_HEIGHT){
+			player1.position_y = player1.position_y + PIXEL_TO_MOVE;
+		}else{
+			player1.position_y = HEIGHT - TANK_HEIGHT;
+		}
 	}else if (direction == MOVE_LEFT){
-		player1.position_x = player1.position_x - PIXEL_TO_MOVE;
+		if (player1.position_x >= PIXEL_TO_MOVE){
+			player1.position_x = player1.position_x - PIXEL_TO_MOVE;
+		}else{
+			player1.position_x = 0;
+		}
 	}else if (direction == MOVE_RIGHT){
-		player1.position_x = player1.position_x + PIXEL_TO_MOVE;
+		if (player1.position_x + PIXEL_TO_MOVE <= WIDTH - TANK_WIDTH){
+			player1.position_x = player1.position_x + PIXEL_TO_MOVE;
+		}else{
+			player1.position_x = WIDTH - TANK_WIDTH;
+		}
 	}
-	
+
 }
 
 void draw_to_buffer(){
-	
+
+	char *sprite_to_draw;
+
 	// Copy again original map to current buffer to show in screen
 	memcpy(buffer_background_image_data,buffer_original_background_bmp,SCREEN_SIZE);
 
-	
-	/* DRAW FRAME of each animation list*/
-	
-	
-	if ( player1.current_frame == 0){
-		// Put the tank in new position
-		draw_sprite_to_buffer(player1.sprite_tank_right, 
-	                              TANK_WIDTH, 
-	                              TANK_HEIGHT, 
-	                              player1.position_x, 
-	                              player1.position_y, 
-	                              buffer_background_image_data);		
-	
-    }else if ( player1.current_frame == 1){
-	    
-	    // Put the tank in new position
-		draw_sprite_to_buffer(player1.sprite_tank_right_2, 
-	                              TANK_WIDTH, 
-	                              TANK_HEIGHT, 
-	                              player1.position_x, 
-	                              player1.position_y, 
-	                              buffer_background_image_data);		
-	    
-	    
+
+	/* DRAW FRAME of each animation list, according to the direction the player is facing */
+
+	if ( player1.current_direction == MOVE_UP ){
+
+		if ( player1.current_frame == 0 ){
+			sprite_to_draw = player1.sprite_tank_up;
+		}else{
+			sprite_to_draw = player1.sprite_tank_up_2;
+		}
+
+	}else if ( player1.current_direction == MOVE_DOWN ){
+
+		if ( player1.current_frame == 0 ){
+			sprite_to_draw = player1.sprite_tank_down;
+		}else{
+			sprite_to_draw = player1.sprite_tank_down_2;
+		}
+
+	}else if ( player1.current_direction == MOVE_LEFT ){
+
+		if ( player1.current_frame == 0 ){
+			sprite_to_draw = player1.sprite_tank_left;
+		}else{
+			sprite_to_draw = player1.sprite_tank_left_2;
+		}
+
+	}else { // if ( player1.current_direction == MOVE_RIGHT ){
+
+		if ( player1.current_frame == 0 ){
+			sprite_to_draw = player1.sprite_tank_right;
+		}else{
+			sprite_to_draw = player1.sprite_tank_right_2;
+		}
+
 	}
+
+	// Put the tank in new position
+	draw_sprite_to_buffer(sprite_to_draw,
+	                              TANK_WIDTH,
+	                              TANK_HEIGHT,
+	                              player1.position_x,
+	                              player1.position_y,
+	                              buffer_background_image_data);
 
 }
 

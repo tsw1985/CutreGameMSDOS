@@ -1,36 +1,36 @@
 MAKE Version 3.6  Copyright (c) 1991 Borland International
 
-Available memory 97906688 bytes
+Available memory 265670656 bytes
 
         tcc -c -O2 -mh -Iheader -obin\main.obj src\main.c
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 src\main.c:
 Warning src\main.c 195: Parameter 'direction' is never used in function update_game
 
-        Available memory 4057276
+        Available memory 4055244
         tcc -c -O2 -mh -Iheader -obin\util.obj src\util.c 
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 src\util.c:
 
-        Available memory 4107456
+        Available memory 4107472
         nasm -f obj src\video.asm -o bin\video.obj
         tcc -c -O2 -mh -Iheader -obin\bmp.obj src\bmp.c 
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 src\bmp.c:
 
-        Available memory 4056160
+        Available memory 4056176
         tcc -c -O2 -mh -Iheader -obin\players.obj src\players.c
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 src\players.c:
 
-        Available memory 4106496
+        Available memory 4106512
         tcc -c -O2 -mh -Iheader -obin\gameloop.obj src\gameloop.c
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 src\gameloop.c:
 
-        Available memory 4100696
+        Available memory 4100712
         tcc -mh -ebin\game.exe  bin\main.obj  bin\util.obj  bin\video.obj  bin\bmp.obj  bin\players.obj  bin\gameloop.obj  
 Turbo C++ Version 3.00 Copyright (c) 1992 Borland International
 Turbo Link  Version 5.0 Copyright (c) 1992 Borland International
 
-        Available memory 4150328
+        Available memory 4150344

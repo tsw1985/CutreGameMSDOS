@@ -32,16 +32,11 @@ bin\bmp.obj: src\bmp.c
 bin\players.obj: src\players.c
 	@if not exist bin mkdir bin
 	$(CC) -c $(CFLAGS) -obin\players.obj src\players.c
-	
+
 	
 bin\gameloop.obj: src\gameloop.c
 	@if not exist bin mkdir bin
 	$(CC) -c $(CFLAGS) -obin\gameloop.obj src\gameloop.c
-	
-
-	
-	
-	
 
 	
 ################################################	

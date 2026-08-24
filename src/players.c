@@ -119,14 +119,14 @@ void player_update_future_cannon_tip(struct player *_player, int direction){
 			future_position_x = 0;
 		}
 
-		_player->future_cannon_tip_x = future_position_x + CANNON_TIP_OFFSET_LEFT_X - 2;
+		_player->future_cannon_tip_x = future_position_x + CANNON_TIP_OFFSET_LEFT_X ;
 		_player->future_cannon_tip_y = future_position_y + CANNON_TIP_OFFSET_LEFT_Y;
 
 	}else{ // MOVE_RIGHT
 
 		future_position_x = future_position_x + PIXEL_TO_MOVE;
 
-		_player->future_cannon_tip_x = future_position_x + CANNON_TIP_OFFSET_RIGHT_X + 2;
+		_player->future_cannon_tip_x = future_position_x + CANNON_TIP_OFFSET_RIGHT_X;
 		_player->future_cannon_tip_y = future_position_y + CANNON_TIP_OFFSET_RIGHT_Y;
 
 	}

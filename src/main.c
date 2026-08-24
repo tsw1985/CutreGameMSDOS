@@ -354,9 +354,9 @@ void init_graphics(){
 	bmp_init_buffers();
 	// Save a original copy of map file
 	// This create a backup of the original file in a buffer
-	bmp_fill_background_in_main_buffer("res\\cutre.bmp");
+	bmp_fill_background_in_main_buffer("..\\res\\cutre.bmp");
 	// Extract the pallete colors to save it un DAC
-	bmp_extract_pallete_from_file("res\\cutre.bmp");
+	bmp_extract_pallete_from_file("..\\res\\cutre.bmp");
 	// Set the pallete data into the VGA DAC
 	bmp_write_pallete_data_into_dac(buffer_palleta_data);
 
@@ -378,7 +378,7 @@ void init_graphics(){
 	// ============================
 	// Extract sprites from sprites.bmp
 	// ============================
-	bmp_fill_sprites_in_buffer("res\\sprites.bmp");
+	bmp_fill_sprites_in_buffer("..\\res\\sprites.bmp");
     bmp_revert_bmp(buffer_sprites_data);
 	
     // ============================
@@ -457,6 +457,26 @@ void setup_screen(){
 void init_players(){
 	//printf("Players Initialization ... !!\n");
 	// Init Player 1
+	
+	// Init player 1
+	/*
+	player1.position_y = 80;
+	player1.position_x = 80;
+
+	player1.current_frame   = 0;
+	player1.frame_counter  = 0;
+	player1.total_frames      = 2;
+	player1.speed_counter = 0;
+	player1.speed_total      = 2;
+	player1.speed_total      = 2;
+	
+	player1.canonn_head_top_up = 0;
+	player1.canonn_head_top_down = 0;
+	player1.canonn_head_top_left = 0;
+	player1.canonn_head_top_right = 0;
+	*/
+	
+	
 	player_init(&player1);
 }
 

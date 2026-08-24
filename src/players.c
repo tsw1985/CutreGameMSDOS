@@ -3,6 +3,8 @@
 
 void player_init(struct player *_player){
 	
+	
+	
 	_player->position_y = 80;
 	_player->position_x = 80;
 
@@ -11,6 +13,8 @@ void player_init(struct player *_player){
 	_player->total_frames = 2;
 	_player->speed_counter = 0;
 	_player->speed_total = 2;
+	
+	
 	
 	
 	_player->sprite_tank_up = (char*)malloc(TANK_WIDTH * TANK_HEIGHT);

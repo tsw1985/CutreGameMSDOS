@@ -143,9 +143,12 @@ void bmp_fill_background_in_main_buffer(char *_file)
 	file_background_image_game = fopen(_file,"rb"); //binario
 	if(file_background_image_game == NULL ){
 		printf("ERROR!!! I can not open the backound image file\n");
+		// Do not touch fseek/fread with a NULL FILE pointer below: that
+		// would read/write invalid memory and hang or crash the game.
+		return;
 	}
-	
-	//Fill ALL file data into buffer_bmp ( not reverted ) 
+
+	//Fill ALL file data into buffer_bmp ( not reverted )
 	fseek(file_background_image_game, 1078L, SEEK_SET);
     fread(buffer_original_background_bmp,SCREEN_SIZE,1,file_background_image_game);
     bmp_revert_bmp(buffer_original_background_bmp);
@@ -158,22 +161,29 @@ void bmp_extract_pallete_from_file(char *_file){
 	file_background_image_game = fopen(_file,"rb"); //binario
 	if(file_background_image_game == NULL ){
 		printf("ERROR!!! I can not open the backound image file\n");
+		// Do not call bmp_load_pallete_data() below with a NULL FILE
+		// pointer: that would read invalid memory and hang or crash the game.
+		return;
 	}
-	
+
 	//First step is load the PALLETE_DATA of image
 	bmp_load_pallete_data(buffer_palleta_data , file_background_image_game);
 	//fclose(file_background_image_game);
-	
+
 }
 
 
 void bmp_fill_sprites_in_buffer(char *_file_sprites_game){
-	
+
 	file_sprites_game	= fopen(_file_sprites_game,"rb");
 	if(file_sprites_game == NULL ){
 		printf("ERROR!!! I can not open file_sprites_game file\n");
+		// Do not call bmp_fill_buffer_with_image_data_from_file() below with
+		// a NULL FILE pointer: that would read invalid memory and hang or
+		// crash the game.
+		return;
 	}
-	
+
 	// Load the sprites data . Full sprites image
 	bmp_fill_buffer_with_image_data_from_file(buffer_sprites_data , file_sprites_game);
 
@@ -239,8 +249,18 @@ void draw_sprite_to_buffer(unsigned char *sprite,
 
 
 void bmp_close_files(){
-	fclose(file_background_image_game);
-	fclose(file_sprites_game);
+
+	// Only close files that were actually opened. If a bmp file failed
+	// to open earlier, its FILE pointer is still NULL here, and calling
+	// fclose() on a NULL pointer is invalid.
+	if (file_background_image_game != NULL){
+		fclose(file_background_image_game);
+	}
+
+	if (file_sprites_game != NULL){
+		fclose(file_sprites_game);
+	}
+
 }
 
 void bmp_delete_buffers(){

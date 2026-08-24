@@ -248,29 +248,37 @@ void move_sprite(int direction){
 	player1.current_direction = direction;
 
 	if (direction == MOVE_UP){
+		
 		if (player1.position_y >= PIXEL_TO_MOVE){
 			player1.position_y = player1.position_y - PIXEL_TO_MOVE;
 		}else{
 			player1.position_y = 0;
 		}
+		
 	}else if (direction == MOVE_DOWN){
+		
 		if (player1.position_y + PIXEL_TO_MOVE <= HEIGHT - TANK_HEIGHT){
 			player1.position_y = player1.position_y + PIXEL_TO_MOVE;
 		}else{
 			player1.position_y = HEIGHT - TANK_HEIGHT;
 		}
+		
 	}else if (direction == MOVE_LEFT){
+		
 		if (player1.position_x >= PIXEL_TO_MOVE){
 			player1.position_x = player1.position_x - PIXEL_TO_MOVE;
 		}else{
 			player1.position_x = 0;
 		}
+		
 	}else if (direction == MOVE_RIGHT){
+		
 		if (player1.position_x + PIXEL_TO_MOVE <= WIDTH - TANK_WIDTH){
 			player1.position_x = player1.position_x + PIXEL_TO_MOVE;
 		}else{
 			player1.position_x = WIDTH - TANK_WIDTH;
 		}
+		
 	}
 
 }
@@ -346,9 +354,9 @@ void init_graphics(){
 	bmp_init_buffers();
 	// Save a original copy of map file
 	// This create a backup of the original file in a buffer
-	bmp_fill_background_in_main_buffer("c:\\cutre.bmp");
+	bmp_fill_background_in_main_buffer("res\\cutre.bmp");
 	// Extract the pallete colors to save it un DAC
-	bmp_extract_pallete_from_file("c:\\cutre.bmp");
+	bmp_extract_pallete_from_file("res\\cutre.bmp");
 	// Set the pallete data into the VGA DAC
 	bmp_write_pallete_data_into_dac(buffer_palleta_data);
 
@@ -370,7 +378,7 @@ void init_graphics(){
 	// ============================
 	// Extract sprites from sprites.bmp
 	// ============================
-	bmp_fill_sprites_in_buffer("c:\\sprites.bmp");
+	bmp_fill_sprites_in_buffer("res\\sprites.bmp");
     bmp_revert_bmp(buffer_sprites_data);
 	
     // ============================
@@ -381,27 +389,27 @@ void init_graphics(){
 	// ============================
     // Fill player 1 with animation TANK_UP and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data,  2, 6 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_up);
-	bmp_extract_sprite(buffer_sprites_data, 75, 6 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_up_2);
+	bmp_extract_sprite(buffer_sprites_data,  2  ,5 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_up);
+	bmp_extract_sprite(buffer_sprites_data, 23, 5 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_up_2);
 	
 	
 	// ============================
     // Fill player 1 with animation TANK_DOWN and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data, 37  ,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_down);
-	bmp_extract_sprite(buffer_sprites_data, 110 ,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_down_2);
+	bmp_extract_sprite(buffer_sprites_data, 43  , 10 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_down);
+	bmp_extract_sprite(buffer_sprites_data, 63  , 10  , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_down_2);
 	
 	// ============================
     // Fill player 1 with animation TANK_LEFT and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data, 56  ,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_left);
-	bmp_extract_sprite(buffer_sprites_data, 129,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_left_2);
+	bmp_extract_sprite(buffer_sprites_data, 83   , 8, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_left);
+	bmp_extract_sprite(buffer_sprites_data, 102 , 8, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_left_2);
 	
 	// ============================
     // Fill player 1 with animation TANK_RIGHT and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data, 20 ,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right);
-	bmp_extract_sprite(buffer_sprites_data, 93 ,6, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right_2);
+	bmp_extract_sprite(buffer_sprites_data, 124 , 8, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right);
+	bmp_extract_sprite(buffer_sprites_data, 144 , 8, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right_2);
 
 	
 	

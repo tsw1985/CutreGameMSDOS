@@ -33,6 +33,8 @@ void bmp_write_pallete_data_into_dac(char *pallete_data);
 void bmp_fill_buffer_with_image_data_from_file(char *buffer_data_dest, FILE *file);
 void bmp_paint_image_data_to_vga(char *buffer_image_data);
 void bmp_extract_pallete_from_file(char *_file);
+unsigned char bmp_get_vga_pixel(unsigned int x, unsigned int y);
+unsigned char bmp_get_map_pixel(unsigned int x, unsigned int y);
 
 
 //LOAD SPRITES

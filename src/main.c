@@ -5,7 +5,6 @@
 #include "header\bmp.h"
 #include "header\players.h"
 
-#define PIXEL_TO_MOVE 		2
 #define FRAMES_COUNTER	3
 
 
@@ -16,12 +15,15 @@
 // card being used, not on an actual clock.
 #define LOG_INTERVAL_FRAMES 70
 
-#define MOVE_UP 				1
-#define MOVE_DOWN 			2
-#define MOVE_LEFT 			3
-#define MOVE_RIGHT 			4
-
 #define SCREEN_SIZE 			64000
+
+// Color/pallete index used in the map bmp (cutrecol.bmp) to mark a wall.
+// If the pixel under the cannon tip is this color, movement in that
+// direction is blocked.
+//
+// Confirmed by reading cutrecol.bmp directly: it only uses 2 colors,
+// index 3 (blue, background/floor) and index 252 (yellow, wall).
+#define COLLISION_COLOR 		252
 
 // Keyboards Directions
 #define DIRECTION_UP			0
@@ -125,6 +127,11 @@ int main(){
 	// Buffer used to build the text of each log line before sending it to tanks_log()
 	char log_message_text[64];
 
+	// Color/pallete index of the map pixel that is currently under the
+	// tank's cannon tip (position is now tracked on player1 itself, see
+	// player_update_cannon_tip() in players.c)
+	unsigned int cannon_tip_pixel_value;
+
 	// Start each run with a fresh, empty log file, instead of mixing
 	// lines from this run with lines left over from the previous run
 	tanks_log_clear();
@@ -139,7 +146,13 @@ int main(){
 	setup_screen();
 	init_players();
 	init_graphics();
-	
+
+	// Compute the cannon tip position for the tank's starting position,
+	// so the very first frame of the loop below already has valid
+	// coordinates to check for collisions, instead of the (0,0) that
+	// init_players() sets as a placeholder
+	player_update_cannon_tip(&player1);
+
 	//main loop
 	
     do{
@@ -148,20 +161,54 @@ int main(){
 		// never move in diagonal. If more than one direction key is held
 		// down at the same time, only the first one below (in the order
 		// UP, DOWN, LEFT, RIGHT) is used for this frame.
+		//
+		// Before moving, player_update_future_cannon_tip() works out where
+		// the cannon tip WOULD land, one PIXEL_TO_MOVE step ahead, without
+		// actually moving the tank yet. That future point is still outside
+		// the tank's current sprite box, so it is safe to read directly
+		// from VGA memory (A000): it is not painted with the tank's own
+		// sprite yet. If it is a wall, the key is ignored and the tank
+		// does not move in that direction.
 		if (keys[KEY_UP]){
-			player1.is_moving = 1;
-       		move_sprite(MOVE_UP);
+
+			player_update_future_cannon_tip(&player1, MOVE_UP);
+
+			if (bmp_get_vga_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
+				player1.is_moving = 1;
+	       		move_sprite(MOVE_UP);
+			}
+
        }else if (keys[KEY_DOWN]){
-	    	player1.is_moving = 1;
-	    	move_sprite(MOVE_DOWN);
+
+			//player_update_future_cannon_tip(&player1, MOVE_DOWN);
+			//if (bmp_get_vga_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
+				player1.is_moving = 1;
+		    	move_sprite(MOVE_DOWN);
+			//}
+
 	    }else if (keys[KEY_LEFT]){
-	    	player1.is_moving = 1;
-	    	move_sprite(MOVE_LEFT);
+
+			//player_update_future_cannon_tip(&player1, MOVE_LEFT);
+			//if (bmp_get_vga_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
+				player1.is_moving = 1;
+		    	move_sprite(MOVE_LEFT);
+			//}
+
     	}else if (keys[KEY_RIGHT]){
-	    	player1.is_moving = 1;
-	    	move_sprite(MOVE_RIGHT);
+
+			//player_update_future_cannon_tip(&player1, MOVE_RIGHT);
+			//if (bmp_get_vga_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
+				player1.is_moving = 1;
+		    	move_sprite(MOVE_RIGHT);
+			//}
+
 		}
-		
+
+		// Keep the cannon tip position (for all 4 directions) up to date
+		// with the tank's current position, so it is ready whenever it is
+		// needed (log below, collision check later on)
+		player_update_cannon_tip(&player1);
+
 		// 2. Update logic game
    		update_game(0);
   		
@@ -191,6 +238,37 @@ int main(){
    				sprintf(log_message_text, "Direction: RIGHT");
    			}
 
+   			tanks_log(log_message_text);
+
+   			// Pick the cannon tip pair that matches the current facing
+   			// direction, and log the color index sitting under it in the
+   			// clean map buffer (not the VGA memory: that one already has
+   			// the tank drawn on top of it, so it would just show the
+   			// tank's own color instead of the map's)
+   			if (player1.current_direction == MOVE_UP){
+   				cannon_tip_pixel_value = bmp_get_map_pixel(player1.canonn_head_top_up_x, player1.canonn_head_top_up_y);
+   				sprintf(log_message_text, "Cannon tip (%u,%u) = %u", player1.canonn_head_top_up_x, player1.canonn_head_top_up_y, cannon_tip_pixel_value);
+   			}else if (player1.current_direction == MOVE_DOWN){
+   				cannon_tip_pixel_value = bmp_get_map_pixel(player1.canonn_head_top_down_x, player1.canonn_head_top_down_y);
+   				sprintf(log_message_text, "Cannon tip (%u,%u) = %u", player1.canonn_head_top_down_x, player1.canonn_head_top_down_y, cannon_tip_pixel_value);
+   			}else if (player1.current_direction == MOVE_LEFT){
+   				cannon_tip_pixel_value = bmp_get_map_pixel(player1.canonn_head_top_left_x, player1.canonn_head_top_left_y);
+   				sprintf(log_message_text, "Cannon tip (%u,%u) = %u", player1.canonn_head_top_left_x, player1.canonn_head_top_left_y, cannon_tip_pixel_value);
+   			}else{
+   				cannon_tip_pixel_value = bmp_get_map_pixel(player1.canonn_head_top_right_x, player1.canonn_head_top_right_y);
+   				sprintf(log_message_text, "Cannon tip (%u,%u) = %u", player1.canonn_head_top_right_x, player1.canonn_head_top_right_y, cannon_tip_pixel_value);
+   			}
+
+   			tanks_log(log_message_text);
+
+   			// Also log the FUTURE cannon tip (one PIXEL_TO_MOVE step ahead
+   			// in the current facing direction) read straight from VGA
+   			// memory, to confirm player_update_future_cannon_tip() and the
+   			// collision check above are seeing the real map color and not
+   			// the tank's own sprite
+   			player_update_future_cannon_tip(&player1, player1.current_direction);
+   			cannon_tip_pixel_value = bmp_get_vga_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y);
+   			sprintf(log_message_text, "Future cannon tip (%u,%u) = %u", player1.future_cannon_tip_x, player1.future_cannon_tip_y, cannon_tip_pixel_value);
    			tanks_log(log_message_text);
    		}
 
@@ -352,7 +430,13 @@ void init_graphics(){
 	bmp_init_buffers();
 	// Save a original copy of map file
 	// This create a backup of the original file in a buffer
-	bmp_fill_background_in_main_buffer("..\\res\\cutre.bmp");
+	//bmp_fill_background_in_main_buffer("..\\res\\cutre.bmp");
+	bmp_fill_background_in_main_buffer("..\\res\\cutrecol.bmp");
+	
+	//load map collision
+	//bmp_fill_background_collision_in_buffer("..\\res\\cutrecol.bmp");
+	
+	
 	// Extract the pallete colors to save it un DAC
 	bmp_extract_pallete_from_file("..\\res\\cutre.bmp");
 	// Set the pallete data into the VGA DAC
@@ -468,13 +552,15 @@ void init_players(){
 	player1.speed_total      = 2;
 	player1.speed_total      = 2;
 	
-	player1.canonn_head_top_up = 0;
-	player1.canonn_head_top_down = 0;
-	player1.canonn_head_top_left = 0;
-	player1.canonn_head_top_right = 0;
-	
-	
-	
+	player1.canonn_head_top_up_x = 0;
+	player1.canonn_head_top_up_y = 0;
+	player1.canonn_head_top_down_x = 0;
+	player1.canonn_head_top_down_y = 0;
+	player1.canonn_head_top_left_x = 0;
+	player1.canonn_head_top_left_y = 0;
+	player1.canonn_head_top_right_x = 0;
+	player1.canonn_head_top_right_y = 0;
+
 	player_init(&player1);
 }
 

@@ -16,6 +16,7 @@ unsigned char *buffer_original_background_bmp = NULL; // Buffer with original IM
 unsigned char *buffer_background_image_data = NULL;
 unsigned char *buffer_palleta_data = NULL;
 unsigned char *buffer_sprites_data = NULL;
+unsigned char *buffer_map_collisions_data = NULL;
 
 
 void bmp_revert_bmp(char *buffer){
@@ -102,6 +103,43 @@ void bmp_paint_image_data_to_vga(char *buffer_image_data){
 	memcpy(vga,buffer_image_data,SCREEN_SIZE);
 }
 
+//===========================================================
+// Read the color/pallete index that is currently at pixel (x,y) in the
+// real VGA video memory (segment 0xA000, the "vga" pointer).
+//
+// WARNING: by the time the main loop reads this, the tank sprite has
+// already been drawn on top of the map for the current frame. So a
+// coordinate that falls on the tank itself (like the cannon tip) will
+// return the tank sprite's own color, not the map color underneath it.
+// Do NOT use this for collision checks. Use bmp_get_map_pixel() instead,
+// which reads the clean map without the tank drawn on it.
+//===========================================================
+unsigned char bmp_get_vga_pixel(unsigned int x, unsigned int y){
+
+	unsigned int offset;
+
+	offset = (y * WIDTH) + x;
+
+	return vga[offset];
+
+}
+
+//===========================================================
+// Read the color/pallete index at pixel (x,y) of the original map,
+// from buffer_original_background_bmp. Unlike bmp_get_vga_pixel(), this
+// buffer never has the tank (or anything else) drawn on top of it, so
+// this is the correct one to use for collision detection.
+//===========================================================
+unsigned char bmp_get_map_pixel(unsigned int x, unsigned int y){
+
+	unsigned int offset;
+
+	offset = (y * WIDTH) + x;
+
+	return buffer_original_background_bmp[offset];
+
+}
+
 void bmp_init_buffers(){
 	
 		
@@ -129,6 +167,14 @@ void bmp_init_buffers(){
 		printf("Error creating buffer_sprites_data\n");	
     }
     
+    
+    buffer_map_collisions_data = (char*)malloc(SCREEN_SIZE);
+	if(buffer_map_collisions_data == NULL){
+		printf("Error creating buffer_buffer_map_collisions_data\n");	
+    }
+    
+    
+    
     // Fill with 0 all buffers
 	
 }
@@ -153,6 +199,28 @@ void bmp_fill_background_in_main_buffer(char *_file)
     fread(buffer_original_background_bmp,SCREEN_SIZE,1,file_background_image_game);
     bmp_revert_bmp(buffer_original_background_bmp);
 }
+
+
+void bmp_fill_background_collision_in_buffer(char *_file)
+{
+	
+	file_background_image_game = fopen(_file,"rb"); //binario
+	if(file_background_image_game == NULL ){
+		printf("ERROR!!! I can not open the backound image file\n");
+		// Do not touch fseek/fread with a NULL FILE pointer below: that
+		// would read/write invalid memory and hang or crash the game.
+		return;
+	}
+
+	//Fill ALL file data into buffer_bmp ( not reverted )
+	fseek(file_background_image_game, 1078L, SEEK_SET);
+    fread(buffer_map_collisions_data,SCREEN_SIZE,1,file_background_image_game);
+    bmp_revert_bmp(buffer_map_collisions_data);
+}
+
+
+
+
 
 
 
@@ -269,5 +337,6 @@ void bmp_delete_buffers(){
     free(buffer_background_image_data);
     free(buffer_palleta_data);
     free(buffer_sprites_data);
+    free(buffer_map_collisions_data);
 	
 }

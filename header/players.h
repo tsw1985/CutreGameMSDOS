@@ -5,6 +5,10 @@
 #define TANK_WIDTH 18
 #define TANK_HEIGHT 18
 
+#define TANK_BULLET_WIDTH  4
+#define TANK_BULLET_HEIGHT 3
+
+
 // How many pixels the tank moves per keypress, and how far "future" look-
 // ahead collision checks look past the current cannon tip
 #define PIXEL_TO_MOVE 2
@@ -39,7 +43,7 @@
 #define CANNON_TIP_OFFSET_RIGHT_X 	15
 #define CANNON_TIP_OFFSET_RIGHT_Y 	CANNON_FINE_PX
 
-	struct player{
+struct player{
 		
 		unsigned int position_y;
 		unsigned int position_x;
@@ -98,6 +102,10 @@
 		
 		char *sprite_tank_right;
 		char *sprite_tank_right_2;
+		
+		char *sprite_tank_bullet;
+		char *sprite_tank_bullet2;
+		
 		// to do : animation
 	};
 

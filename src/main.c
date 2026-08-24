@@ -408,11 +408,19 @@ void draw_to_buffer(){
 		}
 
 	}
-
+	
 	// Put the tank in new position
 	draw_sprite_to_buffer(sprite_to_draw,
 	                              TANK_WIDTH,
 	                              TANK_HEIGHT,
+	                              player1.position_x,
+	                              player1.position_y,
+	                              buffer_background_image_data);
+
+	//testing - remove
+	draw_sprite_to_buffer(player1.sprite_tank_bullet,
+	                              TANK_BULLET_WIDTH,
+	                              TANK_BULLET_HEIGHT,
 	                              player1.position_x,
 	                              player1.position_y,
 	                              buffer_background_image_data);
@@ -499,15 +507,37 @@ void init_graphics(){
 	bmp_extract_sprite(buffer_sprites_data, 124 , 8, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right);
 	bmp_extract_sprite(buffer_sprites_data, 144 , 8, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right_2);
 
+	// ============================
+    // Fill bullet animation 
+    // ============================
+    
+    
+    //#define TANK_BULLET_WIDTH 4
+	//#define TANK_BULLET_HEIGHT 3
+    
+	bmp_extract_sprite(buffer_sprites_data, 252 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player1.sprite_tank_bullet);
+	bmp_extract_sprite(buffer_sprites_data, 259 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player1.sprite_tank_bullet2);
 	
 	
+
 	// Put Sprite in background buffer . Set player in position
+	/*
 	draw_sprite_to_buffer(player1.sprite_tank_up, 
 	                              TANK_WIDTH, 
 	                              TANK_HEIGHT, 
 	                              player1.position_x, 
 	                              player1.position_y, 
+	                              buffer_background_image_data);*/
+	                              
+	// draw bullet for testing
+	draw_sprite_to_buffer(player1.sprite_tank_bullet,
+	                              TANK_BULLET_WIDTH,
+	                              TANK_BULLET_HEIGHT,
+	                              player1.position_x,
+	                              player1.position_y,
 	                              buffer_background_image_data);
+	                              
+	                              
 	                              	                              
 
 	/*	                              	                              	

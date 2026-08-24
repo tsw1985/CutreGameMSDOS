@@ -144,22 +144,20 @@ int main(){
 	
     do{
 	    
+		// Only one direction can be applied per frame, so the tank can
+		// never move in diagonal. If more than one direction key is held
+		// down at the same time, only the first one below (in the order
+		// UP, DOWN, LEFT, RIGHT) is used for this frame.
 		if (keys[KEY_UP]){
 			player1.is_moving = 1;
        		move_sprite(MOVE_UP);
-       }
-       
-    	if (keys[KEY_DOWN]){
+       }else if (keys[KEY_DOWN]){
 	    	player1.is_moving = 1;
 	    	move_sprite(MOVE_DOWN);
-	    }
-	     
-    	if (keys[KEY_LEFT]){    
+	    }else if (keys[KEY_LEFT]){
 	    	player1.is_moving = 1;
 	    	move_sprite(MOVE_LEFT);
-    	}
-    	
-    	if (keys[KEY_RIGHT]){ 
+    	}else if (keys[KEY_RIGHT]){
 	    	player1.is_moving = 1;
 	    	move_sprite(MOVE_RIGHT);
 		}
@@ -459,7 +457,7 @@ void init_players(){
 	// Init Player 1
 	
 	// Init player 1
-	/*
+	
 	player1.position_y = 80;
 	player1.position_x = 80;
 
@@ -474,7 +472,7 @@ void init_players(){
 	player1.canonn_head_top_down = 0;
 	player1.canonn_head_top_left = 0;
 	player1.canonn_head_top_right = 0;
-	*/
+	
 	
 	
 	player_init(&player1);

@@ -14,12 +14,12 @@
 		unsigned int current_direction;
 		unsigned int is_moving;
 		
-		/*
+		
 		unsigned int canonn_head_top_up;
 		unsigned int canonn_head_top_down;
 		unsigned int canonn_head_top_left;
 		unsigned int canonn_head_top_right;
-		*/
+		
 		
 		
 		//Animations

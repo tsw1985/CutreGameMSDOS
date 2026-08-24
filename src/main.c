@@ -183,27 +183,30 @@ int main(){
 
        }else if (keys[KEY_DOWN]){
 
-			//player_update_future_cannon_tip(&player1, MOVE_DOWN);
-			//if (bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
+			player_update_future_cannon_tip(&player1, MOVE_DOWN);
+
+			if (bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
 				player1.is_moving = 1;
 		    	move_sprite(MOVE_DOWN);
-			//}
+			}
 
 	    }else if (keys[KEY_LEFT]){
 
-			//player_update_future_cannon_tip(&player1, MOVE_LEFT);
-			//if (bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
+			player_update_future_cannon_tip(&player1, MOVE_LEFT);
+
+			if (bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
 				player1.is_moving = 1;
 		    	move_sprite(MOVE_LEFT);
-			//}
+			}
 
     	}else if (keys[KEY_RIGHT]){
 
-			//player_update_future_cannon_tip(&player1, MOVE_RIGHT);
-			//if (bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
+			player_update_future_cannon_tip(&player1, MOVE_RIGHT);
+
+			if (bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
 				player1.is_moving = 1;
 		    	move_sprite(MOVE_RIGHT);
-			//}
+			}
 
 		}
 
@@ -433,8 +436,8 @@ void init_graphics(){
 	bmp_init_buffers();
 	// Save a original copy of map file
 	// This create a backup of the original file in a buffer
-	bmp_fill_background_in_main_buffer("..\\res\\cutre.bmp");
-	//bmp_fill_background_in_main_buffer("..\\res\\cutrecol.bmp");  // <--- FOR TESTING
+	//bmp_fill_background_in_main_buffer("..\\res\\cutre.bmp");
+	bmp_fill_background_in_main_buffer("..\\res\\cutrecol.bmp");  // <--- FOR TESTING
 	
 	//load map collision
 	bmp_fill_background_collision_in_buffer("..\\res\\cutrecol.bmp");

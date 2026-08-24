@@ -17,29 +17,26 @@
 // Relative offset (from the sprite's top-left corner) of the cannon tip,
 // inside the TANK_WIDTH x TANK_HEIGHT sprite box.
 //
-// UP is confirmed from the sprite sheet: frame 1's tip pixel is (10,5)
-// and its sprite origin is (2,5), so offset = (8,0). Frame 2's tip pixel
-// is (31,5) and its origin is (23,5), same offset (8,0). So the offset
-// does not change between animation frames, only between directions.
+// All 4 are now confirmed by reading the tip pixel directly from the
+// sprite sheet (sprites.bmp) and subtracting the frame 1 origin used in
+// init_graphics() (in main.c) to extract that direction's sprite:
 //
-// DOWN/LEFT/RIGHT are NOT confirmed yet: they are assumed symmetric to
-// UP (cannon centered on the side of the box that faces that direction).
-// Check the logged pixel values against the sprite sheet and correct
-// these if they are wrong.
-
-
+//   UP:    origin (2,5)   tip (10,5)  -> offset (8,0)
+//   DOWN:  origin (43,10) tip (51,26) -> offset (8,16)
+//   LEFT:  origin (83,8)  tip (83,16) -> offset (0,8)
+//   RIGHT: origin (124,8) tip (139,16)-> offset (15,8)
 #define CANNON_FINE_PX                           8
 
 #define CANNON_TIP_OFFSET_UP_X 		CANNON_FINE_PX
 #define CANNON_TIP_OFFSET_UP_Y 		0
 
 #define CANNON_TIP_OFFSET_DOWN_X 	CANNON_FINE_PX
-#define CANNON_TIP_OFFSET_DOWN_Y 	(TANK_HEIGHT - 1)
+#define CANNON_TIP_OFFSET_DOWN_Y 	16
 
 #define CANNON_TIP_OFFSET_LEFT_X 	0
 #define CANNON_TIP_OFFSET_LEFT_Y 	CANNON_FINE_PX
 
-#define CANNON_TIP_OFFSET_RIGHT_X 	(TANK_WIDTH - 1)
+#define CANNON_TIP_OFFSET_RIGHT_X 	15
 #define CANNON_TIP_OFFSET_RIGHT_Y 	CANNON_FINE_PX
 
 	struct player{

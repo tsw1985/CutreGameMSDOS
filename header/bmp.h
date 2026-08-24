@@ -18,6 +18,7 @@ extern unsigned char *buffer_original_background_bmp;
 extern unsigned char *buffer_background_image_data;
 extern unsigned char *buffer_palleta_data;
 extern unsigned char *buffer_sprites_data;
+extern unsigned char *buffer_map_collisions_data;
 extern FILE *file_background_image_game;
 extern FILE *file_sprites_game;
 
@@ -27,6 +28,7 @@ void bmp_init_buffers();
 void bmp_delete_buffers();
 void bmp_close_files();
 void bmp_fill_background_in_main_buffer(char *file);
+void bmp_fill_background_collision_in_buffer(char *_file);
 void bmp_revert_bmp(char *bmp_data);
 void bmp_load_pallete_data(char *buffer_data_dest, FILE *file);
 void bmp_write_pallete_data_into_dac(char *pallete_data);
@@ -35,6 +37,7 @@ void bmp_paint_image_data_to_vga(char *buffer_image_data);
 void bmp_extract_pallete_from_file(char *_file);
 unsigned char bmp_get_vga_pixel(unsigned int x, unsigned int y);
 unsigned char bmp_get_map_pixel(unsigned int x, unsigned int y);
+unsigned char bmp_get_collision_pixel(unsigned int x, unsigned int y);
 
 
 //LOAD SPRITES

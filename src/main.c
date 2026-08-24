@@ -164,16 +164,19 @@ int main(){
 		//
 		// Before moving, player_update_future_cannon_tip() works out where
 		// the cannon tip WOULD land, one PIXEL_TO_MOVE step ahead, without
-		// actually moving the tank yet. That future point is still outside
-		// the tank's current sprite box, so it is safe to read directly
-		// from VGA memory (A000): it is not painted with the tank's own
-		// sprite yet. If it is a wall, the key is ignored and the tank
-		// does not move in that direction.
+		// actually moving the tank yet. That position is checked against
+		// buffer_map_collisions_data (loaded by
+		// bmp_fill_background_collision_in_buffer()), the dedicated
+		// collision map, instead of VGA memory: this buffer never has the
+		// tank or anything else drawn on top of it, so it is always safe
+		// to read regardless of how close the tip already is. If it is a
+		// wall, the key is ignored and the tank does not move in that
+		// direction.
 		if (keys[KEY_UP]){
 
 			player_update_future_cannon_tip(&player1, MOVE_UP);
 
-			if (bmp_get_vga_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
+			if (bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
 				player1.is_moving = 1;
 	       		move_sprite(MOVE_UP);
 			}
@@ -181,7 +184,7 @@ int main(){
        }else if (keys[KEY_DOWN]){
 
 			//player_update_future_cannon_tip(&player1, MOVE_DOWN);
-			//if (bmp_get_vga_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
+			//if (bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
 				player1.is_moving = 1;
 		    	move_sprite(MOVE_DOWN);
 			//}
@@ -189,7 +192,7 @@ int main(){
 	    }else if (keys[KEY_LEFT]){
 
 			//player_update_future_cannon_tip(&player1, MOVE_LEFT);
-			//if (bmp_get_vga_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
+			//if (bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
 				player1.is_moving = 1;
 		    	move_sprite(MOVE_LEFT);
 			//}
@@ -197,7 +200,7 @@ int main(){
     	}else if (keys[KEY_RIGHT]){
 
 			//player_update_future_cannon_tip(&player1, MOVE_RIGHT);
-			//if (bmp_get_vga_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
+			//if (bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
 				player1.is_moving = 1;
 		    	move_sprite(MOVE_RIGHT);
 			//}
@@ -262,12 +265,12 @@ int main(){
    			tanks_log(log_message_text);
 
    			// Also log the FUTURE cannon tip (one PIXEL_TO_MOVE step ahead
-   			// in the current facing direction) read straight from VGA
-   			// memory, to confirm player_update_future_cannon_tip() and the
-   			// collision check above are seeing the real map color and not
-   			// the tank's own sprite
+   			// in the current facing direction), read from the same
+   			// collision map buffer_map_collisions_data used by the
+   			// collision check above, so the log always shows exactly what
+   			// the check is really seeing
    			player_update_future_cannon_tip(&player1, player1.current_direction);
-   			cannon_tip_pixel_value = bmp_get_vga_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y);
+   			cannon_tip_pixel_value = bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y);
    			sprintf(log_message_text, "Future cannon tip (%u,%u) = %u", player1.future_cannon_tip_x, player1.future_cannon_tip_y, cannon_tip_pixel_value);
    			tanks_log(log_message_text);
    		}
@@ -430,11 +433,11 @@ void init_graphics(){
 	bmp_init_buffers();
 	// Save a original copy of map file
 	// This create a backup of the original file in a buffer
-	//bmp_fill_background_in_main_buffer("..\\res\\cutre.bmp");
-	bmp_fill_background_in_main_buffer("..\\res\\cutrecol.bmp");
+	bmp_fill_background_in_main_buffer("..\\res\\cutre.bmp");
+	//bmp_fill_background_in_main_buffer("..\\res\\cutrecol.bmp");  // <--- FOR TESTING
 	
 	//load map collision
-	//bmp_fill_background_collision_in_buffer("..\\res\\cutrecol.bmp");
+	bmp_fill_background_collision_in_buffer("..\\res\\cutrecol.bmp");
 	
 	
 	// Extract the pallete colors to save it un DAC

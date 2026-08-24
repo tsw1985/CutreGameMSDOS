@@ -102,7 +102,7 @@ void player_update_future_cannon_tip(struct player *_player, int direction){
 		}
 
 		_player->future_cannon_tip_x = future_position_x + CANNON_TIP_OFFSET_UP_X;
-		_player->future_cannon_tip_y = future_position_y + CANNON_TIP_OFFSET_UP_Y;
+		_player->future_cannon_tip_y = future_position_y + CANNON_TIP_OFFSET_UP_Y + 2;
 
 	}else if (direction == MOVE_DOWN){
 

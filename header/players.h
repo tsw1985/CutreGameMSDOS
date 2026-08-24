@@ -26,17 +26,21 @@
 // UP (cannon centered on the side of the box that faces that direction).
 // Check the logged pixel values against the sprite sheet and correct
 // these if they are wrong.
-#define CANNON_TIP_OFFSET_UP_X 		8
+
+
+#define CANNON_FINE_PX                           8
+
+#define CANNON_TIP_OFFSET_UP_X 		CANNON_FINE_PX
 #define CANNON_TIP_OFFSET_UP_Y 		0
 
-#define CANNON_TIP_OFFSET_DOWN_X 	8
+#define CANNON_TIP_OFFSET_DOWN_X 	CANNON_FINE_PX
 #define CANNON_TIP_OFFSET_DOWN_Y 	(TANK_HEIGHT - 1)
 
 #define CANNON_TIP_OFFSET_LEFT_X 	0
-#define CANNON_TIP_OFFSET_LEFT_Y 	8
+#define CANNON_TIP_OFFSET_LEFT_Y 	CANNON_FINE_PX
 
 #define CANNON_TIP_OFFSET_RIGHT_X 	(TANK_WIDTH - 1)
-#define CANNON_TIP_OFFSET_RIGHT_Y 	8
+#define CANNON_TIP_OFFSET_RIGHT_Y 	CANNON_FINE_PX
 
 	struct player{
 		

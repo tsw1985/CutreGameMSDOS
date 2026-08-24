@@ -140,6 +140,24 @@ unsigned char bmp_get_map_pixel(unsigned int x, unsigned int y){
 
 }
 
+//===========================================================
+// Read the color/pallete index at pixel (x,y) of the dedicated collision
+// map, from buffer_map_collisions_data (filled by
+// bmp_fill_background_collision_in_buffer()). This is the buffer that
+// collision checks should actually use: it is never touched by the tank
+// sprite or anything else drawn on screen, so it always holds the raw
+// map colors.
+//===========================================================
+unsigned char bmp_get_collision_pixel(unsigned int x, unsigned int y){
+
+	unsigned int offset;
+
+	offset = (y * WIDTH) + x;
+
+	return buffer_map_collisions_data[offset];
+
+}
+
 void bmp_init_buffers(){
 	
 		

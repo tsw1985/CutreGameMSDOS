@@ -43,7 +43,7 @@
 #define IRQ_KEYBOARD	9
 
 // The scan codes are 128 .
-// Create a array with 128 positions. If 
+// Create a array with 128 positions. If
 unsigned char keys[128] = {0};
 
 
@@ -87,13 +87,13 @@ int frame_counter;
 int log_frame_counter;
 
 // Install our custom interruption vector
-void install_kbd()   { 
-	old_kbd_handler = getvect(IRQ_KEYBOARD); 
-	setvect(IRQ_KEYBOARD, new_kbd_handler); 
+void install_kbd()   {
+	old_kbd_handler = getvect(IRQ_KEYBOARD);
+	setvect(IRQ_KEYBOARD, new_kbd_handler);
 }
 
-void uninstall_kbd() { 
-	setvect(IRQ_KEYBOARD, old_kbd_handler); 
+void uninstall_kbd() {
+	setvect(IRQ_KEYBOARD, old_kbd_handler);
 }
 
 
@@ -117,7 +117,7 @@ void interrupt far new_kbd_handler() {
 
     /* Reset 8042 Controller and weak PIC */
     reset_pic();
-    
+
 }
 
 
@@ -138,11 +138,11 @@ int main(){
 
 	tanks_log("Starting game ...");
 
-	
+
 	// Instal custom Vector ( INT 9 ) keyboard
 	install_kbd();
-	
-	// Init Players and buffers	
+
+	// Init Players and buffers
 	setup_screen();
 	init_players();
 	init_graphics();
@@ -154,9 +154,9 @@ int main(){
 	player_update_cannon_tip(&player1);
 
 	//main loop
-	
+
     do{
-	    
+
 		// Only one direction can be applied per frame, so the tank can
 		// never move in diagonal. If more than one direction key is held
 		// down at the same time, only the first one below (in the order
@@ -217,13 +217,13 @@ int main(){
 
 		// 2. Update logic game
    		update_game(0);
-  		
+
    		// 3. Double buffering
    		draw_to_buffer();
 
    		// 4. Wait vertial retrace
    		wait_retrace();
-   		
+
    		// 5. Show new map in screen
    		bmp_paint_image_data_to_vga(buffer_background_image_data);
 
@@ -280,47 +280,47 @@ int main(){
 
 
     }while(!keys[KEY_ESC]);
-    
-    
+
+
 	player_free(&player1);
 	bmp_delete_buffers();
 	bmp_close_files();
 
-	uninstall_kbd();  /* NEVER REMOVE  */		
-	
+	uninstall_kbd();  /* NEVER REMOVE  */
+
 	return 0;
 }
 
 void update_game(int direction){
-	
+
 	//Animation
 	player1.speed_counter = player1.speed_counter + 1;
-	
+
 	frame_counter++;
 	// 3
-    if (frame_counter >= FRAMES_COUNTER) {
+	if (frame_counter >= FRAMES_COUNTER) {
         frame_counter = 0;
-        
+
         // increment speed
 		if (player1.speed_counter >= player1.speed_total){
 			player1.speed_counter = 0;
-			
+
 			//check if player is moving
 			//If player is in moving, then change frames
 			if(player1.is_moving == 1){
-				
+
 				player1.current_frame = player1.current_frame + 1;
 				if(player1.current_frame >= player1.total_frames){
 					player1.current_frame = 0;
-				}	
-				
+				}
+
 				// set to 0 player
 				player1.is_moving = 0;
-				
+
 			}
 		}
     }
-    
+
 }
 
 
@@ -330,37 +330,37 @@ void move_sprite(int direction){
 	player1.current_direction = direction;
 
 	if (direction == MOVE_UP){
-		
+
 		if (player1.position_y >= PIXEL_TO_MOVE){
 			player1.position_y = player1.position_y - PIXEL_TO_MOVE;
 		}else{
 			player1.position_y = 0;
 		}
-		
+
 	}else if (direction == MOVE_DOWN){
-		
+
 		if (player1.position_y + PIXEL_TO_MOVE <=  ( HEIGHT - 16 ) - TANK_HEIGHT ){
 			player1.position_y = player1.position_y + PIXEL_TO_MOVE;
 		}else{
 			player1.position_y = HEIGHT - TANK_HEIGHT - 16;
 		}
-		
+
 	}else if (direction == MOVE_LEFT){
-		
+
 		if (player1.position_x >= PIXEL_TO_MOVE){
 			player1.position_x = player1.position_x - PIXEL_TO_MOVE;
 		}else{
 			player1.position_x = 0;
 		}
-		
+
 	}else if (direction == MOVE_RIGHT){
-		
+
 		if (player1.position_x + PIXEL_TO_MOVE <= WIDTH - TANK_WIDTH){
 			player1.position_x = player1.position_x + PIXEL_TO_MOVE;
 		}else{
 			player1.position_x = WIDTH - TANK_WIDTH;
 		}
-		
+
 	}
 
 }
@@ -408,7 +408,7 @@ void draw_to_buffer(){
 		}
 
 	}
-	
+
 	// Put the tank in new position
 	draw_sprite_to_buffer(sprite_to_draw,
 	                              TANK_WIDTH,
@@ -429,54 +429,54 @@ void draw_to_buffer(){
 
 
 void init_graphics(){
-	
-	//============================================	
+
+	//============================================
 	// First Stage:
-	// 
+	//
 	// 	Create buffers and initialize them.
 	// 	Create a original copy of the file (bmp_fill_background_in_main_buffer)
 	// 	Extract pallete colors information
 	// 	Write this pallete color information into DAC
-	//============================================	
-	
-	
-	//  Create all buffers	
+	//============================================
+
+
+	//  Create all buffers
 	bmp_init_buffers();
 	// Save a original copy of map file
 	// This create a backup of the original file in a buffer
 	bmp_fill_background_in_main_buffer("..\\res\\cutre.bmp");
 	//bmp_fill_background_in_main_buffer("..\\res\\cutrecol.bmp");  // <--- FOR TESTING
-	
+
 	//load map collision
 	bmp_fill_background_collision_in_buffer("..\\res\\cutrecol.bmp");
-	
-	
+
+
 	// Extract the pallete colors to save it un DAC
 	bmp_extract_pallete_from_file("..\\res\\cutre.bmp");
 	// Set the pallete data into the VGA DAC
 	bmp_write_pallete_data_into_dac(buffer_palleta_data);
 
-	
-	//============================================	
+
+	//============================================
 	// Second stage :
-	// 
+	//
 	// 	Load the sprites sheet and revert it
-	//		
-	//		Fill "buffer_background_image_data" with image data from 
+	//
+	//		Fill "buffer_background_image_data" with image data from
 	//		file "file_background_image_game" ( cutre.bmp)
 	//
 	//		Fill "buffer_sprites_data" with the sprites from "file_sprites_game" ( sprites.bmp)
 	//		Extract a sprite from "buffer_sprites_data" and save it sprites player list
 	//		Add this sprite under buffer_background_image_data
 	//		Show the final result in screen
-	//============================================	
-	
+	//============================================
+
 	// ============================
 	// Extract sprites from sprites.bmp
 	// ============================
 	bmp_fill_sprites_in_buffer("..\\res\\sprites.bmp");
     bmp_revert_bmp(buffer_sprites_data);
-	
+
     // ============================
 	// Extract the background_image data from background file
 	// ============================
@@ -487,80 +487,82 @@ void init_graphics(){
     // ============================
 	bmp_extract_sprite(buffer_sprites_data,  2  ,5 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_up);
 	bmp_extract_sprite(buffer_sprites_data, 23, 5 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_up_2);
-	
-	
+
+
 	// ============================
     // Fill player 1 with animation TANK_DOWN and
     // ============================
 	bmp_extract_sprite(buffer_sprites_data, 43  , 10 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_down);
 	bmp_extract_sprite(buffer_sprites_data, 63  , 10  , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_down_2);
-	
+
 	// ============================
     // Fill player 1 with animation TANK_LEFT and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data, 83   , 8, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_left);
-	bmp_extract_sprite(buffer_sprites_data, 102 , 8, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_left_2);
-	
+	bmp_extract_sprite(buffer_sprites_data, 83  , 8 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_left);
+	bmp_extract_sprite(buffer_sprites_data, 102 , 8 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_left_2);
+
 	// ============================
     // Fill player 1 with animation TANK_RIGHT and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data, 124 , 8, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right);
-	bmp_extract_sprite(buffer_sprites_data, 144 , 8, TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right_2);
+	bmp_extract_sprite(buffer_sprites_data, 124 , 8 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right);
+	bmp_extract_sprite(buffer_sprites_data, 145 , 8 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right_2);
 
 	// ============================
-    // Fill bullet animation 
+    // Fill bullet animation
     // ============================
-    
-    
+
+
     //#define TANK_BULLET_WIDTH 4
 	//#define TANK_BULLET_HEIGHT 3
-    
+
 	bmp_extract_sprite(buffer_sprites_data, 252 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player1.sprite_tank_bullet);
 	bmp_extract_sprite(buffer_sprites_data, 259 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player1.sprite_tank_bullet2);
-	
-	
+
+
 
 	// Put Sprite in background buffer . Set player in position
 	/*
-	draw_sprite_to_buffer(player1.sprite_tank_up, 
-	                              TANK_WIDTH, 
-	                              TANK_HEIGHT, 
-	                              player1.position_x, 
-	                              player1.position_y, 
+	draw_sprite_to_buffer(player1.sprite_tank_up,
+	                              TANK_WIDTH,
+	                              TANK_HEIGHT,
+	                              player1.position_x,
+	                              player1.position_y,
 	                              buffer_background_image_data);*/
-	                              
+
 	// draw bullet for testing
+	/*
 	draw_sprite_to_buffer(player1.sprite_tank_bullet,
 	                              TANK_BULLET_WIDTH,
 	                              TANK_BULLET_HEIGHT,
 	                              player1.position_x,
 	                              player1.position_y,
 	                              buffer_background_image_data);
-	                              
-	                              
-	                              	                              
+	*/
 
-	/*	                              	                              	
-	draw_sprite_to_buffer(player1.sprite_tank_down, 
-	                              TANK_WIDTH, 
-	                              TANK_HEIGHT, 
-	                              300, 
-	                              0, 
+
+
+
+	/*
+	draw_sprite_to_buffer(player1.sprite_tank_down,
+	                              TANK_WIDTH,
+	                              TANK_HEIGHT,
+	                              300,
+	                              0,
 	                              buffer_background_image_data);
-	                              
-	draw_sprite_to_buffer(player1.sprite_tank_left, 
-	                              TANK_WIDTH, 
-	                              TANK_HEIGHT, 
-	                              80, 
-	                              30, 
+
+	draw_sprite_to_buffer(player1.sprite_tank_left,
+	                              TANK_WIDTH,
+	                              TANK_HEIGHT,
+	                              80,
+	                              30,
 	                              buffer_background_image_data);
-	                              
-	                              
-	draw_sprite_to_buffer(player1.sprite_tank_right, 
-	                              TANK_WIDTH, 
-	                              TANK_HEIGHT, 
-	                              40, 
-	                              100, 
+
+
+	draw_sprite_to_buffer(player1.sprite_tank_right,
+	                              TANK_WIDTH,
+	                              TANK_HEIGHT,
+	                              40,
+	                              100,
 	                              buffer_background_image_data);
 	                              */
 
@@ -568,16 +570,16 @@ void init_graphics(){
 
 
 void setup_screen(){
-	//Init 320x200 VGA Mode	
+	//Init 320x200 VGA Mode
 	set_vga_320_200_mode();
 }
 
 void init_players(){
 	//printf("Players Initialization ... !!\n");
 	// Init Player 1
-	
+
 	// Init player 1
-	
+
 	player1.position_y = 80;
 	player1.position_x = 80;
 
@@ -587,7 +589,7 @@ void init_players(){
 	player1.speed_counter = 0;
 	player1.speed_total      = 2;
 	player1.speed_total      = 2;
-	
+
 	player1.canonn_head_top_up_x = 0;
 	player1.canonn_head_top_up_y = 0;
 	player1.canonn_head_top_down_x = 0;

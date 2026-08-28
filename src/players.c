@@ -79,6 +79,40 @@ void player_update_cannon_tip(struct player *_player){
 }
 
 
+void player_update_bullet_position(struct player *_player){
+
+	// Place the bullet sprite on the cannon tip of the direction the tank
+	// is facing right now. player_update_cannon_tip() has already worked
+	// out the 4 tips for the tank's current position, so here we only pick
+	// the pair that matches current_direction.
+	//
+	// That tip is the very same pixel the collision check reads, so the
+	// bullet is drawn exactly where a shot would come out of the cannon.
+	if (_player->current_direction == MOVE_UP){
+
+		_player->bullet_position_x = _player->canonn_head_top_up_x;
+		_player->bullet_position_y = _player->canonn_head_top_up_y;
+
+	}else if (_player->current_direction == MOVE_DOWN){
+
+		_player->bullet_position_x = _player->canonn_head_top_down_x;
+		_player->bullet_position_y = _player->canonn_head_top_down_y;
+
+	}else if (_player->current_direction == MOVE_LEFT){
+
+		_player->bullet_position_x = _player->canonn_head_top_left_x;
+		_player->bullet_position_y = _player->canonn_head_top_left_y;
+
+	}else{ // MOVE_RIGHT
+
+		_player->bullet_position_x = _player->canonn_head_top_right_x;
+		_player->bullet_position_y = _player->canonn_head_top_right_y;
+
+	}
+
+}
+
+
 void player_update_future_cannon_tip(struct player *_player, int direction){
 
 	// Tentative position, one PIXEL_TO_MOVE step further in "direction".

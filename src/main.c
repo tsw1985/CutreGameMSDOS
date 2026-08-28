@@ -153,6 +153,10 @@ int main(){
 	// init_players() sets as a placeholder
 	player_update_cannon_tip(&player1);
 
+	// ... and put the bullet on that cannon tip too, so the very first
+	// frame already draws it in the right place
+	player_update_bullet_position(&player1);
+
 	//main loop
 
     do{
@@ -214,6 +218,11 @@ int main(){
 		// with the tank's current position, so it is ready whenever it is
 		// needed (log below, collision check later on)
 		player_update_cannon_tip(&player1);
+
+		// The bullet follows the cannon tip of whichever direction the
+		// tank is facing now, so it stays glued to the mouth of the
+		// cannon when the tank moves and when it turns
+		player_update_bullet_position(&player1);
 
 		// 2. Update logic game
    		update_game(0);
@@ -417,12 +426,13 @@ void draw_to_buffer(){
 	                              player1.position_y,
 	                              buffer_background_image_data);
 
-	//testing - remove
+	// Put the bullet on the cannon tip of the current direction, instead
+	// of on the top-left corner of the tank sprite
 	draw_sprite_to_buffer(player1.sprite_tank_bullet,
 	                              TANK_BULLET_WIDTH,
 	                              TANK_BULLET_HEIGHT,
-	                              player1.position_x,
-	                              player1.position_y,
+	                              player1.bullet_position_x,
+	                              player1.bullet_position_y,
 	                              buffer_background_image_data);
 
 }
@@ -598,6 +608,9 @@ void init_players(){
 	player1.canonn_head_top_left_y = 0;
 	player1.canonn_head_top_right_x = 0;
 	player1.canonn_head_top_right_y = 0;
+
+	player1.bullet_position_x = 0;
+	player1.bullet_position_y = 0;
 
 	player_init(&player1);
 }

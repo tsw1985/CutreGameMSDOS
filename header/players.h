@@ -78,6 +78,15 @@ struct player{
 		unsigned int future_cannon_tip_x;
 		unsigned int future_cannon_tip_y;
 
+		// Absolute position (in the 320x200 screen) where the bullet
+		// sprite is drawn. It always sits on the cannon tip of the
+		// direction the tank is facing right now, which is exactly the
+		// same pixel used for the collision check, so the bullet is
+		// always visible at the mouth of the cannon. Kept up to date by
+		// player_update_bullet_position().
+		unsigned int bullet_position_x;
+		unsigned int bullet_position_y;
+
 
 		
 		//Animations
@@ -114,6 +123,7 @@ struct player{
 	void player_free(struct player *_player);
 	void player_update_cannon_tip(struct player *_player);
 	void player_update_future_cannon_tip(struct player *_player, int direction);
+	void player_update_bullet_position(struct player *_player);
 	
 	
 

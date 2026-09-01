@@ -1,4 +1,5 @@
 #include "header\players.h"
+#include "header\bmp.h"     /* solo por WIDTH / HEIGHT: los limites de la pantalla */
 #include <alloc.h>
 
 void player_init(struct player *_player){
@@ -107,6 +108,82 @@ void player_update_bullet_position(struct player *_player){
 
 		_player->bullet_position_x = _player->canonn_head_top_right_x;
 		_player->bullet_position_y = _player->canonn_head_top_right_y;
+
+	}
+
+}
+
+
+void player_fire_bullet(struct player *_player){
+
+	// Only one bullet can be in the air at a time: while the previous shot
+	// is still flying, the space bar does nothing.
+	if (_player->bullet_is_flying == 1){
+		return;
+	}
+
+	// Freeze the direction the tank is facing right now. From here on the
+	// bullet ignores current_direction, so it keeps going the same way even
+	// if the tank turns around straight after firing.
+	_player->bullet_direction = _player->current_direction;
+
+	// Recompute the cannon tips from the tank's position at this very
+	// moment, so the shot starts exactly at the mouth of the cannon and not
+	// one frame behind it.
+	player_update_cannon_tip(_player);
+	player_update_bullet_position(_player);
+
+	_player->bullet_is_flying = 1;
+
+}
+
+
+void player_move_bullet(struct player *_player){
+
+	// Advance the bullet one BULLET_PIXEL_TO_MOVE step in the direction it
+	// was fired. This only deals with geometry: whether the bullet is still
+	// on screen. Hitting a wall is decided by the caller, which is the one
+	// that can read the collision map.
+	//
+	// The bounds are checked BEFORE moving, exactly like move_sprite() does
+	// for the tank: bullet_position_x/y are "unsigned int", so subtracting
+	// past 0 would wrap around to 65535 and the collision read that follows
+	// would land far outside the buffer.
+	if (_player->bullet_is_flying == 0){
+		return;
+	}
+
+	if (_player->bullet_direction == MOVE_UP){
+
+		if (_player->bullet_position_y >= BULLET_PIXEL_TO_MOVE){
+			_player->bullet_position_y = _player->bullet_position_y - BULLET_PIXEL_TO_MOVE;
+		}else{
+			_player->bullet_is_flying = 0;
+		}
+
+	}else if (_player->bullet_direction == MOVE_DOWN){
+
+		if (_player->bullet_position_y + BULLET_PIXEL_TO_MOVE + TANK_BULLET_HEIGHT <= HEIGHT){
+			_player->bullet_position_y = _player->bullet_position_y + BULLET_PIXEL_TO_MOVE;
+		}else{
+			_player->bullet_is_flying = 0;
+		}
+
+	}else if (_player->bullet_direction == MOVE_LEFT){
+
+		if (_player->bullet_position_x >= BULLET_PIXEL_TO_MOVE){
+			_player->bullet_position_x = _player->bullet_position_x - BULLET_PIXEL_TO_MOVE;
+		}else{
+			_player->bullet_is_flying = 0;
+		}
+
+	}else{ // MOVE_RIGHT
+
+		if (_player->bullet_position_x + BULLET_PIXEL_TO_MOVE + TANK_BULLET_WIDTH <= WIDTH){
+			_player->bullet_position_x = _player->bullet_position_x + BULLET_PIXEL_TO_MOVE;
+		}else{
+			_player->bullet_is_flying = 0;
+		}
 
 	}
 

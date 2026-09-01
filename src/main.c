@@ -40,6 +40,7 @@
 #define KEY_LEFT		0x4B
 #define KEY_RIGHT		0x4D
 #define KEY_ESC			0x01
+#define KEY_SPACE		0x39
 #define IRQ_KEYBOARD	9
 
 // The scan codes are 128 .
@@ -132,6 +133,11 @@ int main(){
 	// player_update_cannon_tip() in players.c)
 	unsigned int cannon_tip_pixel_value;
 
+	// Remembers whether the space bar was already down on the previous
+	// frame, so a shot is fired only on the frame the key GOES down and
+	// not on every frame it stays down (one shot per keypress)
+	unsigned int space_was_pressed;
+
 	// Start each run with a fresh, empty log file, instead of mixing
 	// lines from this run with lines left over from the previous run
 	tanks_log_clear();
@@ -156,6 +162,8 @@ int main(){
 	// ... and put the bullet on that cannon tip too, so the very first
 	// frame already draws it in the right place
 	player_update_bullet_position(&player1);
+
+	space_was_pressed = 0;
 
 	//main loop
 
@@ -214,15 +222,72 @@ int main(){
 
 		}
 
+		// The fire key is checked OUTSIDE the if/else if chain above, on
+		// purpose: that chain only lets one direction through per frame so
+		// the tank cannot move in diagonal, but shooting is not a
+		// direction, and the tank has to be able to move and fire in the
+		// same frame.
+		//
+		// Only the frame in which the key GOES down counts. keys[] stays at
+		// 1 for as long as the space bar is held, so firing on the plain
+		// value would shoot again by itself the moment the previous bullet
+		// died, turning it into an automatic weapon.
+		if (keys[KEY_SPACE]){
+
+			if (space_was_pressed == 0){
+				player_fire_bullet(&player1);
+			}
+
+			space_was_pressed = 1;
+
+		}else{
+
+			space_was_pressed = 0;
+
+		}
+
 		// Keep the cannon tip position (for all 4 directions) up to date
 		// with the tank's current position, so it is ready whenever it is
 		// needed (log below, collision check later on)
 		player_update_cannon_tip(&player1);
 
-		// The bullet follows the cannon tip of whichever direction the
-		// tank is facing now, so it stays glued to the mouth of the
-		// cannon when the tank moves and when it turns
-		player_update_bullet_position(&player1);
+		// The bullet has two very different lives, so it is updated in two
+		// different ways:
+		//
+		//   not flying -> it is loaded in the cannon: it follows the tip of
+		//                 whichever direction the tank is facing, so it
+		//                 stays glued to the mouth of the cannon when the
+		//                 tank moves and when it turns.
+		//
+		//   flying     -> it travels on its own, ignoring the tank, and it
+		//                 dies either by leaving the screen (checked inside
+		//                 player_move_bullet()) or by reaching a wall
+		//                 (checked here, since this is where the collision
+		//                 map can be read). Once dead it goes back to being
+		//                 loaded, and the next frame puts it back on the
+		//                 cannon.
+		if (player1.bullet_is_flying == 0){
+
+			player_update_bullet_position(&player1);
+
+		}else{
+
+			player_move_bullet(&player1);
+
+			// player_move_bullet() may have just killed the bullet for
+			// leaving the screen. Only read the collision map while it is
+			// still alive, so the position being read is always a real
+			// point inside the 320x200 map.
+			if (player1.bullet_is_flying == 1){
+
+				if (bmp_get_collision_pixel(player1.bullet_position_x + BULLET_CENTER_X,
+				                            player1.bullet_position_y + BULLET_CENTER_Y) == COLLISION_COLOR){
+					player1.bullet_is_flying = 0;
+				}
+
+			}
+
+		}
 
 		// 2. Update logic game
    		update_game(0);
@@ -420,20 +485,23 @@ void draw_to_buffer(){
 
 	// Put the tank in new position
 	draw_sprite_to_buffer(sprite_to_draw,
-	                              TANK_WIDTH,
-	                              TANK_HEIGHT,
-	                              player1.position_x,
-	                              player1.position_y,
-	                              buffer_background_image_data);
+				  TANK_WIDTH,
+				  TANK_HEIGHT,
+				  player1.position_x,
+				  player1.position_y,
+				  buffer_background_image_data);
 
 	// Put the bullet on the cannon tip of the current direction, instead
 	// of on the top-left corner of the tank sprite
+	
+
+	// Draw bullet
 	draw_sprite_to_buffer(player1.sprite_tank_bullet,
-	                              TANK_BULLET_WIDTH,
-	                              TANK_BULLET_HEIGHT,
-	                              player1.bullet_position_x,
-	                              player1.bullet_position_y,
-	                              buffer_background_image_data);
+				  TANK_BULLET_WIDTH,
+				  TANK_BULLET_HEIGHT,
+				  player1.bullet_position_x,
+				  player1.bullet_position_y,
+				  buffer_background_image_data);
 
 }
 
@@ -611,6 +679,12 @@ void init_players(){
 
 	player1.bullet_position_x = 0;
 	player1.bullet_position_y = 0;
+
+	// The tank starts with the bullet loaded in the cannon. bullet_direction
+	// is only a placeholder: player_fire_bullet() always sets it from the
+	// direction the tank is facing at the moment of the shot.
+	player1.bullet_direction = 0;
+	player1.bullet_is_flying = 0;
 
 	player_init(&player1);
 }

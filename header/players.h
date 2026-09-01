@@ -13,6 +13,23 @@
 // ahead collision checks look past the current cannon tip
 #define PIXEL_TO_MOVE 2
 
+// How many pixels the bullet travels per frame once it has been fired.
+// Bigger than PIXEL_TO_MOVE on purpose, so a shot is clearly faster than
+// the tank that fired it.
+#define BULLET_PIXEL_TO_MOVE 3
+
+// Offset (inside the bullet sprite box) of the pixel used to test the
+// bullet against the collision map: the center of the sprite.
+//
+// bullet_position_x/y always hold the TOP-LEFT corner of the bullet,
+// because that is what draw_sprite_to_buffer() needs. The collision point
+// is worked out by adding these two, instead of storing the center and
+// subtracting when drawing: the positions are "unsigned int", so a bullet
+// close to the top or left edge of the screen would wrap around to 65535
+// on a subtraction and read way outside the collision buffer.
+#define BULLET_CENTER_X   (TANK_BULLET_WIDTH / 2)
+#define BULLET_CENTER_Y   (TANK_BULLET_HEIGHT / 2)
+
 #define MOVE_UP 				1
 #define MOVE_DOWN 			2
 #define MOVE_LEFT 			3
@@ -87,6 +104,19 @@ struct player{
 		unsigned int bullet_position_x;
 		unsigned int bullet_position_y;
 
+		// Direction the bullet travels in. It is frozen at the moment of
+		// the shot (copied from current_direction by player_fire_bullet())
+		// and never changes afterwards, so the bullet keeps flying the way
+		// the cannon was pointing even if the tank turns or moves away.
+		unsigned int bullet_direction;
+
+		// 0 = the bullet is "loaded": it sits on the cannon tip and follows
+		//     the tank, and a new shot can be fired.
+		// 1 = the bullet is flying: it moves on its own, ignores the tank,
+		//     and no new shot can be fired until it dies (against a wall or
+		//     by leaving the screen).
+		unsigned int bullet_is_flying;
+
 
 		
 		//Animations
@@ -124,6 +154,8 @@ struct player{
 	void player_update_cannon_tip(struct player *_player);
 	void player_update_future_cannon_tip(struct player *_player, int direction);
 	void player_update_bullet_position(struct player *_player);
+	void player_fire_bullet(struct player *_player);
+	void player_move_bullet(struct player *_player);
 	
 	
 

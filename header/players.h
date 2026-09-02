@@ -88,11 +88,11 @@
 // floor, with not a single pixel inside a wall in cutrecol.bmp. A tank
 // starting embedded in a wall would be stuck from the very first frame,
 // because every direction would be blocked by the collision check.
-#define PLAYER1_START_X 			150
+#define PLAYER1_START_X 			110
 #define PLAYER1_START_Y 			164
 #define PLAYER1_START_DIRECTION 	MOVE_UP
 
-#define PLAYER2_START_X 			150
+#define PLAYER2_START_X 			110
 #define PLAYER2_START_Y 			16
 #define PLAYER2_START_DIRECTION 	MOVE_DOWN
 

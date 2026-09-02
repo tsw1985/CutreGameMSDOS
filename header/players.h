@@ -35,6 +35,41 @@
 #define MOVE_LEFT 			3
 #define MOVE_RIGHT 			4
 
+// Collision box used ONLY for tank against tank, smaller than the sprite so
+// the two tanks are allowed to overlap a little before one stops the other.
+// The margin is taken off every side, so the box is centered inside the
+// sprite: with a margin of 2 the box goes from (position + 2) to
+// (position + 15), and the sprites can overlap by up to 4 pixels before the
+// boxes touch. Raise the margin for more overlap, lower it for less.
+//
+// It is a SQUARE, and the same one for the 4 directions, on purpose. The
+// real hull is about 17x13 facing up/down and 13x17 facing left/right, so a
+// box that followed the hull would change shape when the tank turns, and a
+// tank could then turn straight into an overlap without having moved. Once
+// two tanks overlap, every direction they try still overlaps and both stay
+// frozen for good. With a fixed square, turning can never create an
+// overlap, so that can never happen.
+#define TANK_COLLISION_MARGIN 	2
+#define TANK_COLLISION_WIDTH 	(TANK_WIDTH  - (TANK_COLLISION_MARGIN * 2))
+#define TANK_COLLISION_HEIGHT 	(TANK_HEIGHT - (TANK_COLLISION_MARGIN * 2))
+
+// Where each tank starts, and where it goes back to when a round is
+// restarted after a hit: player 1 at the bottom center looking up, player 2
+// at the top center looking down, facing each other.
+//
+// The two Y values are not picked by eye: they are the lowest and the
+// highest row of that column where the whole 18x18 box of the tank lands on
+// floor, with not a single pixel inside a wall in cutrecol.bmp. A tank
+// starting embedded in a wall would be stuck from the very first frame,
+// because every direction would be blocked by the collision check.
+#define PLAYER1_START_X 			150
+#define PLAYER1_START_Y 			164
+#define PLAYER1_START_DIRECTION 	MOVE_UP
+
+#define PLAYER2_START_X 			150
+#define PLAYER2_START_Y 			16
+#define PLAYER2_START_DIRECTION 	MOVE_DOWN
+
 // Relative offset (from the sprite's top-left corner) of the cannon tip,
 // inside the TANK_WIDTH x TANK_HEIGHT sprite box.
 //
@@ -144,6 +179,14 @@ struct player{
 		unsigned int future_track2_x;
 		unsigned int future_track2_y;
 
+		// The tentative top-left corner of the sprite that the 3 points
+		// above were worked out from, ie. where the tank WOULD be if it
+		// were allowed to move. The wall check only needs the 3 points, but
+		// the tank against tank check needs the whole box, so the corner is
+		// kept here as well.
+		unsigned int future_position_x;
+		unsigned int future_position_y;
+
 		// Absolute position (in the 320x200 screen) where the bullet
 		// sprite is drawn. It always sits on the cannon tip of the
 		// direction the tank is facing right now, which is exactly the
@@ -209,6 +252,8 @@ struct player{
 	
 	void player_init(struct player *_player);
 	void player_free(struct player *_player);
+	void player_reset(struct player *_player, unsigned int start_x, unsigned int start_y, unsigned int start_direction);
+	unsigned int player_add_offset(unsigned int position, int offset);
 	void player_update_cannon_tip(struct player *_player);
 	void player_update_future_collision_points(struct player *_player, int direction);
 	void player_update_bullet_position(struct player *_player);

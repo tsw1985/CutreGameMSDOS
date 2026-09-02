@@ -4,6 +4,7 @@
 #include "header\util.h"
 #include "header\bmp.h"
 #include "header\players.h"
+#include "header\sound.h"
 
 //===========================================================
 // The game: main loop, keyboard, collisions against the map, and drawing.
@@ -166,6 +167,11 @@ int main(){
 	init_players();
 	init_graphics();
 
+	// Sound is optional: if there is no card sound_init() returns 0, says so
+	// in the log, and every later sound call does nothing. The game plays
+	// exactly the same, in silence.
+	sound_init();
+
 	// The first round starts running, not burning
 	explosion_pause_counter = 0;
 
@@ -213,6 +219,18 @@ int main(){
 				player1.bullet_is_flying = 0;
 				player2.bullet_is_flying = 0;
 
+				// Cut both engines. The keyboard is not read during the
+				// pause, so nothing else would ever turn them off and they
+				// would keep looping while the tanks burn.
+				sound_stop(player1.sound_engine_voice);
+				sound_stop(player2.sound_engine_voice);
+
+				// The bang. One single voice, so two tanks dying on the same
+				// frame is one explosion and not two on top of each other.
+				// It is longer than the pause and nothing cuts it, so it
+				// carries on ringing into the start of the new round.
+				sound_play(SOUND_VOICE_EXPLOSION, SOUND_SAMPLE_DIED, SOUND_VOLUME_DIED);
+
 				// Start the pause. The round is NOT restarted here: the
 				// tanks stay where they were shot, so the explosion can be
 				// drawn on top of them.
@@ -233,6 +251,11 @@ int main(){
 			}
 
 		}
+
+		// Refill whichever half of the sound buffer the card has finished.
+		// It is outside the two states above on purpose: the sound has to
+		// keep running during the explosion pause too, or it would stutter.
+		sound_update();
 
 		// 2. Update logic game
    		update_game(0);
@@ -301,6 +324,10 @@ int main(){
 
     }while(!keys[KEY_ESC]);
 
+
+	// Before anything else: while the card is running its DMA is reading
+	// our buffer, so it has to be stopped before that memory is given back
+	sound_shutdown();
 
 	player_free(&player1);
 	player_free(&player2);
@@ -588,6 +615,12 @@ void process_player_input(struct player *_player,
                           unsigned char key_right_code,
                           unsigned char key_fire_code){
 
+	// 1 if a direction key is held this frame, whether the tank actually
+	// managed to move or not. It is what drives the engine noise.
+	unsigned int is_driving;
+
+	is_driving = 0;
+
 	// One direction per frame, so the tank can never go diagonal: with
 	// several keys held, only the first of UP, DOWN, LEFT, RIGHT counts.
 	//
@@ -596,6 +629,8 @@ void process_player_input(struct player *_player,
 	// that against the map and the other tank, and only then does the tank
 	// move. Checking after moving would mean having to get it back out.
 	if (keys[key_up_code]){
+
+		is_driving = 1;
 
 		player_update_future_collision_points(_player, MOVE_UP);
 
@@ -606,6 +641,8 @@ void process_player_input(struct player *_player,
 
 	}else if (keys[key_down_code]){
 
+		is_driving = 1;
+
 		player_update_future_collision_points(_player, MOVE_DOWN);
 
 		if (is_move_blocked(_player, _other) == 0){
@@ -615,6 +652,8 @@ void process_player_input(struct player *_player,
 
 	}else if (keys[key_left_code]){
 
+		is_driving = 1;
+
 		player_update_future_collision_points(_player, MOVE_LEFT);
 
 		if (is_move_blocked(_player, _other) == 0){
@@ -623,6 +662,8 @@ void process_player_input(struct player *_player,
 		}
 
 	}else if (keys[key_right_code]){
+
+		is_driving = 1;
 
 		player_update_future_collision_points(_player, MOVE_RIGHT);
 
@@ -641,8 +682,16 @@ void process_player_input(struct player *_player,
 	// moment the bullet died: an automatic weapon.
 	if (keys[key_fire_code]){
 
+		// The sound only goes off if the shot really did. Pressing the key
+		// while your own bullet is still flying does nothing, and it has to
+		// be silent too: a bang with no bullet coming out is worse than no
+		// bang at all.
 		if (_player->fire_was_pressed == 0){
-			player_fire_bullet(_player);
+
+			if (player_fire_bullet(_player) == 1){
+				sound_play(_player->sound_fire_voice, SOUND_SAMPLE_FIRE, SOUND_VOLUME_FIRE);
+			}
+
 		}
 
 		_player->fire_was_pressed = 1;
@@ -656,6 +705,20 @@ void process_player_input(struct player *_player,
 	// Keep the 4 cannon tips up to date with the new position, ready for the
 	// bullet, the log and next frame's check
 	player_update_cannon_tip(_player);
+
+	// Engine noise while a direction key is held. is_driving is used and not
+	// is_moving, because is_moving is turned off again by the track
+	// animation, so the engine would cut in and out several times a second.
+	// Holding a key against a wall still revs, which is what a tank pushing
+	// against something should sound like.
+	//
+	// sound_loop() knows it is already playing this sample and does nothing,
+	// so calling it every frame is free.
+	if (is_driving == 1){
+		sound_loop(_player->sound_engine_voice, _player->sound_engine_sample, SOUND_VOLUME_ENGINE);
+	}else{
+		sound_stop(_player->sound_engine_voice);
+	}
 
 }
 
@@ -1070,6 +1133,12 @@ void init_players(){
 	// Nothing has been fired yet, so no fire key is being held down
 	player1.fire_was_pressed = 0;
 
+	// Its own mixer voice for the engine and another for the shot, so the
+	// two tanks never cut each other off
+	player1.sound_engine_voice  = SOUND_VOICE_ENGINE_1;
+	player1.sound_engine_sample = SOUND_SAMPLE_ENGINE_1;
+	player1.sound_fire_voice    = SOUND_VOICE_FIRE_1;
+
 	player1.canonn_head_top_up_x = 0;
 	player1.canonn_head_top_up_y = 0;
 	player1.canonn_head_top_down_x = 0;
@@ -1094,6 +1163,10 @@ void init_players(){
 	player2.speed_total = 2;
 
 	player2.fire_was_pressed = 0;
+
+	player2.sound_engine_voice  = SOUND_VOICE_ENGINE_2;
+	player2.sound_engine_sample = SOUND_SAMPLE_ENGINE_2;
+	player2.sound_fire_voice    = SOUND_VOICE_FIRE_2;
 
 	player2.canonn_head_top_up_x = 0;
 	player2.canonn_head_top_up_y = 0;

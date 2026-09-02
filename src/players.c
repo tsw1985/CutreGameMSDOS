@@ -167,12 +167,14 @@ void player_update_bullet_position(struct player *_player){
 }
 
 
-void player_fire_bullet(struct player *_player){
+int player_fire_bullet(struct player *_player){
 
 	// One bullet in the air at a time: while the shot is still flying, the
-	// fire key does nothing.
+	// fire key does nothing. Saying so with the return value matters,
+	// because the caller has to know not to play the firing sound for a
+	// shot that never happened.
 	if (_player->bullet_is_flying == 1){
-		return;
+		return 0;
 	}
 
 	// Freeze the facing direction. From here on the bullet ignores
@@ -186,6 +188,8 @@ void player_fire_bullet(struct player *_player){
 	player_update_bullet_position(_player);
 
 	_player->bullet_is_flying = 1;
+
+	return 1;
 
 }
 

@@ -38,6 +38,11 @@ bin\gameloop.obj: src\gameloop.c
 	@if not exist bin mkdir bin
 	$(CC) -c $(CFLAGS) -obin\gameloop.obj src\gameloop.c
 
+
+bin\sound.obj: src\sound.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\sound.obj src\sound.c
+
 	
 ################################################	
 #                                 ASM FILES                                             # 	
@@ -48,6 +53,15 @@ bin\video.obj: src\video.asm
 
 
 # Enlazar ejecutable
+#
+# DOS solo admite 127 caracteres de argumentos al lanzar un programa, y la
+# lista de .obj ya no cabe: al anadir sound.obj la linea paso de 110 a 127
+# caracteres y MAKE dejo de poder ejecutar tcc, con el error
+# "Fatal: Unable to execute command: tcc".
+#
+# Por eso la lista va en un fichero de respuesta, bin\link.rsp, y a tcc se le
+# pasa con @. La linea baja a 36 caracteres y da igual cuantos .obj se
+# anadan mas adelante.
 $(TARGET): \
 	bin\main.obj \
 	bin\util.obj \
@@ -55,18 +69,13 @@ $(TARGET): \
 	bin\bmp.obj \
 	bin\players.obj \
 	bin\gameloop.obj \
-	
-	
-	$(LD) $(LDFLAGS) -ebin\game.exe \
-		bin\main.obj \
-		bin\util.obj \
-		bin\video.obj \
-		bin\bmp.obj \
-		bin\players.obj \
-		bin\gameloop.obj \
-		
+	bin\sound.obj
+	@echo bin\main.obj bin\util.obj bin\video.obj > bin\link.rsp
+	@echo bin\bmp.obj bin\players.obj bin\gameloop.obj bin\sound.obj >> bin\link.rsp
+	$(LD) $(LDFLAGS) -ebin\game.exe @bin\link.rsp
 
 clean:
 	@if exist bin\*.obj del bin\*.obj
+	@if exist bin\link.rsp del bin\link.rsp
 	@if exist bin\*.map del bin\*.map
 	@if exist $(TARGET) del $(TARGET)

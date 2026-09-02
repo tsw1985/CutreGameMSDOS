@@ -238,6 +238,17 @@ struct player{
 		unsigned int fire_was_pressed;
 
 
+		// ---- Sound ----
+		// Which mixer voice and which sample this tank uses. They are here
+		// so process_player_input() stays generic: it drives whichever
+		// player it is given without knowing that player 1 is the one with
+		// engip1.wav. Set in init_players(), see sound.h for the values.
+
+		unsigned int sound_engine_voice;
+		unsigned int sound_engine_sample;
+		unsigned int sound_fire_voice;
+
+
 		// ---- Track animation timing ----
 
 		unsigned int frame_counter;
@@ -295,8 +306,10 @@ struct player{
 	// Puts the loaded bullet on the cannon tip of the current direction
 	void player_update_bullet_position(struct player *_player);
 
-	// Fires, if no bullet of this player is already in the air
-	void player_fire_bullet(struct player *_player);
+	// Fires, if no bullet of this player is already in the air. Returns 1 if
+	// the shot really went off and 0 if it did not, so the caller knows
+	// whether there is anything to make a noise about.
+	int player_fire_bullet(struct player *_player);
 
 	// Advances a flying bullet, and kills it if it leaves the screen. Walls
 	// and tanks are not its business: main.c decides those.

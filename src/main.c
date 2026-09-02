@@ -496,12 +496,16 @@ void draw_to_buffer(){
 	
 
 	// Draw bullet
-	draw_sprite_to_buffer(player1.sprite_tank_bullet,
-				  TANK_BULLET_WIDTH,
-				  TANK_BULLET_HEIGHT,
-				  player1.bullet_position_x,
-				  player1.bullet_position_y,
-				  buffer_background_image_data);
+	// Show bullet only if bullet is flyng
+	if (player1.bullet_is_flying == 1){
+	
+		draw_sprite_to_buffer(player1.sprite_tank_bullet,
+					  TANK_BULLET_WIDTH,
+					  TANK_BULLET_HEIGHT,
+					  player1.bullet_position_x,
+					  player1.bullet_position_y,
+					  buffer_background_image_data);
+	}
 
 }
 

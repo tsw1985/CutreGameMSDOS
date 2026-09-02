@@ -5,24 +5,25 @@
 #include "header\bmp.h"
 #include "header\players.h"
 
+//===========================================================
+// The game: main loop, keyboard, collisions against the map, and drawing.
+//
+// Everything that needs to know about the map or the screen lives here.
+// players.c only deals with the geometry of a tank.
+//===========================================================
+
+// Loop iterations between track animation frames
 #define FRAMES_COUNTER	3
 
-
-// The main loop runs once per vertical retrace (see wait_retrace()), and
-// VGA mode 13h (320x200, 256 colors) refreshes at approximately 70 Hz.
-// So waiting for 70 loop iterations is roughly one second. This is only
-// approximate, since it depends on the real refresh rate of the video
-// card being used, not on an actual clock.
+// The loop waits for one vertical retrace per iteration and mode 13h runs
+// at about 70 Hz, so 70 iterations is roughly one second. Approximate: it
+// follows the video card, not a clock.
 #define LOG_INTERVAL_FRAMES 70
 
 #define SCREEN_SIZE 			64000
 
-// Color/pallete index used in the map bmp (cutrecol.bmp) to mark a wall.
-// If the pixel under the cannon tip is this color, movement in that
-// direction is blocked.
-//
-// Confirmed by reading cutrecol.bmp directly: it only uses 2 colors,
-// index 3 (blue, background/floor) and index 252 (yellow, wall).
+// Palette index that marks a wall in cutrecol.bmp. That file only uses 2
+// colors: 3 (floor) and 252 (wall).
 #define COLLISION_COLOR 		252
 
 // Keyboards Directions
@@ -34,10 +35,8 @@
 // Keyboard hardware ports
 #define KEY_BUFFER 0x60
 
-// Scan codes
-//
-// Player 1 plays with the cursor keys and fires with the space bar,
-// player 2 plays with W/A/S/D and fires with G.
+// Scan codes. Player 1 drives with the cursor keys and fires with space,
+// player 2 with W/A/S/D and G.
 #define KEY_UP			0x48
 #define KEY_DOWN		0x50
 #define KEY_LEFT		0x4B
@@ -53,8 +52,8 @@
 
 #define IRQ_KEYBOARD	9
 
-// The scan codes are 128 .
-// Create a array with 128 positions. If
+// One slot per scan code: 1 while the key is held, 0 when released. Filled
+// by new_kbd_handler() behind our back, on every keyboard interrupt.
 unsigned char keys[128] = {0};
 
 
@@ -94,34 +93,17 @@ void update_keyboard();
 struct player player1;
 struct player player2;
 
-//=====================
-// Frame counter:
-//
-// This variable is used to count how many retraces are in screen
-
-//=====================
+// Counts loop iterations to pace the track animation, shared by both tanks
+// so they roll at the same rhythm
 int frame_counter;
 
-//=====================
-// Explosion pause counter:
-//
-// Number of main loop iterations left before the round is restarted after a
-// hit. While it is greater than 0 the round is FROZEN: the keyboard is not
-// read and the bullets do not move, so the surviving player cannot keep
-// driving and shooting over a tank that is already blown up. Only the
-// explosion animation and the screen keep running.
-//
-// 0 means the round is running normally.
-//=====================
+// Iterations left before the round restarts after a hit. While it is above
+// 0 the round is FROZEN: no keyboard, no bullets, only the explosion moves.
+// 0 = the round is running normally.
 unsigned int explosion_pause_counter;
 
-//=====================
-// Log frame counter:
-//
-// This variable is separate from frame_counter above, so that throttling
-// the debug log does not affect the speed of the animation. It counts how
-// many loop iterations have passed since the last time we wrote to the log.
-//=====================
+// Iterations since the last line written to the log. Kept apart from
+// frame_counter so throttling the log does not touch the animation speed.
 int log_frame_counter;
 
 // Install our custom interruption vector
@@ -162,22 +144,15 @@ void interrupt far new_kbd_handler() {
 
 int main(){
 
-	// Buffer used to build the text of each log line before sending it to tanks_log()
-	char log_message_text[64];
+	char log_message_text[64];			// text of the log line being built
+	unsigned int cannon_tip_pixel_value;	// map color under the cannon tip, for the log
 
-	// Color/pallete index of the map pixel that is currently under the
-	// tank's cannon tip (position is now tracked on player1 itself, see
-	// player_update_cannon_tip() in players.c)
-	unsigned int cannon_tip_pixel_value;
-
-	// Raised on any frame in which a bullet has hit a tank, so the round is
-	// restarted once, after BOTH bullets have been dealt with. Doing it this
-	// way means that if the two tanks shoot each other on the very same
-	// frame, both shots count and both players get their win.
+	// Raised when a bullet has hit a tank this frame. Checked after BOTH
+	// bullets have been dealt with, so if they shoot each other on the same
+	// frame both shots count.
 	unsigned int tank_was_hit;
 
-	// Start each run with a fresh, empty log file, instead of mixing
-	// lines from this run with lines left over from the previous run
+	// Start each run with an empty log instead of mixing runs
 	tanks_log_clear();
 
 	tanks_log("Starting game ...");
@@ -198,36 +173,23 @@ int main(){
 
     do{
 
-		// The round has two very different states, and this is where they
-		// part ways:
+		// The round has two states:
 		//
-		//   running   -> the keyboard is read and the bullets move, which is
-		//                the game itself.
-		//
-		//   exploding -> a tank has been hit. Everything above is frozen for
-		//                EXPLOSION_TOTAL_FRAMES iterations (about half a
-		//                second) while the explosion burns where the tank
-		//                was shot, and only then is the round restarted.
-		//                Freezing is what stops the survivor from driving
-		//                and shooting over a tank that is already dead.
+		//   running   -> keyboard and bullets, the game itself
+		//   exploding -> a tank has been hit: everything above is frozen for
+		//                half a second while the explosion burns, so the
+		//                survivor cannot drive and shoot over a dead tank
 		if (explosion_pause_counter == 0){
 
-			// 1. Read the keyboard, one call per player.
-			//
-			// Two separate calls means two separate if / else if chains, so
-			// both tanks can move on the same frame. Player 1 drives with
-			// the cursor keys and fires with the space bar, player 2 drives
-			// with W/A/S/D and fires with G.
-			// Each call is also told about the other tank, so a tank can be
-			// stopped by the other one exactly like it is stopped by a wall.
+			// 1. Keyboard, one call per player. Two calls means two separate
+			// if / else if chains, so both tanks can move on the same frame.
+			// Each is told about the other, so one tank stops the other just
+			// like a wall does.
 			process_player_input(&player1, &player2, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_SPACE);
 			process_player_input(&player2, &player1, KEY_W,  KEY_S,    KEY_A,    KEY_D,     KEY_G);
 
-			// Move each bullet (or keep it sitting on its cannon, if that
-			// player has not fired yet). Each one is checked against the
-			// OTHER tank, and returns 1 if it has hit it.
-			//
-			// The tank that blows up is the one that was HIT, not the one
+			// 2. Move each bullet. Returns 1 if it hit the other tank, and
+			// the one that blows up is the tank that was HIT, not the one
 			// that fired: player 1's bullet hitting means player 2 explodes.
 			tank_was_hit = 0;
 
@@ -241,23 +203,19 @@ int main(){
 				tank_was_hit = 1;
 			}
 
-			// Both bullets have already been dealt with, so if they shot
-			// each other on this very frame both shots counted and both
-			// tanks are now burning.
 			if (tank_was_hit == 1){
 
 				sprintf(log_message_text, "Tank hit - wins %u / %u", player1.wins, player2.wins);
 				tanks_log(log_message_text);
 
-				// Put out any bullet still in the air. The round is frozen
-				// from here on, so a bullet left flying would just hang in
-				// mid air for half a second.
+				// Put out any bullet still in the air, or it would hang
+				// frozen in mid air for the whole pause
 				player1.bullet_is_flying = 0;
 				player2.bullet_is_flying = 0;
 
 				// Start the pause. The round is NOT restarted here: the
-				// tanks have to stay where they were shot for the explosion
-				// to be drawn on top of them.
+				// tanks stay where they were shot, so the explosion can be
+				// drawn on top of them.
 				explosion_pause_counter = EXPLOSION_TOTAL_FRAMES;
 
 			}
@@ -270,8 +228,6 @@ int main(){
 
 			explosion_pause_counter = explosion_pause_counter - 1;
 
-			// The pause is over, so now the tanks go back to their starting
-			// spots and a new round begins
 			if (explosion_pause_counter == 0){
 				restart_game();
 			}
@@ -380,13 +336,8 @@ void update_game(int direction){
 
 
 //===========================================================
-// Advances the track animation of one tank by one frame, but only if it has
-// actually moved since the last time (is_moving), so a parked tank does not
-// keep rolling its tracks on the spot.
-//
-// This is the body that used to be inlined inside update_game() for
-// player 1 alone; it is exactly the same logic, only reading the player it
-// is given instead of the global player1.
+// Advances the track animation of one tank, but only if it has actually
+// moved (is_moving), so a parked tank does not roll its tracks on the spot.
 //===========================================================
 void update_player_animation(struct player *_player){
 
@@ -413,19 +364,12 @@ void update_player_animation(struct player *_player){
 
 
 //===========================================================
-// Answers whether the tank would run into a wall if it moved. It reads the
-// 3 points that player_update_future_collision_points() has just worked
-// out for the direction being tried: the cannon tip, in the middle of the
-// front of the tank, and the 2 tracks, at both ends of that front.
+// Would the tank run into a wall if it moved? Reads the 3 points
+// player_update_future_collision_points() has just worked out: the cannon
+// tip and both tracks. All three are needed, see players.h.
 //
-// All three are needed. The cannon tip alone lets a corner of the tank go
-// through the corner of a wall that the cannon passed next to, and the
-// tracks alone let the cannon go into a wall the tracks are not touching
-// yet.
-//
-// The reads are done on buffer_map_collisions_data (the dedicated
-// collision map), never on VGA memory: that buffer never has the tank
-// drawn on top of it.
+// Always read from buffer_map_collisions_data, never from VGA memory: that
+// buffer never has the tanks drawn on top of it.
 //===========================================================
 int is_blocked_by_wall(struct player *_player){
 
@@ -447,26 +391,14 @@ int is_blocked_by_wall(struct player *_player){
 
 
 //===========================================================
-// Answers whether the tank would run into the OTHER tank if it moved.
+// Would the tank run into the OTHER tank if it moved? Compares the box it
+// WOULD occupy against the box the other one occupies right now.
 //
-// It compares the box the tank WOULD occupy (worked out by
-// player_update_future_collision_points(), which is called right before
-// this) against the box the other tank occupies RIGHT NOW.
-//
-// The box is TANK_COLLISION_WIDTH x TANK_COLLISION_HEIGHT, smaller than the
-// 18x18 sprite and centered inside it, so the two tanks are allowed to
-// overlap a few pixels before one stops the other. Being generous here is
-// on purpose: stopping a player short of a tank he can clearly still drive
-// past feels worse than a couple of pixels of overlap.
-//
-// The move is simply refused when the boxes would overlap, nothing is
-// pushed back. That is enough, and it is what guarantees the two tanks can
-// never end up glued together: they start apart, every move is checked
-// before it is applied, and turning does not change the box, so they can
-// never reach a state where the boxes already overlap. As long as they
-// never overlap, a blocked tank always has a free direction left (at the
-// very least the one it just came from), so the player just turns and
-// drives away.
+// The move is just refused, nothing is pushed back. That is what keeps the
+// two tanks from ever ending up glued: they start apart, every move is
+// checked before it is applied, and turning does not change the box, so
+// they can never reach an overlap. And while they never overlap, a blocked
+// tank always has a free direction left, at least the one it came from.
 //===========================================================
 int is_blocked_by_tank(struct player *_player, struct player *_other){
 
@@ -519,12 +451,9 @@ int is_blocked_by_tank(struct player *_player, struct player *_other){
 
 
 //===========================================================
-// The single question process_player_input() asks before moving a tank:
-// is there anything at all in the way? A wall, or the other tank.
-//
+// Is there anything in the way, a wall or the other tank?
 // player_update_future_collision_points() must have been called for the
-// direction being tried before calling this, since both checks read the
-// "future" values it works out.
+// direction being tried first: both checks read the values it works out.
 //===========================================================
 int is_move_blocked(struct player *_player, struct player *_other){
 
@@ -542,23 +471,19 @@ int is_move_blocked(struct player *_player, struct player *_other){
 
 
 //===========================================================
-// Answers whether this player's bullet is hitting the OTHER tank.
+// Is this player's bullet hitting the OTHER tank?
 //
-// The bullet is tested by the same single pixel it uses against the map
-// (its center), against the FULL 18x18 box of the other tank, not the
-// smaller 14x14 box used for tank against tank. The two are different
-// questions on purpose: for pushing you want to be forgiving, so the player
-// is not stopped early, but for a hit you want to be generous, because a
-// shot that looks like it hit has to count.
+// Tested by the bullet's center pixel against the FULL 18x18 box, not the
+// smaller box used for tank against tank: for pushing you want to be
+// forgiving, for a hit generous, because a shot that looks like it hit has
+// to count.
 //
-// A bullet is never tested against the tank that fired it. It is born on
-// its own cannon tip, and the tip for RIGHT is at offset (15,8), which is
-// inside its own 18x18 box: testing against the owner would kill the player
-// the instant he fires to the right.
+// NEVER tested against the tank that fired it: the bullet is born on its
+// own cannon tip, and the RIGHT tip (15,8) is inside its own box, so the
+// player would die the instant he fires to the right.
 //
-// There is no need for a swept test: the bullet travels
-// BULLET_PIXEL_TO_MOVE (3) pixels per frame and the box is 18 pixels wide,
-// so a bullet can never jump over a tank between two frames.
+// No swept test needed: the bullet moves 3 pixels per frame and the box is
+// 18 wide, so it cannot jump over a tank between two frames.
 //===========================================================
 int bullet_has_hit_tank(struct player *_player, struct player *_other){
 
@@ -594,11 +519,8 @@ int bullet_has_hit_tank(struct player *_player, struct player *_other){
 
 
 //===========================================================
-// Starts a new round: both tanks go back to where they started, facing each
-// other, with their bullets loaded again.
-//
-// The scores (wins) are NOT touched, they are what carries over from one
-// round to the next.
+// New round: both tanks back to their starting spots, facing each other,
+// bullets loaded. The scores are NOT touched: they carry over.
 //===========================================================
 void restart_game(){
 
@@ -651,17 +573,12 @@ void move_sprite(struct player *_player, int direction){
 
 //===========================================================
 // Reads the keyboard for ONE player and turns it into movement and shots.
+// The 5 scan codes are parameters, so the same function drives both players.
 //
-// The 5 scan codes are passed in instead of being hardcoded, so the very
-// same function drives player 1 with the cursor keys + space bar and
-// player 2 with W/A/S/D + G.
-//
-// IMPORTANT: each player gets its own call to this function, and therefore
-// its own if / else if chain. The chain must NOT be shared between the two
-// players: inside one chain only one key gets through per frame (that is
-// what stops a single tank from moving in diagonal), so if both players
-// were in the same chain only one of them would be able to move on any
-// given frame.
+// IMPORTANT: each player needs its OWN call, and therefore its own
+// if / else if chain. Inside one chain only one key gets through per frame
+// (that is what stops the diagonal), so sharing it between the two players
+// would let only one of them move per frame.
 //===========================================================
 void process_player_input(struct player *_player,
                           struct player *_other,
@@ -671,21 +588,13 @@ void process_player_input(struct player *_player,
                           unsigned char key_right_code,
                           unsigned char key_fire_code){
 
-	// Only one direction can be applied per frame, so the tank can never
-	// move in diagonal. If more than one direction key is held down at the
-	// same time, only the first one below (in the order UP, DOWN, LEFT,
-	// RIGHT) is used for this frame.
+	// One direction per frame, so the tank can never go diagonal: with
+	// several keys held, only the first of UP, DOWN, LEFT, RIGHT counts.
 	//
-	// Before moving, player_update_future_collision_points() works out where
-	// the 3 collision points (cannon tip and both tracks) WOULD land, one
-	// PIXEL_TO_MOVE step ahead, without actually moving the tank yet. Those
-	// positions are checked against buffer_map_collisions_data (loaded by
-	// bmp_fill_background_collision_in_buffer()), the dedicated collision
-	// map, instead of VGA memory: this buffer never has the tank or anything
-	// else drawn on top of it, so it is always safe to read regardless of
-	// how close the tip already is. The tentative box is also checked
-	// against the other tank. If it is a wall or the other tank, the key is
-	// ignored and the tank does not move in that direction.
+	// Look before you leap: player_update_future_collision_points() works
+	// out where the tank WOULD land one step ahead, is_move_blocked() checks
+	// that against the map and the other tank, and only then does the tank
+	// move. Checking after moving would mean having to get it back out.
 	if (keys[key_up_code]){
 
 		player_update_future_collision_points(_player, MOVE_UP);
@@ -724,17 +633,12 @@ void process_player_input(struct player *_player,
 
 	}
 
-	// The fire key is checked OUTSIDE the if/else if chain above, on
-	// purpose: that chain only lets one direction through per frame so the
-	// tank cannot move in diagonal, but shooting is not a direction, and the
-	// tank has to be able to move and fire in the same frame.
+	// OUTSIDE the chain above on purpose: shooting is not a direction, and
+	// the tank has to be able to move and fire on the same frame.
 	//
-	// Only the frame in which the key GOES down counts. keys[] stays at 1
-	// for as long as the key is held, so firing on the plain value would
-	// shoot again by itself the moment the previous bullet died, turning it
-	// into an automatic weapon. fire_was_pressed lives in the player, so
-	// each one remembers its own key without main() needing a variable per
-	// player.
+	// Only the frame the key GOES down counts. keys[] stays at 1 while it is
+	// held, so firing on the plain value would shoot again by itself the
+	// moment the bullet died: an automatic weapon.
 	if (keys[key_fire_code]){
 
 		if (_player->fire_was_pressed == 0){
@@ -749,35 +653,25 @@ void process_player_input(struct player *_player,
 
 	}
 
-	// Keep the cannon tip position (for all 4 directions) up to date with
-	// the tank's current position, so it is ready whenever it is needed
-	// (log below, collision check on the next frame)
+	// Keep the 4 cannon tips up to date with the new position, ready for the
+	// bullet, the log and next frame's check
 	player_update_cannon_tip(_player);
 
 }
 
 
 //===========================================================
-// Moves the bullet of ONE player, and kills it when it reaches a wall.
+// Moves the bullet of ONE player. Returns 1 if it has hit the other tank.
 //
-// The bullet has two very different lives, so it is updated in two
-// different ways:
+// A bullet has two lives:
+//   loaded -> it follows the cannon tip, so it is always at the mouth of
+//             the cannon when the tank moves or turns
+//   flying -> it travels on its own and dies against the edge of the screen
+//             (inside player_move_bullet()), a tank, or a wall. Once dead
+//             it goes back to loaded and returns to the cannon.
 //
-//   not flying -> it is loaded in the cannon: it follows the tip of
-//                 whichever direction the tank is facing, so it stays glued
-//                 to the mouth of the cannon when the tank moves and when
-//                 it turns.
-//
-//   flying     -> it travels on its own, ignoring the tank, and it dies
-//                 either by leaving the screen (checked inside
-//                 player_move_bullet()) or by reaching a wall (checked
-//                 here). Once dead it goes back to being loaded, and the
-//                 next frame puts it back on the cannon.
-//
-// The wall check lives here in main.c, and not in players.c next to
-// player_move_bullet(), on purpose: players.c only deals with the geometry
-// of a tank and knows nothing about the map. Reading the collision map is
-// this file's job.
+// The wall check is here and not in players.c on purpose: players.c knows
+// nothing about the map, reading it is this file's job.
 //===========================================================
 int update_bullet(struct player *_player, struct player *_other){
 
@@ -791,16 +685,16 @@ int update_bullet(struct player *_player, struct player *_other){
 
 	player_move_bullet(_player);
 
-	// player_move_bullet() may have just killed the bullet for leaving the
-	// screen. Only read the collision map while it is still alive, so the
-	// position being read is always a real point inside the 320x200 map.
+	// player_move_bullet() may have just killed it for leaving the screen.
+	// Only read the map while it is alive, so the coordinate is always a
+	// real point inside the 320x200.
 	if (_player->bullet_is_flying == 0){
 		return 0;
 	}
 
-	// The other tank is checked BEFORE the wall. It makes no difference in
-	// practice, since a tank can never be standing on a wall, but a hit is
-	// what the game is about, so it is the question worth asking first.
+	// The tank is checked before the wall: no practical difference, since a
+	// tank can never be standing on a wall, but a hit is the point of the
+	// game.
 	if (bullet_has_hit_tank(_player, _other) == 1){
 
 		_player->bullet_is_flying = 0;
@@ -821,10 +715,9 @@ int update_bullet(struct player *_player, struct player *_other){
 
 void draw_to_buffer(){
 
-	// One pointer per player. They must be two separate variables: with a
-	// single one, the block that picks player 2's sprite would overwrite
-	// the choice already made for player 1, and both tanks would end up
-	// drawn with the same sprite.
+	// One per player, and they MUST be two variables: with a single one the
+	// block that picks player 2's sprite would overwrite player 1's choice
+	// and both tanks would be drawn with the same sprite.
 	char *sprite_to_draw_player1;
 	char *sprite_to_draw_player2;
 
@@ -905,14 +798,12 @@ void draw_to_buffer(){
 	}
 
 
-	// Put each tank in its new position, unless it has been blown up, in
-	// which case its explosion is drawn in its place.
+	// Each tank in its new position, unless it has been blown up, in which
+	// case its explosion goes there instead.
 	//
-	// The choice is made HERE, per tank, and not where draw_to_buffer() is
+	// The choice is made HERE, per tank, not where draw_to_buffer() is
 	// called: during an explosion the map and the surviving tank still have
-	// to be drawn exactly as always, so this is not a case of drawing the
-	// explosion INSTEAD of the frame, only instead of one tank sprite. It is
-	// the same shape the bullets below already use.
+	// to be drawn as always. Same shape as the bullets below.
 	if (player1.is_exploding == 1){
 
 		draw_explosion(&player1);
@@ -946,10 +837,9 @@ void draw_to_buffer(){
 	}
 
 
-	// Draw bullets
-	// Show each bullet only if it is flying. While it is not, it is sitting
-	// on the cannon tip (update_bullet() keeps it there) but it is not
-	// painted, so the tank does not carry a visible bullet around.
+	// Bullets, only while they fly. A loaded bullet is still sitting on the
+	// cannon tip, but it is not painted, so the tank does not carry a
+	// visible bullet around.
 	if (player1.bullet_is_flying == 1){
 
 		draw_sprite_to_buffer(player1.sprite_tank_bullet,
@@ -974,17 +864,11 @@ void draw_to_buffer(){
 
 
 //===========================================================
-// Draws the explosion of a tank that has been hit, in the place of its tank
-// sprite.
+// Draws the explosion of a tank that has been hit, in place of its sprite.
+// It is 13x13 against the tank's 18x18, so it is pushed in 2 pixels on each
+// side to sit centered in the box the tank was filling.
 //
-// The explosion is 13x13 and the tank is 18x18, so it is pushed in
-// EXPLOSION_OFFSET_X / EXPLOSION_OFFSET_Y ( 2 pixels ) on each side to sit
-// in the middle of the box the tank was filling. Without that it would be
-// drawn stuck to the top left corner of where the tank was, and would look
-// off center.
-//
-// Which of the 2 sprites is showing is decided by
-// player_update_explosion(), this only paints it.
+// Which of the 2 sprites shows is decided by player_update_explosion().
 //===========================================================
 void draw_explosion(struct player *_player){
 
@@ -1094,17 +978,10 @@ void init_graphics(){
 	bmp_extract_sprite(buffer_sprites_data, 252 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player1.sprite_tank_bullet);
 	bmp_extract_sprite(buffer_sprites_data, 259 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player1.sprite_tank_bullet2);
 	
-	// Explosion
-	//
-	// These cells are 13x13, NOT the 18x18 of a tank, and they are the only
-	// sprites in the sheet that are not tank sized. Their exact origins were
-	// read off sprites.bmp: player 1's two frames start at (171,11) and
-	// (190,11), player 2's at (171,32) and (192,32).
-	//
-	// Extracting them with TANK_WIDTH / TANK_HEIGHT would drag in the blank
-	// gap that separates the two cells plus the first columns of the next
-	// one, so each frame would come out with a piece of the other one glued
-	// to its right.
+	// Explosion. 13x13, the only sprites in the sheet that are not tank
+	// sized: extracting them with TANK_WIDTH would drag in the gap between
+	// cells plus the first columns of the next one, gluing a piece of one
+	// frame to the right of the other.
 	bmp_extract_sprite(buffer_sprites_data, 171 , 11 , EXPLOSION_WIDTH, EXPLOSION_HEIGHT, player1.sprite_tank_explosion);
 	bmp_extract_sprite(buffer_sprites_data, 190 , 11 , EXPLOSION_WIDTH, EXPLOSION_HEIGHT, player1.sprite_tank_explosion2);
 
@@ -1112,18 +989,13 @@ void init_graphics(){
 	// ==============================================================
 	//           SPRITES PLAYER 2
 	//
-	// The second tank lives in sprites.bmp on a second row, exactly 21
-	// pixels below the first one, and painted in a different color so the
-	// two players can tell their tanks apart on screen. So every origin
-	// below is the same X as player 1 with Y + 21:
+	// The second tank is a second row in sprites.bmp, exactly 21 pixels
+	// below the first and in a different color, so every origin here is the
+	// same X as player 1 with Y + 21.
 	//
-	//   UP:    (2,5)   -> (2,26)      DOWN:  (43,10) -> (43,31)
-	//   LEFT:  (83,8)  -> (83,29)     RIGHT: (124,8) -> (124,29)
-	//
-	// The silhouette of both tanks is the same (checked cell by cell
-	// against the sprite sheet), so player 2 reuses every
-	// CANNON_TIP_OFFSET_* and TRACK*_OFFSET_* from players.h without any
-	// recalculation.
+	// Both tanks have the same silhouette (checked cell by cell against the
+	// sheet), so player 2 reuses every CANNON_TIP_OFFSET_* and
+	// TRACK*_OFFSET_* without recalculating anything.
 	//===============================================================
 	
 	// ============================
@@ -1180,12 +1052,11 @@ void setup_screen(){
 void init_players(){
 	//printf("Players Initialization ... !!\n");
 
-	// Everything that is set here is set ONCE for the whole game: the
-	// sprite buffers, the animation settings and the score. Everything that
-	// belongs to a single round (position, facing direction, bullet) is set
-	// by player_reset() at the bottom, which is the very same function that
-	// restart_game() calls after a hit, so a fresh game and a fresh round
-	// always start from exactly the same state.
+	// What is set here is set ONCE for the whole game: sprite buffers,
+	// animation settings and score. Whatever belongs to a single round
+	// (position, direction, bullet) is set by restart_game() at the bottom,
+	// the very same call used after a hit, so a new game and a new round
+	// always start from the same state.
 
 	// ============================
 	// INIT PLAYER 1
@@ -1238,10 +1109,9 @@ void init_players(){
 
 	player_init(&player2);
 
-	// Put both tanks on their starting spots, facing each other. This also
-	// works out their cannon tips and puts their (loaded) bullets on them,
-	// so the very first frame of the main loop already has valid
-	// coordinates to check collisions with.
+	// Both tanks to their starting spots, facing each other. This also works
+	// out their cannon tips and loads their bullets, so the first frame of
+	// the loop already has valid coordinates.
 	restart_game();
 
 }

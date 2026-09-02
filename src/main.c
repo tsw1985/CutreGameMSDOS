@@ -441,17 +441,17 @@ void move_sprite(int direction){
 	if (direction == MOVE_UP){
 
 		if (player1.position_y >= PIXEL_TO_MOVE){
-			player1.position_y = player1.position_y - PIXEL_TO_MOVE;
+			player1.position_y = player1.position_y - PIXEL_TO_MOVE ;
 		}else{
 			player1.position_y = 0;
 		}
 
 	}else if (direction == MOVE_DOWN){
 
-		if (player1.position_y + PIXEL_TO_MOVE <=  ( HEIGHT - 16 ) - TANK_HEIGHT ){
+		if (player1.position_y + PIXEL_TO_MOVE <=  ( HEIGHT ) - TANK_HEIGHT ){
 			player1.position_y = player1.position_y + PIXEL_TO_MOVE;
 		}else{
-			player1.position_y = HEIGHT - TANK_HEIGHT - 16;
+			player1.position_y = HEIGHT - TANK_HEIGHT ;
 		}
 
 	}else if (direction == MOVE_LEFT){
@@ -561,8 +561,8 @@ void init_graphics(){
 	bmp_init_buffers();
 	// Save a original copy of map file
 	// This create a backup of the original file in a buffer
-	//bmp_fill_background_in_main_buffer("..\\res\\cutre.bmp");
-	bmp_fill_background_in_main_buffer("..\\res\\cutrecol.bmp");  // <--- FOR TESTING
+	bmp_fill_background_in_main_buffer("..\\res\\cutre.bmp");
+	//bmp_fill_background_in_main_buffer("..\\res\\cutrecol.bmp");  // <--- FOR TESTING
 
 	//load map collision
 	bmp_fill_background_collision_in_buffer("..\\res\\cutrecol.bmp");

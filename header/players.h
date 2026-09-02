@@ -46,18 +46,18 @@
 //   DOWN:  origin (43,10) tip (51,26) -> offset (8,16)
 //   LEFT:  origin (83,8)  tip (83,16) -> offset (0,8)
 //   RIGHT: origin (124,8) tip (139,16)-> offset (15,8)
-#define CANNON_FINE_PX                           8
+#define CANNON_FINE_PX              8  // 8
 
 #define CANNON_TIP_OFFSET_UP_X 		CANNON_FINE_PX
-#define CANNON_TIP_OFFSET_UP_Y 		0
+#define CANNON_TIP_OFFSET_UP_Y 		-1  // 0
 
 #define CANNON_TIP_OFFSET_DOWN_X 	CANNON_FINE_PX
-#define CANNON_TIP_OFFSET_DOWN_Y 	16
+#define CANNON_TIP_OFFSET_DOWN_Y 	16 // 16
 
-#define CANNON_TIP_OFFSET_LEFT_X 	0
+#define CANNON_TIP_OFFSET_LEFT_X 	0  // 0
 #define CANNON_TIP_OFFSET_LEFT_Y 	CANNON_FINE_PX
 
-#define CANNON_TIP_OFFSET_RIGHT_X 	15
+#define CANNON_TIP_OFFSET_RIGHT_X 	15 // 15
 #define CANNON_TIP_OFFSET_RIGHT_Y 	CANNON_FINE_PX
 
 // Relative offset (from the sprite's top-left corner) of the 2 extra

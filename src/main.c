@@ -87,6 +87,7 @@ void process_player_input(struct player *_player,
                           unsigned char key_right_code,
                           unsigned char key_fire_code);
 void draw_to_buffer();
+void draw_explosion(struct player *_player);
 void update_keyboard();
 
 /*  Players */
@@ -100,6 +101,19 @@ struct player player2;
 
 //=====================
 int frame_counter;
+
+//=====================
+// Explosion pause counter:
+//
+// Number of main loop iterations left before the round is restarted after a
+// hit. While it is greater than 0 the round is FROZEN: the keyboard is not
+// read and the bullets do not move, so the surviving player cannot keep
+// driving and shooting over a tank that is already blown up. Only the
+// explosion animation and the screen keep running.
+//
+// 0 means the round is running normally.
+//=====================
+unsigned int explosion_pause_counter;
 
 //=====================
 // Log frame counter:
@@ -177,42 +191,90 @@ int main(){
 	init_players();
 	init_graphics();
 
+	// The first round starts running, not burning
+	explosion_pause_counter = 0;
+
 	//main loop
 
     do{
 
-		// 1. Read the keyboard, one call per player.
+		// The round has two very different states, and this is where they
+		// part ways:
 		//
-		// Two separate calls means two separate if / else if chains, so
-		// both tanks can move on the same frame. Player 1 drives with the
-		// cursor keys and fires with the space bar, player 2 drives with
-		// W/A/S/D and fires with G.
-		// Each call is also told about the other tank, so a tank can be
-		// stopped by the other one exactly like it is stopped by a wall.
-		process_player_input(&player1, &player2, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_SPACE);
-		process_player_input(&player2, &player1, KEY_W,  KEY_S,    KEY_A,    KEY_D,     KEY_G);
+		//   running   -> the keyboard is read and the bullets move, which is
+		//                the game itself.
+		//
+		//   exploding -> a tank has been hit. Everything above is frozen for
+		//                EXPLOSION_TOTAL_FRAMES iterations (about half a
+		//                second) while the explosion burns where the tank
+		//                was shot, and only then is the round restarted.
+		//                Freezing is what stops the survivor from driving
+		//                and shooting over a tank that is already dead.
+		if (explosion_pause_counter == 0){
 
-		// Move each bullet (or keep it sitting on its cannon, if that
-		// player has not fired yet). Each one is checked against the OTHER
-		// tank, and returns 1 if it has hit it.
-		tank_was_hit = 0;
+			// 1. Read the keyboard, one call per player.
+			//
+			// Two separate calls means two separate if / else if chains, so
+			// both tanks can move on the same frame. Player 1 drives with
+			// the cursor keys and fires with the space bar, player 2 drives
+			// with W/A/S/D and fires with G.
+			// Each call is also told about the other tank, so a tank can be
+			// stopped by the other one exactly like it is stopped by a wall.
+			process_player_input(&player1, &player2, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_SPACE);
+			process_player_input(&player2, &player1, KEY_W,  KEY_S,    KEY_A,    KEY_D,     KEY_G);
 
-		if (update_bullet(&player1, &player2) == 1){
-			tank_was_hit = 1;
-		}
+			// Move each bullet (or keep it sitting on its cannon, if that
+			// player has not fired yet). Each one is checked against the
+			// OTHER tank, and returns 1 if it has hit it.
+			//
+			// The tank that blows up is the one that was HIT, not the one
+			// that fired: player 1's bullet hitting means player 2 explodes.
+			tank_was_hit = 0;
 
-		if (update_bullet(&player2, &player1) == 1){
-			tank_was_hit = 1;
-		}
+			if (update_bullet(&player1, &player2) == 1){
+				player_start_explosion(&player2);
+				tank_was_hit = 1;
+			}
 
-		// Both bullets have already been dealt with, so the round can now
-		// be restarted without cutting the other shot short
-		if (tank_was_hit == 1){
+			if (update_bullet(&player2, &player1) == 1){
+				player_start_explosion(&player1);
+				tank_was_hit = 1;
+			}
 
-			sprintf(log_message_text, "Tank hit - wins %u / %u", player1.wins, player2.wins);
-			tanks_log(log_message_text);
+			// Both bullets have already been dealt with, so if they shot
+			// each other on this very frame both shots counted and both
+			// tanks are now burning.
+			if (tank_was_hit == 1){
 
-			restart_game();
+				sprintf(log_message_text, "Tank hit - wins %u / %u", player1.wins, player2.wins);
+				tanks_log(log_message_text);
+
+				// Put out any bullet still in the air. The round is frozen
+				// from here on, so a bullet left flying would just hang in
+				// mid air for half a second.
+				player1.bullet_is_flying = 0;
+				player2.bullet_is_flying = 0;
+
+				// Start the pause. The round is NOT restarted here: the
+				// tanks have to stay where they were shot for the explosion
+				// to be drawn on top of them.
+				explosion_pause_counter = EXPLOSION_TOTAL_FRAMES;
+
+			}
+
+		}else{
+
+			// Burning: only the explosion animation moves
+			player_update_explosion(&player1);
+			player_update_explosion(&player2);
+
+			explosion_pause_counter = explosion_pause_counter - 1;
+
+			// The pause is over, so now the tanks go back to their starting
+			// spots and a new round begins
+			if (explosion_pause_counter == 0){
+				restart_game();
+			}
 
 		}
 
@@ -843,22 +905,45 @@ void draw_to_buffer(){
 	}
 
 
-	// Put the tank in new position - Draw Player 1
-	draw_sprite_to_buffer(sprite_to_draw_player1,
-				  TANK_WIDTH,
-				  TANK_HEIGHT,
-				  player1.position_x,
-				  player1.position_y,
-				  buffer_background_image_data);
+	// Put each tank in its new position, unless it has been blown up, in
+	// which case its explosion is drawn in its place.
+	//
+	// The choice is made HERE, per tank, and not where draw_to_buffer() is
+	// called: during an explosion the map and the surviving tank still have
+	// to be drawn exactly as always, so this is not a case of drawing the
+	// explosion INSTEAD of the frame, only instead of one tank sprite. It is
+	// the same shape the bullets below already use.
+	if (player1.is_exploding == 1){
 
+		draw_explosion(&player1);
 
-	// Put the tank in new position - Draw Player 2
-	draw_sprite_to_buffer(sprite_to_draw_player2,
-				  TANK_WIDTH,
-				  TANK_HEIGHT,
-				  player2.position_x,
-				  player2.position_y,
-				  buffer_background_image_data);
+	}else{
+
+		// Draw Player 1
+		draw_sprite_to_buffer(sprite_to_draw_player1,
+					  TANK_WIDTH,
+					  TANK_HEIGHT,
+					  player1.position_x,
+					  player1.position_y,
+					  buffer_background_image_data);
+
+	}
+
+	if (player2.is_exploding == 1){
+
+		draw_explosion(&player2);
+
+	}else{
+
+		// Draw Player 2
+		draw_sprite_to_buffer(sprite_to_draw_player2,
+					  TANK_WIDTH,
+					  TANK_HEIGHT,
+					  player2.position_x,
+					  player2.position_y,
+					  buffer_background_image_data);
+
+	}
 
 
 	// Draw bullets
@@ -884,6 +969,39 @@ void draw_to_buffer(){
 					  player2.bullet_position_y,
 					  buffer_background_image_data);
 	}
+
+}
+
+
+//===========================================================
+// Draws the explosion of a tank that has been hit, in the place of its tank
+// sprite.
+//
+// The explosion is 13x13 and the tank is 18x18, so it is pushed in
+// EXPLOSION_OFFSET_X / EXPLOSION_OFFSET_Y ( 2 pixels ) on each side to sit
+// in the middle of the box the tank was filling. Without that it would be
+// drawn stuck to the top left corner of where the tank was, and would look
+// off center.
+//
+// Which of the 2 sprites is showing is decided by
+// player_update_explosion(), this only paints it.
+//===========================================================
+void draw_explosion(struct player *_player){
+
+	char *sprite_to_draw;
+
+	if (_player->explosion_current_frame == 0){
+		sprite_to_draw = _player->sprite_tank_explosion;
+	}else{
+		sprite_to_draw = _player->sprite_tank_explosion2;
+	}
+
+	draw_sprite_to_buffer(sprite_to_draw,
+				  EXPLOSION_WIDTH,
+				  EXPLOSION_HEIGHT,
+				  _player->position_x + EXPLOSION_OFFSET_X,
+				  _player->position_y + EXPLOSION_OFFSET_Y,
+				  buffer_background_image_data);
 
 }
 
@@ -975,6 +1093,20 @@ void init_graphics(){
     // Bullet tank 1
 	bmp_extract_sprite(buffer_sprites_data, 252 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player1.sprite_tank_bullet);
 	bmp_extract_sprite(buffer_sprites_data, 259 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player1.sprite_tank_bullet2);
+	
+	// Explosion
+	//
+	// These cells are 13x13, NOT the 18x18 of a tank, and they are the only
+	// sprites in the sheet that are not tank sized. Their exact origins were
+	// read off sprites.bmp: player 1's two frames start at (171,11) and
+	// (190,11), player 2's at (171,32) and (192,32).
+	//
+	// Extracting them with TANK_WIDTH / TANK_HEIGHT would drag in the blank
+	// gap that separates the two cells plus the first columns of the next
+	// one, so each frame would come out with a piece of the other one glued
+	// to its right.
+	bmp_extract_sprite(buffer_sprites_data, 171 , 11 , EXPLOSION_WIDTH, EXPLOSION_HEIGHT, player1.sprite_tank_explosion);
+	bmp_extract_sprite(buffer_sprites_data, 190 , 11 , EXPLOSION_WIDTH, EXPLOSION_HEIGHT, player1.sprite_tank_explosion2);
 
 	
 	// ==============================================================
@@ -1028,6 +1160,11 @@ void init_graphics(){
     // sheet, so both players shoot the same sprite
 	bmp_extract_sprite(buffer_sprites_data, 252 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player2.sprite_tank_bullet);
 	bmp_extract_sprite(buffer_sprites_data, 259 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player2.sprite_tank_bullet2);
+	
+	
+	// Explosion - same as player 1, on the second row of the sheet
+	bmp_extract_sprite(buffer_sprites_data, 171 , 32 , EXPLOSION_WIDTH, EXPLOSION_HEIGHT, player2.sprite_tank_explosion);
+	bmp_extract_sprite(buffer_sprites_data, 192 , 32 , EXPLOSION_WIDTH, EXPLOSION_HEIGHT, player2.sprite_tank_explosion2);
 
 
 

@@ -35,6 +35,32 @@
 #define MOVE_LEFT 			3
 #define MOVE_RIGHT 			4
 
+// The explosion sprite is NOT the size of a tank: it is 13x13, while the
+// tank is 18x18. So it needs its own size, and its own offset to sit in the
+// middle of the tank it is replacing, ( 18 - 13 ) / 2 = 2 pixels in on each
+// side. Confirmed by reading sprites.bmp: the 4 explosion cells all span
+// exactly 13 columns and 13 rows.
+#define EXPLOSION_WIDTH 		13
+#define EXPLOSION_HEIGHT 		13
+
+#define EXPLOSION_OFFSET_X 		((TANK_WIDTH  - EXPLOSION_WIDTH)  / 2)
+#define EXPLOSION_OFFSET_Y 		((TANK_HEIGHT - EXPLOSION_HEIGHT) / 2)
+
+// How many sprites the explosion animation has
+#define EXPLOSION_TOTAL_SPRITES 2
+
+// How long the whole explosion lasts, and how long each of its 2 sprites
+// stays on screen, both counted in main loop iterations.
+//
+// The main loop waits for one vertical retrace per iteration and mode 13h
+// refreshes at about 70 Hz, so 35 iterations is roughly half a second (the
+// same reasoning behind LOG_INTERVAL_FRAMES 70 in main.c, which is about
+// one second). Swapping sprite every 7 frames gives 5 flickers in that
+// half second, which is what makes it read as fire instead of as a still
+// picture.
+#define EXPLOSION_TOTAL_FRAMES 	35
+#define EXPLOSION_FRAME_DELAY 	7
+
 // Collision box used ONLY for tank against tank, smaller than the sprite so
 // the two tanks are allowed to overlap a little before one stops the other.
 // The margin is taken off every side, so the box is centered inside the
@@ -209,6 +235,17 @@ struct player{
 		//     by leaving the screen).
 		unsigned int bullet_is_flying;
 
+		// 1 = this tank has been hit and is showing its explosion instead of
+		//     its tank sprite. The round is frozen while this is on, and it
+		//     is cleared by player_reset() when the next round starts.
+		unsigned int is_exploding;
+
+		// Counts main loop iterations to decide when to swap between the 2
+		// explosion sprites, and which of the two is showing right now.
+		// These only mean anything while is_exploding is 1.
+		unsigned int explosion_counter;
+		unsigned int explosion_current_frame;
+
 		// Remembers whether this player's fire key was already down on the
 		// previous frame, so a shot is fired only on the frame the key GOES
 		// down and not on every frame it stays down (one shot per keypress).
@@ -246,6 +283,10 @@ struct player{
 		char *sprite_tank_bullet;
 		char *sprite_tank_bullet2;
 		
+		
+		char *sprite_tank_explosion;
+		char *sprite_tank_explosion2;
+		
 		// to do : animation
 	};
 
@@ -259,6 +300,8 @@ struct player{
 	void player_update_bullet_position(struct player *_player);
 	void player_fire_bullet(struct player *_player);
 	void player_move_bullet(struct player *_player);
+	void player_start_explosion(struct player *_player);
+	void player_update_explosion(struct player *_player);
 	
 	
 

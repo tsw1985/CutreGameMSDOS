@@ -47,9 +47,28 @@ void player_init(struct player *_player){
 	//#define TANK_BULLET_WIDTH 4
 	//#define TANK_BULLET_HEIGHT 3
 	
-	 _player->sprite_tank_bullet    = (char*)malloc(TANK_BULLET_WIDTH * TANK_BULLET_HEIGHT);
+	 _player->sprite_tank_bullet = (char*)malloc(TANK_BULLET_WIDTH * TANK_BULLET_HEIGHT);
+	 if (_player->sprite_tank_bullet == NULL){
+		printf("Error creating player_buffer_sprites_data\n");	
+	 }
+	 
+	 
      _player->sprite_tank_bullet2 = (char*)malloc(TANK_BULLET_WIDTH * TANK_BULLET_HEIGHT);	
-	
+	 if (_player->sprite_tank_bullet2 == NULL){
+		printf("Error creating player_buffer_sprites_data\n");	
+	 }
+	 
+	 
+	 
+	 _player->sprite_tank_explosion = (char*)malloc(EXPLOSION_WIDTH * EXPLOSION_HEIGHT);
+	 if (_player->sprite_tank_explosion == NULL){
+		printf("Error creating player_buffer_sprites_data\n");	
+	 }
+	 
+	_player->sprite_tank_explosion2 = (char*)malloc(EXPLOSION_WIDTH * EXPLOSION_HEIGHT);
+	 if (_player->sprite_tank_explosion2 == NULL){
+		printf("Error creating player_buffer_sprites_data\n");	
+	 }
 	
 	
 	
@@ -338,12 +357,73 @@ void player_reset(struct player *_player, unsigned int start_x, unsigned int sta
 	_player->bullet_direction = 0;
 	_player->bullet_is_flying = 0;
 
+	// The tank is whole again for the new round
+	_player->is_exploding = 0;
+	_player->explosion_counter = 0;
+	_player->explosion_current_frame = 0;
+
 	// Work out the cannon tips for the new position and put the (loaded)
 	// bullet on the right one, so the very first frame of the new round
 	// already has valid coordinates instead of whatever was left from the
 	// round that just ended.
 	player_update_cannon_tip(_player);
 	player_update_bullet_position(_player);
+
+}
+
+
+//===========================================================
+// Blows this tank up: from now on draw_to_buffer() paints the explosion
+// where the tank was, instead of the tank.
+//
+// The tank is deliberately NOT moved. It stays exactly where it was shot,
+// which is where the explosion has to appear. It goes back to its starting
+// spot later, when the round is restarted at the end of the pause.
+//===========================================================
+void player_start_explosion(struct player *_player){
+
+	_player->is_exploding = 1;
+	_player->explosion_counter = 0;
+	_player->explosion_current_frame = 0;
+
+	// A tank that has just been blown up is not moving, so its tracks must
+	// not keep rolling underneath the explosion
+	_player->is_moving = 0;
+
+}
+
+
+//===========================================================
+// Swaps between the 2 sprites of the explosion every EXPLOSION_FRAME_DELAY
+// iterations, so the fire flickers.
+//
+// This is kept apart from update_player_animation() on purpose: the track
+// animation only advances when the tank has actually moved (is_moving),
+// while the explosion has to run on its own, on a tank that by definition
+// is not going anywhere.
+//
+// How LONG the explosion lasts is not decided here: that is the pause in
+// the main loop, which is also the one that knows when to restart the
+// round.
+//===========================================================
+void player_update_explosion(struct player *_player){
+
+	if (_player->is_exploding == 0){
+		return;
+	}
+
+	_player->explosion_counter = _player->explosion_counter + 1;
+
+	if (_player->explosion_counter >= EXPLOSION_FRAME_DELAY){
+
+		_player->explosion_counter = 0;
+
+		_player->explosion_current_frame = _player->explosion_current_frame + 1;
+		if (_player->explosion_current_frame >= EXPLOSION_TOTAL_SPRITES){
+			_player->explosion_current_frame = 0;
+		}
+
+	}
 
 }
 
@@ -366,6 +446,9 @@ void player_free(struct player *_player){
 	
 	free(_player->sprite_tank_bullet);
 	free(_player->sprite_tank_bullet2);
+	
+	free(_player->sprite_tank_explosion);
+	free(_player->sprite_tank_explosion2);
 	
 	
 }

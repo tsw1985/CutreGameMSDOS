@@ -166,6 +166,15 @@ struct player{
 		//     by leaving the screen).
 		unsigned int bullet_is_flying;
 
+		// Remembers whether this player's fire key was already down on the
+		// previous frame, so a shot is fired only on the frame the key GOES
+		// down and not on every frame it stays down (one shot per keypress).
+		//
+		// It lives here, in the player, instead of being a variable in
+		// main(): every player needs its own, and this way adding a player
+		// does not add another variable to the main loop.
+		unsigned int fire_was_pressed;
+
 
 		
 		//Animations

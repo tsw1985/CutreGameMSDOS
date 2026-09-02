@@ -35,12 +35,22 @@
 #define KEY_BUFFER 0x60
 
 // Scan codes
+//
+// Player 1 plays with the cursor keys and fires with the space bar,
+// player 2 plays with W/A/S/D and fires with G.
 #define KEY_UP			0x48
 #define KEY_DOWN		0x50
 #define KEY_LEFT		0x4B
 #define KEY_RIGHT		0x4D
 #define KEY_ESC			0x01
 #define KEY_SPACE		0x39
+
+#define KEY_W			0x11
+#define KEY_A			0x1E
+#define KEY_S			0x1F
+#define KEY_D			0x20
+#define KEY_G			0x22
+
 #define IRQ_KEYBOARD	9
 
 // The scan codes are 128 .
@@ -59,13 +69,20 @@ extern set_vga_320_200_mode();
 void setup_screen();
 void init_graphics();
 void init_players();
-int is_blocked_by_wall();
+int is_blocked_by_wall(struct player *_player);
 void wait_retrace();
 void update_game(int direction);
-void move_sprite(int direction);
+void update_player_animation(struct player *_player);
+void move_sprite(struct player *_player, int direction);
+void update_bullet(struct player *_player);
+void process_player_input(struct player *_player,
+                          unsigned char key_up_code,
+                          unsigned char key_down_code,
+                          unsigned char key_left_code,
+                          unsigned char key_right_code,
+                          unsigned char key_fire_code);
 void draw_to_buffer();
 void update_keyboard();
-void process_input();
 
 /*  Players */
 struct player player1;
@@ -134,11 +151,6 @@ int main(){
 	// player_update_cannon_tip() in players.c)
 	unsigned int cannon_tip_pixel_value;
 
-	// Remembers whether the space bar was already down on the previous
-	// frame, so a shot is fired only on the frame the key GOES down and
-	// not on every frame it stays down (one shot per keypress)
-	unsigned int space_was_pressed;
-
 	// Start each run with a fresh, empty log file, instead of mixing
 	// lines from this run with lines left over from the previous run
 	tanks_log_clear();
@@ -159,137 +171,30 @@ int main(){
 	// coordinates to check for collisions, instead of the (0,0) that
 	// init_players() sets as a placeholder
 	player_update_cannon_tip(&player1);
+	player_update_cannon_tip(&player2);
 
 	// ... and put the bullet on that cannon tip too, so the very first
 	// frame already draws it in the right place
 	player_update_bullet_position(&player1);
-
-	space_was_pressed = 0;
+	player_update_bullet_position(&player2);
 
 	//main loop
 
     do{
 
-		// Only one direction can be applied per frame, so the tank can
-		// never move in diagonal. If more than one direction key is held
-		// down at the same time, only the first one below (in the order
-		// UP, DOWN, LEFT, RIGHT) is used for this frame.
+		// 1. Read the keyboard, one call per player.
 		//
-		// Before moving, player_update_future_collision_points() works out
-		// where the 3 collision points (cannon tip and both tracks) WOULD
-		// land, one PIXEL_TO_MOVE step ahead, without actually moving the
-		// tank yet. Those positions are checked against
-		// buffer_map_collisions_data (loaded by
-		// bmp_fill_background_collision_in_buffer()), the dedicated
-		// collision map, instead of VGA memory: this buffer never has the
-		// tank or anything else drawn on top of it, so it is always safe
-		// to read regardless of how close the tip already is. If it is a
-		// wall, the key is ignored and the tank does not move in that
-		// direction.
-		if (keys[KEY_UP]){
+		// Two separate calls means two separate if / else if chains, so
+		// both tanks can move on the same frame. Player 1 drives with the
+		// cursor keys and fires with the space bar, player 2 drives with
+		// W/A/S/D and fires with G.
+		process_player_input(&player1, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_SPACE);
+		process_player_input(&player2, KEY_W,  KEY_S,    KEY_A,    KEY_D,     KEY_G);
 
-			player_update_future_collision_points(&player1, MOVE_UP);
-
-			if (is_blocked_by_wall() == 0){
-				player1.is_moving = 1;
-	       		move_sprite(MOVE_UP);
-			}
-
-       }else if (keys[KEY_DOWN]){
-
-			player_update_future_collision_points(&player1, MOVE_DOWN);
-
-			if (is_blocked_by_wall() == 0){
-				player1.is_moving = 1;
-		    	move_sprite(MOVE_DOWN);
-			}
-
-	    }else if (keys[KEY_LEFT]){
-
-			player_update_future_collision_points(&player1, MOVE_LEFT);
-
-			if (is_blocked_by_wall() == 0){
-				player1.is_moving = 1;
-		    	move_sprite(MOVE_LEFT);
-			}
-
-    	}else if (keys[KEY_RIGHT]){
-
-			player_update_future_collision_points(&player1, MOVE_RIGHT);
-
-			if (is_blocked_by_wall() == 0){
-				player1.is_moving = 1;
-		    	move_sprite(MOVE_RIGHT);
-			}
-
-		}
-
-		// The fire key is checked OUTSIDE the if/else if chain above, on
-		// purpose: that chain only lets one direction through per frame so
-		// the tank cannot move in diagonal, but shooting is not a
-		// direction, and the tank has to be able to move and fire in the
-		// same frame.
-		//
-		// Only the frame in which the key GOES down counts. keys[] stays at
-		// 1 for as long as the space bar is held, so firing on the plain
-		// value would shoot again by itself the moment the previous bullet
-		// died, turning it into an automatic weapon.
-		if (keys[KEY_SPACE]){
-
-			if (space_was_pressed == 0){
-				player_fire_bullet(&player1);
-			}
-
-			space_was_pressed = 1;
-
-		}else{
-
-			space_was_pressed = 0;
-
-		}
-
-		// Keep the cannon tip position (for all 4 directions) up to date
-		// with the tank's current position, so it is ready whenever it is
-		// needed (log below, collision check later on)
-		player_update_cannon_tip(&player1);
-
-		// The bullet has two very different lives, so it is updated in two
-		// different ways:
-		//
-		//   not flying -> it is loaded in the cannon: it follows the tip of
-		//                 whichever direction the tank is facing, so it
-		//                 stays glued to the mouth of the cannon when the
-		//                 tank moves and when it turns.
-		//
-		//   flying     -> it travels on its own, ignoring the tank, and it
-		//                 dies either by leaving the screen (checked inside
-		//                 player_move_bullet()) or by reaching a wall
-		//                 (checked here, since this is where the collision
-		//                 map can be read). Once dead it goes back to being
-		//                 loaded, and the next frame puts it back on the
-		//                 cannon.
-		if (player1.bullet_is_flying == 0){
-
-			player_update_bullet_position(&player1);
-
-		}else{
-
-			player_move_bullet(&player1);
-
-			// player_move_bullet() may have just killed the bullet for
-			// leaving the screen. Only read the collision map while it is
-			// still alive, so the position being read is always a real
-			// point inside the 320x200 map.
-			if (player1.bullet_is_flying == 1){
-
-				if (bmp_get_collision_pixel(player1.bullet_position_x + BULLET_CENTER_X,
-				                            player1.bullet_position_y + BULLET_CENTER_Y) == COLLISION_COLOR){
-					player1.bullet_is_flying = 0;
-				}
-
-			}
-
-		}
+		// Move each bullet (or keep it sitting on its cannon, if that
+		// player has not fired yet)
+		update_bullet(&player1);
+		update_bullet(&player2);
 
 		// 2. Update logic game
    		update_game(0);
@@ -327,6 +232,7 @@ int main(){
    			// clean map buffer (not the VGA memory: that one already has
    			// the tank drawn on top of it, so it would just show the
    			// tank's own color instead of the map's)
+			/*
    			if (player1.current_direction == MOVE_UP){
    				cannon_tip_pixel_value = bmp_get_map_pixel(player1.canonn_head_top_up_x, player1.canonn_head_top_up_y);
    				sprintf(log_message_text, "Cannon tip (%u,%u) = %u", player1.canonn_head_top_up_x, player1.canonn_head_top_up_y, cannon_tip_pixel_value);
@@ -341,7 +247,7 @@ int main(){
    				sprintf(log_message_text, "Cannon tip (%u,%u) = %u", player1.canonn_head_top_right_x, player1.canonn_head_top_right_y, cannon_tip_pixel_value);
    			}
 
-   			tanks_log(log_message_text);
+   			tanks_log(log_message_text);*/
 
    			// Also log the FUTURE cannon tip (one PIXEL_TO_MOVE step ahead
    			// in the current facing direction), read from the same
@@ -359,6 +265,7 @@ int main(){
 
 
 	player_free(&player1);
+	player_free(&player2);
 	bmp_delete_buffers();
 	bmp_close_files();
 
@@ -371,31 +278,54 @@ void update_game(int direction){
 
 	//Animation
 	player1.speed_counter = player1.speed_counter + 1;
+	player2.speed_counter = player2.speed_counter + 1;
 
 	frame_counter++;
 	// 3
 	if (frame_counter >= FRAMES_COUNTER) {
         frame_counter = 0;
 
-        // increment speed
-		if (player1.speed_counter >= player1.speed_total){
-			player1.speed_counter = 0;
-
-			//check if player is moving
-			//If player is in moving, then change frames
-			if(player1.is_moving == 1){
-
-				player1.current_frame = player1.current_frame + 1;
-				if(player1.current_frame >= player1.total_frames){
-					player1.current_frame = 0;
-				}
-
-				// set to 0 player
-				player1.is_moving = 0;
-
-			}
-		}
+        // Both tanks are animated from the same frame_counter on purpose, so
+        // they move their tracks at the same rhythm. What is NOT shared is
+        // speed_counter / current_frame / is_moving: those live in each
+        // player, so a tank that is standing still keeps its own frame while
+        // the other one is rolling.
+        update_player_animation(&player1);
+        update_player_animation(&player2);
     }
+
+}
+
+
+//===========================================================
+// Advances the track animation of one tank by one frame, but only if it has
+// actually moved since the last time (is_moving), so a parked tank does not
+// keep rolling its tracks on the spot.
+//
+// This is the body that used to be inlined inside update_game() for
+// player 1 alone; it is exactly the same logic, only reading the player it
+// is given instead of the global player1.
+//===========================================================
+void update_player_animation(struct player *_player){
+
+	// increment speed
+	if (_player->speed_counter >= _player->speed_total){
+		_player->speed_counter = 0;
+
+		//check if player is moving
+		//If player is in moving, then change frames
+		if(_player->is_moving == 1){
+
+			_player->current_frame = _player->current_frame + 1;
+			if(_player->current_frame >= _player->total_frames){
+				_player->current_frame = 0;
+			}
+
+			// set to 0 player
+			_player->is_moving = 0;
+
+		}
+	}
 
 }
 
@@ -415,17 +345,17 @@ void update_game(int direction){
 // collision map), never on VGA memory: that buffer never has the tank
 // drawn on top of it.
 //===========================================================
-int is_blocked_by_wall(){
+int is_blocked_by_wall(struct player *_player){
 
-	if (bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) == COLLISION_COLOR){
+	if (bmp_get_collision_pixel(_player->future_cannon_tip_x, _player->future_cannon_tip_y) == COLLISION_COLOR){
 		return 1;
 	}
 
-	if (bmp_get_collision_pixel(player1.future_track1_x, player1.future_track1_y) == COLLISION_COLOR){
+	if (bmp_get_collision_pixel(_player->future_track1_x, _player->future_track1_y) == COLLISION_COLOR){
 		return 1;
 	}
 
-	if (bmp_get_collision_pixel(player1.future_track2_x, player1.future_track2_y) == COLLISION_COLOR){
+	if (bmp_get_collision_pixel(_player->future_track2_x, _player->future_track2_y) == COLLISION_COLOR){
 		return 1;
 	}
 
@@ -433,41 +363,197 @@ int is_blocked_by_wall(){
 
 }
 
-void move_sprite(int direction){
+void move_sprite(struct player *_player, int direction){
 
 	// Remember facing direction so draw_to_buffer() can pick the right sprite
-	player1.current_direction = direction;
+	_player->current_direction = direction;
 
 	if (direction == MOVE_UP){
 
-		if (player1.position_y >= PIXEL_TO_MOVE){
-			player1.position_y = player1.position_y - PIXEL_TO_MOVE ;
+		if (_player->position_y >= PIXEL_TO_MOVE){
+			_player->position_y = _player->position_y - PIXEL_TO_MOVE ;
 		}else{
-			player1.position_y = 0;
+			_player->position_y = 0;
 		}
 
 	}else if (direction == MOVE_DOWN){
 
-		if (player1.position_y + PIXEL_TO_MOVE <=  ( HEIGHT ) - TANK_HEIGHT ){
-			player1.position_y = player1.position_y + PIXEL_TO_MOVE;
+		if (_player->position_y + PIXEL_TO_MOVE <=  ( HEIGHT ) - TANK_HEIGHT ){
+			_player->position_y = _player->position_y + PIXEL_TO_MOVE;
 		}else{
-			player1.position_y = HEIGHT - TANK_HEIGHT ;
+			_player->position_y = HEIGHT - TANK_HEIGHT ;
 		}
 
 	}else if (direction == MOVE_LEFT){
 
-		if (player1.position_x >= PIXEL_TO_MOVE){
-			player1.position_x = player1.position_x - PIXEL_TO_MOVE;
+		if (_player->position_x >= PIXEL_TO_MOVE){
+			_player->position_x = _player->position_x - PIXEL_TO_MOVE;
 		}else{
-			player1.position_x = 0;
+			_player->position_x = 0;
 		}
 
 	}else if (direction == MOVE_RIGHT){
 
-		if (player1.position_x + PIXEL_TO_MOVE <= WIDTH - TANK_WIDTH){
-			player1.position_x = player1.position_x + PIXEL_TO_MOVE;
+		if (_player->position_x + PIXEL_TO_MOVE <= WIDTH - TANK_WIDTH){
+			_player->position_x = _player->position_x + PIXEL_TO_MOVE;
 		}else{
-			player1.position_x = WIDTH - TANK_WIDTH;
+			_player->position_x = WIDTH - TANK_WIDTH;
+		}
+
+	}
+
+}
+
+
+//===========================================================
+// Reads the keyboard for ONE player and turns it into movement and shots.
+//
+// The 5 scan codes are passed in instead of being hardcoded, so the very
+// same function drives player 1 with the cursor keys + space bar and
+// player 2 with W/A/S/D + G.
+//
+// IMPORTANT: each player gets its own call to this function, and therefore
+// its own if / else if chain. The chain must NOT be shared between the two
+// players: inside one chain only one key gets through per frame (that is
+// what stops a single tank from moving in diagonal), so if both players
+// were in the same chain only one of them would be able to move on any
+// given frame.
+//===========================================================
+void process_player_input(struct player *_player,
+                          unsigned char key_up_code,
+                          unsigned char key_down_code,
+                          unsigned char key_left_code,
+                          unsigned char key_right_code,
+                          unsigned char key_fire_code){
+
+	// Only one direction can be applied per frame, so the tank can never
+	// move in diagonal. If more than one direction key is held down at the
+	// same time, only the first one below (in the order UP, DOWN, LEFT,
+	// RIGHT) is used for this frame.
+	//
+	// Before moving, player_update_future_collision_points() works out where
+	// the 3 collision points (cannon tip and both tracks) WOULD land, one
+	// PIXEL_TO_MOVE step ahead, without actually moving the tank yet. Those
+	// positions are checked against buffer_map_collisions_data (loaded by
+	// bmp_fill_background_collision_in_buffer()), the dedicated collision
+	// map, instead of VGA memory: this buffer never has the tank or anything
+	// else drawn on top of it, so it is always safe to read regardless of
+	// how close the tip already is. If it is a wall, the key is ignored and
+	// the tank does not move in that direction.
+	if (keys[key_up_code]){
+
+		player_update_future_collision_points(_player, MOVE_UP);
+
+		if (is_blocked_by_wall(_player) == 0){
+			_player->is_moving = 1;
+			move_sprite(_player, MOVE_UP);
+		}
+
+	}else if (keys[key_down_code]){
+
+		player_update_future_collision_points(_player, MOVE_DOWN);
+
+		if (is_blocked_by_wall(_player) == 0){
+			_player->is_moving = 1;
+			move_sprite(_player, MOVE_DOWN);
+		}
+
+	}else if (keys[key_left_code]){
+
+		player_update_future_collision_points(_player, MOVE_LEFT);
+
+		if (is_blocked_by_wall(_player) == 0){
+			_player->is_moving = 1;
+			move_sprite(_player, MOVE_LEFT);
+		}
+
+	}else if (keys[key_right_code]){
+
+		player_update_future_collision_points(_player, MOVE_RIGHT);
+
+		if (is_blocked_by_wall(_player) == 0){
+			_player->is_moving = 1;
+			move_sprite(_player, MOVE_RIGHT);
+		}
+
+	}
+
+	// The fire key is checked OUTSIDE the if/else if chain above, on
+	// purpose: that chain only lets one direction through per frame so the
+	// tank cannot move in diagonal, but shooting is not a direction, and the
+	// tank has to be able to move and fire in the same frame.
+	//
+	// Only the frame in which the key GOES down counts. keys[] stays at 1
+	// for as long as the key is held, so firing on the plain value would
+	// shoot again by itself the moment the previous bullet died, turning it
+	// into an automatic weapon. fire_was_pressed lives in the player, so
+	// each one remembers its own key without main() needing a variable per
+	// player.
+	if (keys[key_fire_code]){
+
+		if (_player->fire_was_pressed == 0){
+			player_fire_bullet(_player);
+		}
+
+		_player->fire_was_pressed = 1;
+
+	}else{
+
+		_player->fire_was_pressed = 0;
+
+	}
+
+	// Keep the cannon tip position (for all 4 directions) up to date with
+	// the tank's current position, so it is ready whenever it is needed
+	// (log below, collision check on the next frame)
+	player_update_cannon_tip(_player);
+
+}
+
+
+//===========================================================
+// Moves the bullet of ONE player, and kills it when it reaches a wall.
+//
+// The bullet has two very different lives, so it is updated in two
+// different ways:
+//
+//   not flying -> it is loaded in the cannon: it follows the tip of
+//                 whichever direction the tank is facing, so it stays glued
+//                 to the mouth of the cannon when the tank moves and when
+//                 it turns.
+//
+//   flying     -> it travels on its own, ignoring the tank, and it dies
+//                 either by leaving the screen (checked inside
+//                 player_move_bullet()) or by reaching a wall (checked
+//                 here). Once dead it goes back to being loaded, and the
+//                 next frame puts it back on the cannon.
+//
+// The wall check lives here in main.c, and not in players.c next to
+// player_move_bullet(), on purpose: players.c only deals with the geometry
+// of a tank and knows nothing about the map. Reading the collision map is
+// this file's job.
+//===========================================================
+void update_bullet(struct player *_player){
+
+	if (_player->bullet_is_flying == 0){
+
+		player_update_bullet_position(_player);
+
+	}else{
+
+		player_move_bullet(_player);
+
+		// player_move_bullet() may have just killed the bullet for leaving
+		// the screen. Only read the collision map while it is still alive,
+		// so the position being read is always a real point inside the
+		// 320x200 map.
+		if (_player->bullet_is_flying == 1){
+
+			if (bmp_get_collision_pixel(_player->bullet_position_x + BULLET_CENTER_X,
+			                            _player->bullet_position_y + BULLET_CENTER_Y) == COLLISION_COLOR){
+				_player->bullet_is_flying = 0;
+			}
+
 		}
 
 	}
@@ -476,7 +562,12 @@ void move_sprite(int direction){
 
 void draw_to_buffer(){
 
-	char *sprite_to_draw;
+	// One pointer per player. They must be two separate variables: with a
+	// single one, the block that picks player 2's sprite would overwrite
+	// the choice already made for player 1, and both tanks would end up
+	// drawn with the same sprite.
+	char *sprite_to_draw_player1;
+	char *sprite_to_draw_player2;
 
 	// Copy again original map to current buffer to show in screen
 	memcpy(buffer_background_image_data,buffer_original_background_bmp,SCREEN_SIZE);
@@ -484,61 +575,116 @@ void draw_to_buffer(){
 
 	/* DRAW FRAME of each animation list, according to the direction the player is facing */
 
+	// Directions PLAYER 1
 	if ( player1.current_direction == MOVE_UP ){
 
 		if ( player1.current_frame == 0 ){
-			sprite_to_draw = player1.sprite_tank_up;
+			sprite_to_draw_player1 = player1.sprite_tank_up;
 		}else{
-			sprite_to_draw = player1.sprite_tank_up_2;
+			sprite_to_draw_player1 = player1.sprite_tank_up_2;
 		}
 
 	}else if ( player1.current_direction == MOVE_DOWN ){
 
 		if ( player1.current_frame == 0 ){
-			sprite_to_draw = player1.sprite_tank_down;
+			sprite_to_draw_player1 = player1.sprite_tank_down;
 		}else{
-			sprite_to_draw = player1.sprite_tank_down_2;
+			sprite_to_draw_player1 = player1.sprite_tank_down_2;
 		}
 
 	}else if ( player1.current_direction == MOVE_LEFT ){
 
 		if ( player1.current_frame == 0 ){
-			sprite_to_draw = player1.sprite_tank_left;
+			sprite_to_draw_player1 = player1.sprite_tank_left;
 		}else{
-			sprite_to_draw = player1.sprite_tank_left_2;
+			sprite_to_draw_player1 = player1.sprite_tank_left_2;
 		}
 
 	}else { // if ( player1.current_direction == MOVE_RIGHT ){
 
 		if ( player1.current_frame == 0 ){
-			sprite_to_draw = player1.sprite_tank_right;
+			sprite_to_draw_player1 = player1.sprite_tank_right;
 		}else{
-			sprite_to_draw = player1.sprite_tank_right_2;
+			sprite_to_draw_player1 = player1.sprite_tank_right_2;
 		}
 
 	}
 
-	// Put the tank in new position
-	draw_sprite_to_buffer(sprite_to_draw,
+	// Directions PLAYER 2
+	if ( player2.current_direction == MOVE_UP ){
+
+		if ( player2.current_frame == 0 ){
+			sprite_to_draw_player2 = player2.sprite_tank_up;
+		}else{
+			sprite_to_draw_player2 = player2.sprite_tank_up_2;
+		}
+
+	}else if ( player2.current_direction == MOVE_DOWN ){
+
+		if ( player2.current_frame == 0 ){
+			sprite_to_draw_player2 = player2.sprite_tank_down;
+		}else{
+			sprite_to_draw_player2 = player2.sprite_tank_down_2;
+		}
+
+	}else if ( player2.current_direction == MOVE_LEFT ){
+
+		if ( player2.current_frame == 0 ){
+			sprite_to_draw_player2 = player2.sprite_tank_left;
+		}else{
+			sprite_to_draw_player2 = player2.sprite_tank_left_2;
+		}
+
+	}else { // if ( player2.current_direction == MOVE_RIGHT ){
+
+		if ( player2.current_frame == 0 ){
+			sprite_to_draw_player2 = player2.sprite_tank_right;
+		}else{
+			sprite_to_draw_player2 = player2.sprite_tank_right_2;
+		}
+
+	}
+
+
+	// Put the tank in new position - Draw Player 1
+	draw_sprite_to_buffer(sprite_to_draw_player1,
 				  TANK_WIDTH,
 				  TANK_HEIGHT,
 				  player1.position_x,
 				  player1.position_y,
 				  buffer_background_image_data);
 
-	// Put the bullet on the cannon tip of the current direction, instead
-	// of on the top-left corner of the tank sprite
-	
 
-	// Draw bullet
-	// Show bullet only if bullet is flyng
+	// Put the tank in new position - Draw Player 2
+	draw_sprite_to_buffer(sprite_to_draw_player2,
+				  TANK_WIDTH,
+				  TANK_HEIGHT,
+				  player2.position_x,
+				  player2.position_y,
+				  buffer_background_image_data);
+
+
+	// Draw bullets
+	// Show each bullet only if it is flying. While it is not, it is sitting
+	// on the cannon tip (update_bullet() keeps it there) but it is not
+	// painted, so the tank does not carry a visible bullet around.
 	if (player1.bullet_is_flying == 1){
-	
+
 		draw_sprite_to_buffer(player1.sprite_tank_bullet,
 					  TANK_BULLET_WIDTH,
 					  TANK_BULLET_HEIGHT,
 					  player1.bullet_position_x,
 					  player1.bullet_position_y,
+					  buffer_background_image_data);
+	}
+
+	if (player2.bullet_is_flying == 1){
+
+		draw_sprite_to_buffer(player2.sprite_tank_bullet,
+					  TANK_BULLET_WIDTH,
+					  TANK_BULLET_HEIGHT,
+					  player2.bullet_position_x,
+					  player2.bullet_position_y,
 					  buffer_background_image_data);
 	}
 
@@ -629,59 +775,65 @@ void init_graphics(){
     // ============================
 
 
-    //#define TANK_BULLET_WIDTH 4
-	//#define TANK_BULLET_HEIGHT 3
-
+    // Bullet tank 1
 	bmp_extract_sprite(buffer_sprites_data, 252 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player1.sprite_tank_bullet);
 	bmp_extract_sprite(buffer_sprites_data, 259 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player1.sprite_tank_bullet2);
 
+	
+	// ==============================================================
+	//           SPRITES PLAYER 2
+	//
+	// The second tank lives in sprites.bmp on a second row, exactly 21
+	// pixels below the first one, and painted in a different color so the
+	// two players can tell their tanks apart on screen. So every origin
+	// below is the same X as player 1 with Y + 21:
+	//
+	//   UP:    (2,5)   -> (2,26)      DOWN:  (43,10) -> (43,31)
+	//   LEFT:  (83,8)  -> (83,29)     RIGHT: (124,8) -> (124,29)
+	//
+	// The silhouette of both tanks is the same (checked cell by cell
+	// against the sprite sheet), so player 2 reuses every
+	// CANNON_TIP_OFFSET_* and TRACK*_OFFSET_* from players.h without any
+	// recalculation.
+	//===============================================================
+	
+	// ============================
+    // Fill player 2 with animation TANK_UP and
+    // ============================
+	bmp_extract_sprite(buffer_sprites_data,  2  , 26 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_up);
+	bmp_extract_sprite(buffer_sprites_data, 23  , 26 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_up_2);
 
 
-	// Put Sprite in background buffer . Set player in position
-	/*
-	draw_sprite_to_buffer(player1.sprite_tank_up,
-	                              TANK_WIDTH,
-	                              TANK_HEIGHT,
-	                              player1.position_x,
-	                              player1.position_y,
-	                              buffer_background_image_data);*/
+	// ============================
+    // Fill player 2 with animation TANK_DOWN and
+    // ============================
+	bmp_extract_sprite(buffer_sprites_data, 43  , 31 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_down);
+	bmp_extract_sprite(buffer_sprites_data, 63  , 31 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_down_2);
 
-	// draw bullet for testing
-	/*
-	draw_sprite_to_buffer(player1.sprite_tank_bullet,
-	                              TANK_BULLET_WIDTH,
-	                              TANK_BULLET_HEIGHT,
-	                              player1.position_x,
-	                              player1.position_y,
-	                              buffer_background_image_data);
-	*/
+	// ============================
+    // Fill player 2 with animation TANK_LEFT and
+    // ============================
+	bmp_extract_sprite(buffer_sprites_data, 83  , 29 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_left);
+	bmp_extract_sprite(buffer_sprites_data, 102 , 29 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_left_2);
 
+	// ============================
+    // Fill player 2 with animation TANK_RIGHT and
+    // ============================
+	bmp_extract_sprite(buffer_sprites_data, 124 , 29 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_right);
+	bmp_extract_sprite(buffer_sprites_data, 145 , 29 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_right_2);
 
-
-
-	/*
-	draw_sprite_to_buffer(player1.sprite_tank_down,
-	                              TANK_WIDTH,
-	                              TANK_HEIGHT,
-	                              300,
-	                              0,
-	                              buffer_background_image_data);
-
-	draw_sprite_to_buffer(player1.sprite_tank_left,
-	                              TANK_WIDTH,
-	                              TANK_HEIGHT,
-	                              80,
-	                              30,
-	                              buffer_background_image_data);
+	// ============================
+    // Fill bullet animation
+    // ============================
 
 
-	draw_sprite_to_buffer(player1.sprite_tank_right,
-	                              TANK_WIDTH,
-	                              TANK_HEIGHT,
-	                              40,
-	                              100,
-	                              buffer_background_image_data);
-	                              */
+    // Bullet tank 2 - there is only one pair of bullets in the sprite
+    // sheet, so both players shoot the same sprite
+	bmp_extract_sprite(buffer_sprites_data, 252 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player2.sprite_tank_bullet);
+	bmp_extract_sprite(buffer_sprites_data, 259 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player2.sprite_tank_bullet2);
+
+
+
 
 }
 
@@ -693,19 +845,26 @@ void setup_screen(){
 
 void init_players(){
 	//printf("Players Initialization ... !!\n");
-	// Init Player 1
 
-	// Init player 1
+	// ============================
+	// INIT PLAYER 1
+	// ============================
 
 	player1.position_y = 80;
 	player1.position_x = 80;
 
+	player1.wins = 0;
 	player1.current_frame   = 0;
 	player1.frame_counter  = 0;
 	player1.total_frames      = 2;
 	player1.speed_counter = 0;
 	player1.speed_total      = 2;
-	player1.speed_total      = 2;
+
+	// Set the facing direction explicitly. Without this it would stay at 0,
+	// which is not any of the MOVE_* values, and draw_to_buffer() would fall
+	// through to its final "else" (RIGHT) by accident instead of by choice.
+	player1.current_direction = MOVE_RIGHT;
+	player1.is_moving = 0;
 
 	player1.canonn_head_top_up_x = 0;
 	player1.canonn_head_top_up_y = 0;
@@ -724,8 +883,51 @@ void init_players(){
 	// direction the tank is facing at the moment of the shot.
 	player1.bullet_direction = 0;
 	player1.bullet_is_flying = 0;
+	player1.fire_was_pressed = 0;
 
 	player_init(&player1);
+
+	// ============================
+	// INIT PLAYER 2
+	//
+	// The starting position is not symmetrical to player 1 by eye: it was
+	// picked by checking cutrecol.bmp, so that the whole 18x18 box of the
+	// tank lands on floor and not a single pixel of it is inside a wall.
+	// Starting embedded in a wall would leave the tank stuck from frame one,
+	// because every direction would be blocked by the collision check.
+	// ============================
+
+	player2.position_y = 80;
+	player2.position_x = 202;
+
+	player2.wins = 0;
+	player2.current_frame   = 0;
+	player2.frame_counter  = 0;
+	player2.total_frames      = 2;
+	player2.speed_counter = 0;
+	player2.speed_total      = 2;
+
+	player2.current_direction = MOVE_LEFT;
+	player2.is_moving = 0;
+
+	player2.canonn_head_top_up_x = 0;
+	player2.canonn_head_top_up_y = 0;
+	player2.canonn_head_top_down_x = 0;
+	player2.canonn_head_top_down_y = 0;
+	player2.canonn_head_top_left_x = 0;
+	player2.canonn_head_top_left_y = 0;
+	player2.canonn_head_top_right_x = 0;
+	player2.canonn_head_top_right_y = 0;
+
+	player2.bullet_position_x = 0;
+	player2.bullet_position_y = 0;
+
+	player2.bullet_direction = 0;
+	player2.bullet_is_flying = 0;
+	player2.fire_was_pressed = 0;
+
+	player_init(&player2);
+
 }
 
 void wait_retrace(void)

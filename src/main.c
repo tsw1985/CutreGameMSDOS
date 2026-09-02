@@ -59,6 +59,7 @@ extern set_vga_320_200_mode();
 void setup_screen();
 void init_graphics();
 void init_players();
+int is_blocked_by_wall();
 void wait_retrace();
 void update_game(int direction);
 void move_sprite(int direction);
@@ -174,9 +175,10 @@ int main(){
 		// down at the same time, only the first one below (in the order
 		// UP, DOWN, LEFT, RIGHT) is used for this frame.
 		//
-		// Before moving, player_update_future_cannon_tip() works out where
-		// the cannon tip WOULD land, one PIXEL_TO_MOVE step ahead, without
-		// actually moving the tank yet. That position is checked against
+		// Before moving, player_update_future_collision_points() works out
+		// where the 3 collision points (cannon tip and both tracks) WOULD
+		// land, one PIXEL_TO_MOVE step ahead, without actually moving the
+		// tank yet. Those positions are checked against
 		// buffer_map_collisions_data (loaded by
 		// bmp_fill_background_collision_in_buffer()), the dedicated
 		// collision map, instead of VGA memory: this buffer never has the
@@ -186,36 +188,36 @@ int main(){
 		// direction.
 		if (keys[KEY_UP]){
 
-			player_update_future_cannon_tip(&player1, MOVE_UP);
+			player_update_future_collision_points(&player1, MOVE_UP);
 
-			if (bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
+			if (is_blocked_by_wall() == 0){
 				player1.is_moving = 1;
 	       		move_sprite(MOVE_UP);
 			}
 
        }else if (keys[KEY_DOWN]){
 
-			player_update_future_cannon_tip(&player1, MOVE_DOWN);
+			player_update_future_collision_points(&player1, MOVE_DOWN);
 
-			if (bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
+			if (is_blocked_by_wall() == 0){
 				player1.is_moving = 1;
 		    	move_sprite(MOVE_DOWN);
 			}
 
 	    }else if (keys[KEY_LEFT]){
 
-			player_update_future_cannon_tip(&player1, MOVE_LEFT);
+			player_update_future_collision_points(&player1, MOVE_LEFT);
 
-			if (bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
+			if (is_blocked_by_wall() == 0){
 				player1.is_moving = 1;
 		    	move_sprite(MOVE_LEFT);
 			}
 
     	}else if (keys[KEY_RIGHT]){
 
-			player_update_future_cannon_tip(&player1, MOVE_RIGHT);
+			player_update_future_collision_points(&player1, MOVE_RIGHT);
 
-			if (bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) != COLLISION_COLOR){
+			if (is_blocked_by_wall() == 0){
 				player1.is_moving = 1;
 		    	move_sprite(MOVE_RIGHT);
 			}
@@ -346,7 +348,7 @@ int main(){
    			// collision map buffer_map_collisions_data used by the
    			// collision check above, so the log always shows exactly what
    			// the check is really seeing
-   			player_update_future_cannon_tip(&player1, player1.current_direction);
+   			player_update_future_collision_points(&player1, player1.current_direction);
    			cannon_tip_pixel_value = bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y);
    			sprintf(log_message_text, "Future cannon tip (%u,%u) = %u", player1.future_cannon_tip_x, player1.future_cannon_tip_y, cannon_tip_pixel_value);
    			tanks_log(log_message_text);
@@ -397,6 +399,39 @@ void update_game(int direction){
 
 }
 
+
+//===========================================================
+// Answers whether the tank would run into a wall if it moved. It reads the
+// 3 points that player_update_future_collision_points() has just worked
+// out for the direction being tried: the cannon tip, in the middle of the
+// front of the tank, and the 2 tracks, at both ends of that front.
+//
+// All three are needed. The cannon tip alone lets a corner of the tank go
+// through the corner of a wall that the cannon passed next to, and the
+// tracks alone let the cannon go into a wall the tracks are not touching
+// yet.
+//
+// The reads are done on buffer_map_collisions_data (the dedicated
+// collision map), never on VGA memory: that buffer never has the tank
+// drawn on top of it.
+//===========================================================
+int is_blocked_by_wall(){
+
+	if (bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y) == COLLISION_COLOR){
+		return 1;
+	}
+
+	if (bmp_get_collision_pixel(player1.future_track1_x, player1.future_track1_y) == COLLISION_COLOR){
+		return 1;
+	}
+
+	if (bmp_get_collision_pixel(player1.future_track2_x, player1.future_track2_y) == COLLISION_COLOR){
+		return 1;
+	}
+
+	return 0;
+
+}
 
 void move_sprite(int direction){
 
@@ -526,8 +561,8 @@ void init_graphics(){
 	bmp_init_buffers();
 	// Save a original copy of map file
 	// This create a backup of the original file in a buffer
-	bmp_fill_background_in_main_buffer("..\\res\\cutre.bmp");
-	//bmp_fill_background_in_main_buffer("..\\res\\cutrecol.bmp");  // <--- FOR TESTING
+	//bmp_fill_background_in_main_buffer("..\\res\\cutre.bmp");
+	bmp_fill_background_in_main_buffer("..\\res\\cutrecol.bmp");  // <--- FOR TESTING
 
 	//load map collision
 	bmp_fill_background_collision_in_buffer("..\\res\\cutrecol.bmp");

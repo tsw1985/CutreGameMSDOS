@@ -190,11 +190,15 @@ void player_move_bullet(struct player *_player){
 }
 
 
-void player_update_future_cannon_tip(struct player *_player, int direction){
+void player_update_future_collision_points(struct player *_player, int direction){
 
 	// Tentative position, one PIXEL_TO_MOVE step further in "direction".
 	// This mirrors the same clamping move_sprite() does, but without
 	// actually committing it to _player->position_x/position_y.
+	//
+	// From that tentative position, the 3 points that are checked against
+	// the collision map are worked out: the cannon tip (the middle of the
+	// front of the tank) and the 2 tracks (the two ends of that front).
 	unsigned int future_position_x;
 	unsigned int future_position_y;
 
@@ -212,12 +216,24 @@ void player_update_future_cannon_tip(struct player *_player, int direction){
 		_player->future_cannon_tip_x = future_position_x + CANNON_TIP_OFFSET_UP_X;
 		_player->future_cannon_tip_y = future_position_y + CANNON_TIP_OFFSET_UP_Y + 2;
 
+		_player->future_track1_x = future_position_x + TRACK1_OFFSET_UP_X;
+		_player->future_track1_y = future_position_y + TRACK1_OFFSET_UP_Y;
+
+		_player->future_track2_x = future_position_x + TRACK2_OFFSET_UP_X;
+		_player->future_track2_y = future_position_y + TRACK2_OFFSET_UP_Y;
+
 	}else if (direction == MOVE_DOWN){
 
 		future_position_y = future_position_y + PIXEL_TO_MOVE;
 
 		_player->future_cannon_tip_x = future_position_x + CANNON_TIP_OFFSET_DOWN_X;
 		_player->future_cannon_tip_y = future_position_y + CANNON_TIP_OFFSET_DOWN_Y - 2;
+
+		_player->future_track1_x = future_position_x + TRACK1_OFFSET_DOWN_X;
+		_player->future_track1_y = future_position_y + TRACK1_OFFSET_DOWN_Y;
+
+		_player->future_track2_x = future_position_x + TRACK2_OFFSET_DOWN_X;
+		_player->future_track2_y = future_position_y + TRACK2_OFFSET_DOWN_Y;
 
 	}else if (direction == MOVE_LEFT){
 
@@ -230,12 +246,24 @@ void player_update_future_cannon_tip(struct player *_player, int direction){
 		_player->future_cannon_tip_x = future_position_x + CANNON_TIP_OFFSET_LEFT_X ;
 		_player->future_cannon_tip_y = future_position_y + CANNON_TIP_OFFSET_LEFT_Y;
 
+		_player->future_track1_x = future_position_x + TRACK1_OFFSET_LEFT_X;
+		_player->future_track1_y = future_position_y + TRACK1_OFFSET_LEFT_Y;
+
+		_player->future_track2_x = future_position_x + TRACK2_OFFSET_LEFT_X;
+		_player->future_track2_y = future_position_y + TRACK2_OFFSET_LEFT_Y;
+
 	}else{ // MOVE_RIGHT
 
 		future_position_x = future_position_x + PIXEL_TO_MOVE;
 
 		_player->future_cannon_tip_x = future_position_x + CANNON_TIP_OFFSET_RIGHT_X;
 		_player->future_cannon_tip_y = future_position_y + CANNON_TIP_OFFSET_RIGHT_Y;
+
+		_player->future_track1_x = future_position_x + TRACK1_OFFSET_RIGHT_X;
+		_player->future_track1_y = future_position_y + TRACK1_OFFSET_RIGHT_Y;
+
+		_player->future_track2_x = future_position_x + TRACK2_OFFSET_RIGHT_X;
+		_player->future_track2_y = future_position_y + TRACK2_OFFSET_RIGHT_Y;
 
 	}
 

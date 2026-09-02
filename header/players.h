@@ -60,6 +60,45 @@
 #define CANNON_TIP_OFFSET_RIGHT_X 	15
 #define CANNON_TIP_OFFSET_RIGHT_Y 	CANNON_FINE_PX
 
+// Relative offset (from the sprite's top-left corner) of the 2 extra
+// collision points: the tank's tracks. The cannon tip alone is not enough,
+// because it only covers the middle of the tank: without these, a corner of
+// the tank would go through the corner of a wall that the cannon missed.
+//
+// They are the two ends of the LEADING edge of the tank for that direction
+// (the cannon is not counted, it has its own point):
+//
+//   going UP/DOWN    -> left track and right track, on the front row
+//   going LEFT/RIGHT -> top track and bottom track, on the front column
+//
+// Same method as the cannon tip: the pixel read on the sprite sheet
+// (sprites.bmp) minus the frame 1 origin used in init_graphics() to extract
+// that direction's sprite.
+//
+//   UP:    origin (2,5)    tracks (4,10)  (16,10)  -> (2,5)  (14,5)
+//   DOWN:  origin (43,10)  tracks (45,22) (58,22)  -> (2,12) (15,12)
+//   LEFT:  origin (83,8)   tracks (87,9)  (87,23)  -> (4,1)  (4,15)
+//   RIGHT: origin (124,8)  tracks (136,9) (136,23) -> (12,1) (12,15)
+#define TRACK1_OFFSET_UP_X 			2
+#define TRACK1_OFFSET_UP_Y 			5
+#define TRACK2_OFFSET_UP_X 			14
+#define TRACK2_OFFSET_UP_Y 			5
+
+#define TRACK1_OFFSET_DOWN_X 		2
+#define TRACK1_OFFSET_DOWN_Y 		12
+#define TRACK2_OFFSET_DOWN_X 		15
+#define TRACK2_OFFSET_DOWN_Y 		12
+
+#define TRACK1_OFFSET_LEFT_X 		4
+#define TRACK1_OFFSET_LEFT_Y 		1
+#define TRACK2_OFFSET_LEFT_X 		4
+#define TRACK2_OFFSET_LEFT_Y 		15
+
+#define TRACK1_OFFSET_RIGHT_X 		12
+#define TRACK1_OFFSET_RIGHT_Y 		1
+#define TRACK2_OFFSET_RIGHT_X 		12
+#define TRACK2_OFFSET_RIGHT_Y 		15
+
 struct player{
 		
 		unsigned int position_y;
@@ -88,12 +127,22 @@ struct player{
 		unsigned int canonn_head_top_right_y;
 
 		// Where the cannon tip WOULD be, one PIXEL_TO_MOVE step further in
-		// a given direction, computed by player_update_future_cannon_tip()
+		// a given direction, computed by
+		// player_update_future_collision_points()
 		// right before actually moving. Reading this position (instead of
 		// the current tip) means it is not the tank's own sprite pixel
 		// yet, so it is safe to check directly against VGA memory (A000).
 		unsigned int future_cannon_tip_x;
 		unsigned int future_cannon_tip_y;
+
+		// The same look-ahead, for the 2 track points of that direction.
+		// Movement is blocked if ANY of the three (cannon tip, track 1,
+		// track 2) would land on a wall.
+		unsigned int future_track1_x;
+		unsigned int future_track1_y;
+
+		unsigned int future_track2_x;
+		unsigned int future_track2_y;
 
 		// Absolute position (in the 320x200 screen) where the bullet
 		// sprite is drawn. It always sits on the cannon tip of the
@@ -152,7 +201,7 @@ struct player{
 	void player_init(struct player *_player);
 	void player_free(struct player *_player);
 	void player_update_cannon_tip(struct player *_player);
-	void player_update_future_cannon_tip(struct player *_player, int direction);
+	void player_update_future_collision_points(struct player *_player, int direction);
 	void player_update_bullet_position(struct player *_player);
 	void player_fire_bullet(struct player *_player);
 	void player_move_bullet(struct player *_player);

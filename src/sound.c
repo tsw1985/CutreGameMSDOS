@@ -47,7 +47,7 @@
 #define SOUND_SILENCE 		128
 
 // Volumes are out of this, so 64 is full volume
-#define SOUND_VOLUME_MAX 	64
+#define SOUND_VOLUME_MAX 	32//64
 
 
 /* ---------- WAV file format ---------- */

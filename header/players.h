@@ -106,7 +106,7 @@
 // The values below are those, then tuned by eye until the tip grazed the
 // walls right (hence the -1). They are allowed to be negative:
 // player_add_offset() is what keeps that from wrapping round to 65535.
-#define CANNON_FINE_PX              8  // 8
+#define CANNON_FINE_PX              6  // 8
 
 #define CANNON_TIP_OFFSET_UP_X 		CANNON_FINE_PX
 #define CANNON_TIP_OFFSET_UP_Y 		-1  // 0

@@ -36,14 +36,20 @@
 // Keyboard hardware ports
 #define KEY_BUFFER 0x60
 
-// Scan codes. Player 1 drives with the cursor keys and fires with space,
-// player 2 with W/A/S/D and G.
+// Scan codes. Player 1 drives with the cursor keys and fires with the 5 of
+// the numeric keypad, player 2 with W/A/S/D and G.
+//
+// The keypad 5 is a clean key for this: it sends a single 0x4C, with no
+// 0xE0 prefix and no twin anywhere else on the keyboard, and the Num Lock
+// state does not matter because the keyboard always sends that same code.
+// Num Lock is something the BIOS interprets, and new_kbd_handler() reads
+// the raw scan code straight from port 0x60 without going through it.
 #define KEY_UP			0x48
 #define KEY_DOWN		0x50
 #define KEY_LEFT		0x4B
 #define KEY_RIGHT		0x4D
 #define KEY_ESC			0x01
-#define KEY_SPACE		0x39
+#define KEY_NUMPAD_5	0x4C
 
 #define KEY_W			0x11
 #define KEY_A			0x1E
@@ -191,7 +197,7 @@ int main(){
 			// if / else if chains, so both tanks can move on the same frame.
 			// Each is told about the other, so one tank stops the other just
 			// like a wall does.
-			process_player_input(&player1, &player2, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_SPACE);
+			process_player_input(&player1, &player2, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_NUMPAD_5);
 			process_player_input(&player2, &player1, KEY_W,  KEY_S,    KEY_A,    KEY_D,     KEY_G);
 
 			// 2. Move each bullet. Returns 1 if it hit the other tank, and

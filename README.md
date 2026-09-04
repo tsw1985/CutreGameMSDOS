@@ -44,7 +44,7 @@ I hope you like the game.
 | | Player 1 | Player 2 |
 |---|---|---|
 | Move | Arrow keys | W / A / S / D |
-| Fire | Space | G |
+| Fire | Keypad 5 | G |
 | Quit | Esc | |
 
 ### Building
@@ -100,7 +100,7 @@ Espero que te guste el juego.
 | | Jugador 1 | Jugador 2 |
 |---|---|---|
 | Mover | Flechas | W / A / S / D |
-| Disparar | Espacio | G |
+| Disparar | 5 del teclado numérico | G |
 | Salir | Esc | |
 
 ### Compilación

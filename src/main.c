@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <conio.h>
 #include <dos.h>
+#include <string.h>
+#include <bios.h>
 #include "header\util.h"
 #include "header\bmp.h"
 #include "header\players.h"
 #include "header\sound.h"
+#include "header\net.h"
 
 //===========================================================
 // The game: main loop, keyboard, collisions against the map, and drawing.
@@ -87,11 +90,14 @@ void move_sprite(struct player *_player, int direction);
 int update_bullet(struct player *_player, struct player *_other);
 void process_player_input(struct player *_player,
                           struct player *_other,
-                          unsigned char key_up_code,
-                          unsigned char key_down_code,
-                          unsigned char key_left_code,
-                          unsigned char key_right_code,
-                          unsigned char key_fire_code);
+                          unsigned char input_bits);
+unsigned char read_input_from_keys(unsigned char key_up_code,
+                                   unsigned char key_down_code,
+                                   unsigned char key_left_code,
+                                   unsigned char key_right_code,
+                                   unsigned char key_fire_code);
+unsigned int compute_state_checksum();
+void set_text_mode();
 void draw_to_buffer();
 void draw_explosion(struct player *_player);
 void update_keyboard();
@@ -112,6 +118,14 @@ unsigned int explosion_pause_counter;
 // Iterations since the last line written to the log. Kept apart from
 // frame_counter so throttling the log does not touch the animation speed.
 int log_frame_counter;
+
+// 1 when the game is being played against another machine, 0 for the two
+// players on this same keyboard. Set from the command line: game.exe /net
+int network_mode;
+
+// Which tank THIS machine drives over the network. Meaningless in local
+// mode, where this keyboard drives both of them.
+int local_player_is_1;
 
 // Install our custom interruption vector
 void install_kbd()   {
@@ -149,7 +163,7 @@ void interrupt far new_kbd_handler() {
 
 
 
-int main(){
+int main(int argc, char *argv[]){
 
 	char log_message_text[64];			// text of the log line being built
 	unsigned int cannon_tip_pixel_value;	// map color under the cannon tip, for the log
@@ -159,11 +173,87 @@ int main(){
 	// frame both shots count.
 	unsigned int tank_was_hit;
 
+	// The keys driving each tank this frame. Everything downstream works on
+	// these two bytes, so it never has to know whether they came from this
+	// keyboard or down the wire.
+	unsigned char player1_input;
+	unsigned char player2_input;
+	unsigned char local_input;
+
+	// Raised when the other machine has gone, so the loop can get out
+	int connection_was_lost;
+
+	int argument_index;
+
+	// BIOS tick to stop the "connected" message at, so it can be read
+	long message_until_tick;
+
 	// Start each run with an empty log instead of mixing runs
 	tanks_log_clear();
 
 	tanks_log("Starting game ...");
 
+	// game.exe /net plays against another machine. game.exe on its own is
+	// the two players on one keyboard game that was here before.
+	network_mode        = 0;
+	local_player_is_1   = 1;
+	connection_was_lost = 0;
+
+	argument_index = 1;
+	while (argument_index < argc){
+
+		if (stricmp(argv[argument_index], "/net") == 0){
+			network_mode = 1;
+		}
+
+		if (stricmp(argv[argument_index], "-net") == 0){
+			network_mode = 1;
+		}
+
+		argument_index = argument_index + 1;
+
+	}
+
+	// The two machines find each other BEFORE the screen is switched to
+	// VGA, on purpose: in graphics mode there is nowhere to print, and this
+	// is exactly the part that needs to be able to say what is going on.
+	//
+	// The custom INT 9 handler is not installed yet either, so plain kbhit()
+	// and getch() still work here.
+	if (network_mode == 1){
+
+		tanks_log("Network mode");
+
+		if (net_init() == 0){
+			printf("\nNo IPX driver found.\n\n");
+			printf("In DOSBox: put ipx=true in dosbox.conf, then run\n");
+			printf("  ipxnet startserver        on one machine\n");
+			printf("  ipxnet connect <its ip>   on the other\n\n");
+			printf("On real DOS: load LSL, your card's ODI driver and IPXODI first.\n");
+			return 1;
+		}
+
+		if (net_find_opponent() == 0){
+			net_shutdown();
+			return 1;
+		}
+
+		local_player_is_1 = net_is_player1();
+
+		// Two seconds to read the message, and NOT a keypress. Both machines
+		// start at frame 0 and the first one there simply waits for the other,
+		// which lockstep handles fine as long as the wait is short. Waiting
+		// for a key would make it as long as the other player takes to press
+		// one, and the connection would time out first.
+		//
+		// The network is still being read in here: their packets are already
+		// arriving, and a buffer that is not picked up is a packet dropped.
+		message_until_tick = biostime(0, 0L) + 36L;
+		while (biostime(0, 0L) < message_until_tick){
+			net_poll();
+		}
+
+	}
 
 	// Instal custom Vector ( INT 9 ) keyboard
 	install_kbd();
@@ -185,6 +275,70 @@ int main(){
 
     do{
 
+		// 0. The keys for BOTH tanks this frame.
+		//
+		// This happens on every single frame, explosion pause included. Over
+		// the network the two machines have to keep stepping through the same
+		// frame numbers even while nothing on screen is moving, or one of them
+		// would sit waiting for an input the other one never sent.
+		if (network_mode == 1){
+
+			// Our own keys go IN at frame + NET_INPUT_DELAY and come back OUT
+			// at the current frame, so they are applied exactly as late as the
+			// other machine's. Applying them straight away would feel better
+			// and desync within the first second.
+			//
+			// Both machines drive with the cursor keys here: it does not matter
+			// which of the two tanks you were given.
+			local_input = read_input_from_keys(KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_NUMPAD_5);
+
+			net_set_local_input(local_input);
+			net_send_input();
+
+			if (net_has_remote_input() == 0){
+				net_count_wait();
+			}
+
+			// Stand still until their keys for THIS frame turn up. That is the
+			// price of lockstep, and NET_INPUT_DELAY is what keeps it from
+			// being paid often.
+			//
+			// sound_update() is called in here on purpose: the wait is usually
+			// a fraction of a frame, but one bad moment on the wifi would make
+			// the card replay the same half buffer and stutter.
+			while (net_has_remote_input() == 0){
+
+				net_poll();
+				sound_update();
+
+				if (net_connection_lost() == 1){
+					connection_was_lost = 1;
+					break;
+				}
+
+			}
+
+			if (connection_was_lost == 1){
+				break;
+			}
+
+			net_poll();
+
+			if (local_player_is_1 == 1){
+				player1_input = net_get_local_input();
+				player2_input = net_get_remote_input();
+			}else{
+				player1_input = net_get_remote_input();
+				player2_input = net_get_local_input();
+			}
+
+		}else{
+
+			player1_input = read_input_from_keys(KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_NUMPAD_5);
+			player2_input = read_input_from_keys(KEY_W,  KEY_S,    KEY_A,    KEY_D,     KEY_G);
+
+		}
+
 		// The round has two states:
 		//
 		//   running   -> keyboard and bullets, the game itself
@@ -193,12 +347,11 @@ int main(){
 		//                survivor cannot drive and shoot over a dead tank
 		if (explosion_pause_counter == 0){
 
-			// 1. Keyboard, one call per player. Two calls means two separate
-			// if / else if chains, so both tanks can move on the same frame.
-			// Each is told about the other, so one tank stops the other just
-			// like a wall does.
-			process_player_input(&player1, &player2, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_NUMPAD_5);
-			process_player_input(&player2, &player1, KEY_W,  KEY_S,    KEY_A,    KEY_D,     KEY_G);
+			// 1. One call per player. Two calls means two separate if / else if
+			// chains, so both tanks can move on the same frame. Each is told
+			// about the other, so one tank stops the other just like a wall does.
+			process_player_input(&player1, &player2, player1_input);
+			process_player_input(&player2, &player1, player2_input);
 
 			// 2. Move each bullet. Returns 1 if it hit the other tank, and
 			// the one that blows up is the tank that was HIT, not the one
@@ -328,12 +481,30 @@ int main(){
    		}
 
 
+   		// 7. Over the network this frame is finished. Both machines must
+   		//    have reached this line with EXACTLY the same state, and the
+   		//    checksum is what proves it: it is compared against the other
+   		//    machine's a few frames later.
+   		//
+   		//    Then, and only then, the frame number moves on. Both machines
+   		//    always sit on the same one.
+   		if (network_mode == 1){
+   			net_set_local_checksum(compute_state_checksum());
+   			net_advance_frame();
+   		}
+
     }while(!keys[KEY_ESC]);
 
 
 	// Before anything else: while the card is running its DMA is reading
 	// our buffer, so it has to be stopped before that memory is given back
 	sound_shutdown();
+
+	// The socket has to go back to the driver, or the next run cannot open
+	// the same one and the game says there is no network
+	if (network_mode == 1){
+		net_shutdown();
+	}
 
 	player_free(&player1);
 	player_free(&player2);
@@ -342,7 +513,131 @@ int main(){
 
 	uninstall_kbd();  /* NEVER REMOVE  */
 
+	// Back to text, so whatever happened can actually be read. Only in
+	// network mode, where there is something to say.
+	if (network_mode == 1){
+
+		set_text_mode();
+
+		if (connection_was_lost == 1){
+			printf("\nThe other machine stopped answering.\n");
+		}else{
+			printf("\nGame over.\n");
+		}
+
+		if (net_desync_detected() == 1){
+			printf("The two machines went out of step. See tanks.log.\n");
+		}
+
+		printf("Final score: player 1 %u - player 2 %u\n", player1.wins, player2.wins);
+
+	}
+
 	return 0;
+}
+
+
+//===========================================================
+// Back to the 80x25 text screen. Used on the way out of a network game, so
+// the message about what happened is not painted into a 320x200 buffer
+// nobody is looking at any more.
+//===========================================================
+void set_text_mode(){
+
+	union REGS registers;
+
+	registers.x.ax = 0x0003;
+	int86(0x10, &registers, &registers);
+
+}
+
+
+//===========================================================
+// Turns this keyboard into the one byte the rest of the game works with.
+//
+// Everything downstream only ever sees these 5 bits, so it cannot tell
+// whether they came from this keyboard or arrived from the other machine,
+// and does not need to. That is what let the network be bolted on without
+// touching the collisions, the bullets or the drawing.
+//===========================================================
+unsigned char read_input_from_keys(unsigned char key_up_code,
+                                   unsigned char key_down_code,
+                                   unsigned char key_left_code,
+                                   unsigned char key_right_code,
+                                   unsigned char key_fire_code){
+
+	unsigned char input_bits;
+
+	input_bits = 0;
+
+	if (keys[key_up_code]){
+		input_bits = input_bits | NET_INPUT_UP;
+	}
+
+	if (keys[key_down_code]){
+		input_bits = input_bits | NET_INPUT_DOWN;
+	}
+
+	if (keys[key_left_code]){
+		input_bits = input_bits | NET_INPUT_LEFT;
+	}
+
+	if (keys[key_right_code]){
+		input_bits = input_bits | NET_INPUT_RIGHT;
+	}
+
+	if (keys[key_fire_code]){
+		input_bits = input_bits | NET_INPUT_FIRE;
+	}
+
+	return input_bits;
+
+}
+
+
+//===========================================================
+// One number standing for the whole state of the game, to catch a desync.
+//
+// In lockstep, when the two machines stop agreeing nothing looks wrong:
+// each screen carries on making perfect sense, just a different one, and
+// you can chase that for days. So each side works this out every frame and
+// sends it now and then, and net.c compares it with its own.
+//
+// Every value the simulation can change goes in. The multipliers are there
+// so that swapping two of them, say the two tanks' X, still comes out to a
+// different total. It is allowed to overflow: that wraps the same way on
+// both machines, which is all that matters.
+//===========================================================
+unsigned int compute_state_checksum(){
+
+	unsigned int checksum;
+
+	checksum = 0;
+
+	checksum = checksum + (player1.position_x * 3);
+	checksum = checksum + (player1.position_y * 5);
+	checksum = checksum + (player1.current_direction * 7);
+	checksum = checksum + (player1.bullet_position_x * 11);
+	checksum = checksum + (player1.bullet_position_y * 13);
+	checksum = checksum + (player1.bullet_is_flying * 17);
+	checksum = checksum + (player1.bullet_direction * 19);
+	checksum = checksum + (player1.wins * 23);
+	checksum = checksum + (player1.is_exploding * 29);
+
+	checksum = checksum + (player2.position_x * 31);
+	checksum = checksum + (player2.position_y * 37);
+	checksum = checksum + (player2.current_direction * 41);
+	checksum = checksum + (player2.bullet_position_x * 43);
+	checksum = checksum + (player2.bullet_position_y * 47);
+	checksum = checksum + (player2.bullet_is_flying * 53);
+	checksum = checksum + (player2.bullet_direction * 59);
+	checksum = checksum + (player2.wins * 61);
+	checksum = checksum + (player2.is_exploding * 67);
+
+	checksum = checksum + (explosion_pause_counter * 71);
+
+	return checksum;
+
 }
 
 void update_game(int direction){
@@ -605,21 +900,21 @@ void move_sprite(struct player *_player, int direction){
 
 
 //===========================================================
-// Reads the keyboard for ONE player and turns it into movement and shots.
-// The 5 scan codes are parameters, so the same function drives both players.
+// Turns one player's keys into movement and shots.
+//
+// It is handed the 5 bits already worked out, NOT the keyboard, so it does
+// not care where they came from: this keyboard in a local game, or the
+// other machine in a network game. That single change is what let the whole
+// network be bolted on without touching the collisions or the drawing.
 //
 // IMPORTANT: each player needs its OWN call, and therefore its own
-// if / else if chain. Inside one chain only one key gets through per frame
-// (that is what stops the diagonal), so sharing it between the two players
-// would let only one of them move per frame.
+// if / else if chain. Inside one chain only one direction gets through per
+// frame (that is what stops the diagonal), so sharing it between the two
+// players would let only one of them move per frame.
 //===========================================================
 void process_player_input(struct player *_player,
                           struct player *_other,
-                          unsigned char key_up_code,
-                          unsigned char key_down_code,
-                          unsigned char key_left_code,
-                          unsigned char key_right_code,
-                          unsigned char key_fire_code){
+                          unsigned char input_bits){
 
 	// 1 if a direction key is held this frame, whether the tank actually
 	// managed to move or not. It is what drives the engine noise.
@@ -634,7 +929,7 @@ void process_player_input(struct player *_player,
 	// out where the tank WOULD land one step ahead, is_move_blocked() checks
 	// that against the map and the other tank, and only then does the tank
 	// move. Checking after moving would mean having to get it back out.
-	if (keys[key_up_code]){
+	if (input_bits & NET_INPUT_UP){
 
 		is_driving = 1;
 
@@ -645,7 +940,7 @@ void process_player_input(struct player *_player,
 			move_sprite(_player, MOVE_UP);
 		}
 
-	}else if (keys[key_down_code]){
+	}else if (input_bits & NET_INPUT_DOWN){
 
 		is_driving = 1;
 
@@ -656,7 +951,7 @@ void process_player_input(struct player *_player,
 			move_sprite(_player, MOVE_DOWN);
 		}
 
-	}else if (keys[key_left_code]){
+	}else if (input_bits & NET_INPUT_LEFT){
 
 		is_driving = 1;
 
@@ -667,7 +962,7 @@ void process_player_input(struct player *_player,
 			move_sprite(_player, MOVE_LEFT);
 		}
 
-	}else if (keys[key_right_code]){
+	}else if (input_bits & NET_INPUT_RIGHT){
 
 		is_driving = 1;
 
@@ -683,10 +978,10 @@ void process_player_input(struct player *_player,
 	// OUTSIDE the chain above on purpose: shooting is not a direction, and
 	// the tank has to be able to move and fire on the same frame.
 	//
-	// Only the frame the key GOES down counts. keys[] stays at 1 while it is
-	// held, so firing on the plain value would shoot again by itself the
-	// moment the bullet died: an automatic weapon.
-	if (keys[key_fire_code]){
+	// Only the frame the key GOES down counts. The bit stays set while the
+	// key is held, so firing on the plain value would shoot again by itself
+	// the moment the bullet died: an automatic weapon.
+	if (input_bits & NET_INPUT_FIRE){
 
 		// The sound only goes off if the shot really did. Pressing the key
 		// while your own bullet is still flying does nothing, and it has to

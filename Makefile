@@ -43,6 +43,11 @@ bin\sound.obj: src\sound.c
 	@if not exist bin mkdir bin
 	$(CC) -c $(CFLAGS) -obin\sound.obj src\sound.c
 
+
+bin\net.obj: src\net.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\net.obj src\net.c
+
 	
 ################################################	
 #                                 ASM FILES                                             # 	
@@ -69,9 +74,11 @@ $(TARGET): \
 	bin\bmp.obj \
 	bin\players.obj \
 	bin\gameloop.obj \
-	bin\sound.obj
+	bin\sound.obj \
+	bin\net.obj
 	@echo bin\main.obj bin\util.obj bin\video.obj > bin\link.rsp
-	@echo bin\bmp.obj bin\players.obj bin\gameloop.obj bin\sound.obj >> bin\link.rsp
+	@echo bin\bmp.obj bin\players.obj bin\gameloop.obj >> bin\link.rsp
+	@echo bin\sound.obj bin\net.obj >> bin\link.rsp
 	$(LD) $(LDFLAGS) -ebin\game.exe @bin\link.rsp
 
 clean:

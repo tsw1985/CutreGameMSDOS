@@ -61,6 +61,26 @@ Sound is optional: if no Sound Blaster is found the game runs exactly the
 same, in silence. It reads the `BLASTER` environment variable to locate the
 card, and falls back to A220 I5 D1.
 
+### Network play
+
+Two machines can play each other over IPX:
+
+```
+game.exe /net
+```
+
+Both copies find each other on their own by broadcast, so **no IP address is
+typed anywhere**. Over the network both players drive with the cursor keys and
+fire with keypad 5, whichever tank they get.
+
+In DOSBox, put `ipx=true` in `dosbox.conf`, then `ipxnet startserver` on one
+machine and `ipxnet connect <its ip>` on the other. On real DOS, load `LSL`,
+your card's ODI driver and `IPXODI` first.
+
+No positions are ever sent: both machines run the whole game and only one byte
+of pressed keys per player per frame travels. See
+[`src/NETWORK.md`](src/NETWORK.md) for how and why.
+
 ---
 
 ## Español
@@ -73,7 +93,7 @@ Pentium 3 con Windows 98 real.
 Este juego es un port de otro juego que he hecho para Commodore 64 en
 ensamblador. Ese sí lo hice yo 100% con mis manos, aquí tienes el repositorio:
 
-**[Versión de Commodore 64](PON_AQUI_LA_URL)**
+**[Versión de Commodore 64](https://github.com/tsw1985/CutreGameC64)**
 
 Apoyándome en un curso que hice en YouTube previamente.
 
@@ -117,11 +137,33 @@ El sonido es opcional: si no encuentra una Sound Blaster el juego funciona
 exactamente igual, en silencio. Lee la variable de entorno `BLASTER` para
 localizar la tarjeta, y si no está asume A220 I5 D1.
 
+### Juego en red
+
+Dos máquinas pueden jugar entre ellas por IPX:
+
+```
+game.exe /net
+```
+
+Las dos copias se encuentran solas por broadcast, así que **no hay que teclear
+ninguna IP en ningún sitio**. En red los dos jugadores se manejan con las
+flechas y disparan con el 5 del teclado numérico, dé igual qué tanque les toque.
+
+En DOSBox, pon `ipx=true` en `dosbox.conf`, y luego `ipxnet startserver` en una
+máquina e `ipxnet connect <su ip>` en la otra. En DOS real, carga antes `LSL`,
+el driver ODI de tu tarjeta e `IPXODI`.
+
+No se manda ninguna posición: las dos máquinas ejecutan el juego entero y solo
+viaja un byte de teclas pulsadas por jugador y por frame. El cómo y el porqué,
+en [`src/NETWORK.md`](src/NETWORK.md).
+
 ---
 
 ## Documentación técnica / Technical documentation
 
 - [`src/SOUND.md`](src/SOUND.md) — cómo funciona el sonido: DMA, doble buffer,
   el mezclador por software y el porqué de cada decisión.
+- [`src/NETWORK.md`](src/NETWORK.md) — cómo funciona el juego en red: IPX,
+  lockstep, el retardo de entrada y la detección de desincronización.
 - [`src/sb/FLUJO.md`](src/sb/FLUJO.md) — el reproductor de WAV original del
   que salió el módulo de sonido.

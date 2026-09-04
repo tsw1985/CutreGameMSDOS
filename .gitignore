@@ -1,0 +1,5 @@
+# Confs de DOSBox generados por launch_game_server.sh / launch_game_client.sh
+net-test/generated-*.conf
+
+# Logs del juego (k:\game.log de cada instancia)
+net-test/log-*/

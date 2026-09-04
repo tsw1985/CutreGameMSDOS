@@ -4,6 +4,11 @@ Documento de `src/net.c` y `header/net.h`, y de los cambios que la red trajo a
 `src/main.c`. Explica qué hace cada función, por qué está tomada cada decisión,
 y cómo montar las dos máquinas para probarlo.
 
+> **Esto es la REFERENCIA, para consultar cosas sueltas.**
+> Si lo que quieres es *entender* cómo funciona, empieza por
+> [`MANUAL-RED.md`](MANUAL-RED.md), que es un manual de aprendizaje que va
+> desde cero y en orden. Vuelve aquí después.
+
 Se juega en red arrancando el juego así:
 
 ```
@@ -12,6 +17,25 @@ game.exe /net
 
 Sin argumento, el juego sigue siendo exactamente el de siempre: dos jugadores
 en el mismo teclado. **No se ha tocado nada de eso.**
+
+---
+
+## Indice
+
+1. El problema de partida, y qué es IPX
+2. La decisión de fondo: lockstep
+3. El retardo de entrada
+4. La redundancia
+5. Las tres capas de `net.c`
+6. Cómo se encuentran las dos máquinas
+7. La detección de desincronización
+8. Montar las dos máquinas en DOSBox
+9. En hardware real
+10. Qué cambió en `main.c`
+11. Constantes que se pueden tocar
+12. Diagnóstico: qué mirar en el log
+13. **El flujo completo, de principio a fin**
+14. **Referencia de todas las funciones**
 
 ---
 
@@ -46,6 +70,47 @@ Se ha elegido **IPX**, por cuatro razones:
 llamadas que un driver real, así que el mismo `game.exe`, sin recompilar y sin
 un solo `#ifdef`, funciona en dos DOSBox hablando por UDP o en dos máquinas
 reales con tarjeta e `IPXODI` cargado.
+
+### Qué es IPX exactamente
+
+**IPX** (*Internetwork Packet eXchange*) es el protocolo de red de Novell
+NetWare, de mediados de los 80. Fue el protocolo dominante en las redes de
+oficina de DOS durante una década, antes de que TCP/IP se lo comiera. Es lo que
+usaban Doom, Duke Nukem 3D, Warcraft II, Command & Conquer...
+
+Puesto al lado de lo que conoces hoy:
+
+| | TCP/IP | IPX |
+|---|---|---|
+| Direcciones | IP (4 bytes) + puerto | Red (4 bytes) + **nodo** (6 bytes) + **socket** (2 bytes) |
+| El nodo es | — | **la MAC de la tarjeta**, sin traducción de ningún tipo |
+| Nombres | DNS | no hay, y no hacen falta |
+| Equivalente a UDP | UDP | **IPX a secas**, que es lo que usamos |
+| Equivalente a TCP | TCP | SPX (no lo usamos) |
+
+Tres cosas que lo hacen la elección correcta aquí:
+
+**1. La dirección es la MAC.** No hay que asignar IPs, ni configurar máscaras,
+ni montar un DHCP. La tarjeta ya viene con su dirección de fábrica. Y hay
+broadcast (`FF:FF:FF:FF:FF:FF`), que es lo que permite que las dos copias del
+juego se encuentren solas sin que nadie teclee nada.
+
+**2. No hay pila que enlazar.** Esto es lo decisivo en Turbo C++ 3.0. Con
+TCP/IP tendrías que meter WATTCP en el binario, con su ARP, su IP, su UDP y su
+gestión de buffers, y recompilarla para el modelo HUGE. Con IPX **el driver ya
+está cargado en memoria** y tú solo le haces una llamada lejana.
+
+**3. Es un datagrama y ya está.** IPX no reintenta, no ordena, no garantiza
+entrega y no hace control de congestión. Suena a defecto y es justo lo que
+quiere un juego: TCP, con sus retransmisiones y su `Nagle`, te metería tirones
+de cientos de milisegundos por recuperar un paquete que al llegar ya no sirve
+para nada. Lo que hacemos nosotros con los paquetes perdidos —ignorarlos,
+porque el siguiente trae la información otra vez— es más barato y más rápido
+que cualquier cosa que TCP pueda hacer por ti.
+
+Lo que IPX **no** te da y hay que poner tú: fiabilidad (la resolvemos con
+redundancia, sección 4), saber quién está al otro lado (el HELLO de la sección
+6), y que las dos partidas cuadren (el lockstep, sección 2).
 
 ---
 
@@ -349,6 +414,34 @@ tarde todavía encuentra el frame al que pertenece.
 2F, la llamada lejana, los ECB. Eso quiere decir que **no hay driver que
 cargar**: ni `LSL.COM`, ni ODI, ni `IPXODI.COM`, ni `NET.CFG`, ni frame types.
 
+### La forma fácil: los scripts
+
+Para dos máquinas, lo práctico es no escribir ningún `.conf`:
+
+```
+./launch_game_server.sh                        <- arranca esta PRIMERO
+./launch_game_client.sh <ip-del-servidor>      <- y luego esta
+```
+
+Estos scripts **averiguan solos dónde está el juego** a partir de dónde están
+ellos mismos y generan el `.conf` en cada arranque, así que el proyecto puede
+vivir en carpetas distintas en cada máquina. Las rutas absolutas escritas a
+mano dentro de un `.conf` son la causa número uno de que esto falle al pasarlo
+a la segunda máquina.
+
+Antes de lanzar nada comprueban que DOSBox está instalado, que existen `bin/` y
+`res/` (y te dicen **la fecha del ejecutable**, para que veas si estás corriendo
+un binario viejo), que el puerto no es privilegiado ni está ocupado, y el
+cliente hace ping al servidor. El servidor te imprime la línea exacta que hay
+que ejecutar en la otra máquina, con la IP ya puesta.
+
+Y "servidor" no significa que no juegue: las dos máquinas juegan igual. Lo
+único que hace es levantar el túnel para que la otra pueda engancharse. Tampoco
+tiene nada que ver con quién acaba siendo el jugador 1, que lo decide el
+`instance_id`.
+
+### A mano, si prefieres
+
 En las dos máquinas, en `dosbox.conf`:
 
 ```ini
@@ -360,7 +453,7 @@ Máquina A, la que hace de concentrador del túnel (también juega):
 
 ```ini
 [autoexec]
-ipxnet startserver
+ipxnet startserver 5213
 mount c d:\msdos
 c:
 cd \game\bin
@@ -371,7 +464,7 @@ Máquina B:
 
 ```ini
 [autoexec]
-ipxnet connect 192.168.1.10
+ipxnet connect 192.168.1.10 5213
 mount c d:\msdos
 c:
 cd \game\bin
@@ -381,6 +474,24 @@ game.exe /net
 Doble clic en cada una y el juego arranca ya conectado. La IP aparece **una
 sola vez**, en un fichero de configuración, nunca en el código ni en una
 pantalla del juego.
+
+### El puerto: en Linux NO puede ser el 213
+
+DOSBox tunela el IPX sobre UDP y por defecto usa el **puerto 213**, que es el
+que IANA asigna a IPX. En **Linux eso no vale**: los puertos por debajo de 1024
+son privilegiados y un usuario normal no puede abrirlos. `ipxnet startserver`
+falla, y el unico sintoma que ves es que el otro lado dice
+`Timeout connecting to server`.
+
+Por eso se usa un puerto alto, el **5213**, en las dos maquinas:
+
+```
+ipxnet startserver 5213
+ipxnet connect <ip> 5213
+```
+
+En Windows el 213 si funciona, pero mas vale usar el mismo puerto en todas
+partes. Y si hay cortafuegos por medio, lo que hay que abrir es **UDP 5213**.
 
 ### Comprobaciones antes de culpar al código
 
@@ -403,8 +514,8 @@ ping -i 0.2 <ip de la otra máquina>
    y **siempre** en las redes de invitados: impide que dos dispositivos de la
    misma wifi se hablen. Internet funciona y `ipxnet connect` se queda colgado
    sin decir por qué. Si el `ping` entre las dos máquinas no va, es esto.
-2. **Cortafuegos, UDP 213.** La máquina que hace `startserver` tiene que
-   aceptar entrante.
+2. **Cortafuegos, UDP 5213.** La máquina que hace `startserver` tiene que
+   aceptar entrante. Es el puerto que usamos, no el 213 de por defecto.
 
 Si una de las dos puede ir por cable, ponla por cable: cada salto wifi añade
 su propio jitter.
@@ -511,8 +622,265 @@ Todas en `header/net.h`.
 | `NET: sent X, received Y, waited Z frames` | Resumen al salir |
 
 Ese último es el más útil de todos. **`waited`** cuenta cuántos frames se pasó
-el juego parado esperando a la otra máquina:
+el juego parado esperando a la otra máquina. Tiene **dos causas distintas**, y
+distinguirlas importa porque la solución no es la misma:
 
-- Cerca de 0 → el enlace va sobrado.
-- Unas decenas en una partida larga → normal en wifi.
-- Cientos o miles → **sube `NET_INPUT_DELAY`**, o pon una máquina por cable.
+- **Cerca de 0** → el enlace va sobrado.
+- **Unas decenas, a rachas, en una partida larga** → jitter de la red. Para eso
+  está `NET_INPUT_DELAY`. Súbelo, o pon una máquina por cable.
+- **Una fracción grande y sostenida de los frames** (por ejemplo la mitad) →
+  las dos máquinas **no van a la misma velocidad**, y la rápida se está
+  frenando al ritmo de la lenta. Esto no es jitter, y **subir
+  `NET_INPUT_DELAY` no lo arregla**: solo mete latencia. Un buffer fijo absorbe
+  variación, no una diferencia permanente de velocidad. Baja `cycles` en **las
+  dos** máquinas a un valor que la lenta pueda sostener.
+
+Para saber cuál es la lenta, compara el `waited` de los dos logs: la lenta lo
+tendrá cerca de cero, porque nunca tiene que esperar a nadie.
+
+---
+
+## 13. El flujo completo, de principio a fin
+
+### Arranque
+
+```
+game.exe /net
+   |
+   +-- main()                        main.c:166
+   |     lee los argumentos, network_mode = 1
+   |
+   +-- net_init()                    net.c:775
+   |     |
+   |     +-- escribe los tamanos de las estructuras en el log
+   |     |   (42/30/60: si sale otra cosa, el compilador ha rellenado
+   |     |    las estructuras e IPX leeria todos los campos mal)
+   |     |
+   |     +-- ipx_detect()            net.c:266
+   |     |     INT 2F con AX=7A00. Si AL vuelve 0xFF, IPX esta cargado
+   |     |     y ES:DI es la puerta de entrada. Se guarda.
+   |     |
+   |     +-- ipx_socket_call(OPEN)   net.c:358
+   |     |     abre el socket 0x869C. A partir de aqui el driver nos
+   |     |     entregara lo que llegue a ese socket y nada mas.
+   |     |
+   |     +-- ipx_get_local_address() net.c:411
+   |     |     nuestra direccion de nodo. Solo para el log: si sale
+   |     |     todo ceros, esta maquina NO esta unida a ningun tunel.
+   |     |
+   |     +-- instance_id = numero al azar del tick de la BIOS
+   |     |
+   |     +-- net_post_listen() x4    net.c:430
+   |           entrega 4 buffers al driver. A partir de ahora, todo lo
+   |           que llegue cae en uno de ellos. Cuatro y no uno porque
+   |           mientras tratamos un paquete su buffer es nuestro.
+   |
+   +-- net_find_opponent()           net.c:878     <-- modo TEXTO
+   |     bucle hasta emparejar (abajo)
+   |
+   +-- pausa de 2 segundos llamando a net_poll()
+   |
+   +-- install_kbd() / setup_screen() / init_players() / init_graphics()
+   +-- sound_init()
+   |
+   +-- bucle principal
+```
+
+### El emparejamiento
+
+Las dos copias hacen literalmente lo mismo. No hay un "servidor" y un
+"cliente" a nivel de juego: eso es solo del tunel de DOSBox.
+
+```
+      MAQUINA A                                MAQUINA B
+
+  HELLO --> broadcast  ------------------------->  net_poll()
+                                                   net_handle_packet()
+                                                   guarda su nodo e id
+                                                   marca bit 0x01
+                                    <-- HELLO_ACK  responde directo
+  net_poll()
+  marca bit 0x02
+                                                   HELLO --> broadcast
+  net_handle_packet()  <---------------------------
+  guarda su nodo e id
+  marca bit 0x01
+  HELLO_ACK -->  -------------------------------->  net_poll()
+                                                    marca bit 0x02
+
+  bits == 0x03  -> EMPAREJADA           bits == 0x03  -> EMPAREJADA
+```
+
+Hacen falta **los dos bits**: haber oido a la otra (`0x01`) y que la otra haya
+contestado a lo nuestro (`0x02`). Con uno solo, la maquina rapida se largaria a
+jugar mientras la lenta sigue esperando una respuesta que ya nadie va a mandar.
+
+Al salir del bucle, las dos hacen lo mismo por su cuenta y llegan a la misma
+conclusion:
+
+```c
+if (local_instance_id < remote_instance_id){ is_player1 = 1; }
+```
+
+Y ponen `simulation_frame = 0`, limpian los anillos y rellenan los primeros
+`NET_INPUT_DELAY` frames con "ninguna tecla", porque nadie los ha mandado nunca.
+
+### Cada frame del bucle principal
+
+Esto es el corazon. `main.c:276` en adelante.
+
+```
+ 1. read_input_from_keys()      main.c:563
+       flechas + 5 del numerico  ->  un byte con 5 bits
+
+ 2. net_set_local_input(byte)   net.c:1046
+       lo guarda en el frame  N + NET_INPUT_DELAY   <-- EL RETARDO
+                                                        ESTA AQUI
+
+ 3. net_send_input()            net.c:1063
+       un paquete con los frames  N-2 .. N+5  (8 frames, la redundancia)
+       + el checksum del estado si toca mandarlo
+
+ 4. while (net_has_remote_input() == 0){        <-- LA ESPERA
+        net_poll();          recoge lo que haya llegado
+        sound_update();      el sonido NO se para mientras esperamos
+        net_connection_lost() ?  -> salir
+    }
+
+ 5. reparto segun quien somos:
+       si soy jugador 1:  p1 = mi byte del frame N,  p2 = el suyo
+       si no:             p1 = el suyo,              p2 = mi byte
+
+ 6. process_player_input(&player1, &player2, p1)    main.c:915
+    process_player_input(&player2, &player1, p2)
+       <-- desde aqui hacia abajo, NADA sabe que existe una red
+
+ 7. update_bullet() x2, explosiones, sonido, marcador
+ 8. update_game() / draw_to_buffer() / wait_retrace() / volcado a VGA
+
+ 9. net_set_local_checksum(compute_state_checksum())   main.c:611
+       resume TODO el estado en un numero y lo guarda
+
+10. net_advance_frame()         net.c:1199
+       N = N + 1
+```
+
+Los pasos 6, 7 y 8 son **exactamente el codigo que ya existia**. No se ha
+tocado ni una linea de colisiones, balas, explosiones ni dibujado.
+
+### Lo que viaja por el cable
+
+Un paquete son **60 bytes**, de los cuales 30 son la cabecera de IPX:
+
+```
++--------------------------------+  30 bytes  cabecera IPX
+| red / nodo / socket destino    |            (destino lo ponemos nosotros,
+| red / nodo / socket origen     |             origen lo rellena el driver)
++--------------------------------+
+| "CTRE"                         |   4        marca, para ignorar lo ajeno
+| tipo (HELLO/ACK/INPUT)         |   1
+| cuantos inputs van             |   1
+| instance_id                    |   4        quien lo manda / quien es P1
+| primer frame de inputs[]       |   4
+| inputs[8]                      |   8        <-- LOS DATOS DE VERDAD
+| hay checksum?                  |   1
+| relleno                        |   1
+| frame del checksum             |   4
+| checksum                       |   2
++--------------------------------+  30 bytes  nuestra carga
+```
+
+Mira la proporcion: de 60 bytes, **8 son el juego**. La cabecera pesa cuatro
+veces mas que los datos. Por eso la redundancia sale gratis y por eso se mandan
+8 frames en vez de 1.
+
+### La salida
+
+```
+ESC
+ |
+ +-- sound_shutdown()    para el DMA ANTES de soltar la memoria
+ +-- net_shutdown()      cierra el socket, escribe el resumen en el log
+ +-- player_free() / bmp_delete_buffers() / bmp_close_files()
+ +-- uninstall_kbd()     devuelve el INT 9 original
+ +-- set_text_mode()     main.c:545, para poder leer el mensaje final
+```
+
+**Salir cerrando la ventana no ejecuta nada de esto.** En DOSBox da igual, pero
+en DOS real el socket IPX se queda abierto y la siguiente partida no puede
+abrir el mismo, y el DMA de la Sound Blaster sigue leyendo memoria que ya no es
+tuya.
+
+---
+
+## 14. Referencia de todas las funciones
+
+### `src/net.c` — capa 1, el driver IPX
+
+| Función | Línea | Qué hace |
+|---|---|---|
+| `net_swap16()` | 242 | Da la vuelta a los 2 bytes de un entero. IPX escribe sockets y longitudes con el byte alto delante, y el 8086 los guarda al revés |
+| `ipx_detect()` | 266 | `INT 2F` con `AX=7A00`. Si `AL` vuelve `0xFF`, IPX está cargado y `ES:DI` es la puerta de entrada |
+| `ipx_call()` | 308 | **La** llamada al driver: `BX` = qué hacer, `ES:SI` = el ECB. En ensamblador, porque IPX quiere los argumentos en registros y se entra con `CALL FAR` |
+| `ipx_socket_call()` | 358 | Abrir y cerrar el socket. No usan ECB: el número va en `DX` y el resultado vuelve en `AL` |
+| `ipx_get_local_address()` | 411 | Nuestra dirección de nodo. Solo para el log |
+| `net_post_listen()` | 430 | Entrega un buffer de recepción al driver |
+
+### `src/net.c` — capa 2, nuestro paquete
+
+| Función | Línea | Qué hace |
+|---|---|---|
+| `net_send_is_busy()` | 460 | ¿El driver sigue con el paquete anterior? Hay que preguntarlo **antes de construir**, no solo antes de enviar |
+| `net_transmit()` | 483 | Rellena la cabecera IPX y el ECB y suelta el paquete. Nunca espera |
+| `net_build_header()` | 535 | La parte de la carga que llevan todos los paquetes: marca, tipo, id |
+| `net_packet_is_valid()` | 553 | ¿Empieza por `"CTRE"` y no es nuestro propio eco? |
+| `net_handle_packet()` | 654 | Reparte según el tipo: HELLO, HELLO_ACK o INPUT |
+| `net_poll()` | 728 | Recoge todo lo que el driver tenga y le devuelve los buffers. **Lo único que mueve datos hacia dentro** |
+
+### `src/net.c` — capa 3, lockstep
+
+| Función | Línea | Qué hace |
+|---|---|---|
+| `net_store_remote_input()` | 594 | Archiva un frame de teclas de la otra máquina. Descarta lo ya simulado y lo que va demasiado por delante |
+| `net_check_remote_checksum()` | 622 | Compara su checksum con el nuestro de ese frame. Si no cuadra, `NET DESYNC` al log |
+| `net_set_local_input()` | 1046 | Nuestras teclas entran en `frame + NET_INPUT_DELAY`. **Todo el retardo de entrada es esta línea** |
+| `net_send_input()` | 1063 | Manda los últimos 8 frames de teclas, y el checksum cuando toca |
+| `net_has_remote_input()` | 1129 | ¿Han llegado sus teclas para el frame actual? Mientras sea 0, el juego no avanza |
+| `net_get_remote_input()` | 1148 | Sus teclas para este frame |
+| `net_get_local_input()` | 1159 | Las nuestras para este frame. **Del anillo, no del teclado**: por eso se aplican igual de tarde que las suyas |
+| `net_set_local_checksum()` | 1175 | Guarda el resumen del estado y, cada 30 frames, lo aparta para que viaje |
+| `net_advance_frame()` | 1199 | Frame siguiente |
+
+### `src/net.c` — el ciclo de vida y los avisos
+
+| Función | Línea | Qué hace |
+|---|---|---|
+| `net_init()` | 775 | Busca el driver, abre el socket, deja los 4 buffers escuchando |
+| `net_find_opponent()` | 878 | El HELLO / HELLO_ACK hasta emparejar. En modo texto |
+| `net_is_player1()` | 1024 | Qué tanque nos ha tocado |
+| `net_get_frame()` | 1031 | El frame que se está simulando |
+| `net_connection_lost()` | 1213 | 1 cuando llevamos 10 segundos sin recibir nada |
+| `net_desync_detected()` | 1243 | 1 cuando las dos máquinas han calculado estados distintos |
+| `net_count_wait()` | 1254 | Cuenta un frame parado esperando, para el resumen del log |
+| `net_shutdown()` | 848 | Cierra el socket y escribe el resumen |
+
+### `src/main.c` — lo que se añadió
+
+| Función | Línea | Qué hace |
+|---|---|---|
+| `read_input_from_keys()` | 563 | Convierte este teclado en el byte de 5 bits. **La única que sigue leyendo `keys[]`** |
+| `compute_state_checksum()` | 611 | Resume todo el estado del juego en un número, para detectar desincronización |
+| `set_text_mode()` | 545 | Vuelve al modo texto al salir, para poder leer el mensaje final |
+| `process_player_input()` | 915 | **Modificada.** Antes leía `keys[]`; ahora recibe el byte ya resuelto. Ese es el único cambio de fondo que hizo falta en todo el juego |
+
+### Y lo que **no** se tocó
+
+`is_blocked_by_wall()`, `is_blocked_by_tank()`, `is_move_blocked()`,
+`bullet_has_hit_tank()`, `update_bullet()`, `move_sprite()`,
+`update_player_animation()`, `draw_to_buffer()`, `draw_explosion()`,
+`restart_game()`, `update_game()`, todo `players.c`, todo `sound.c` y todo
+`bmp.c`.
+
+Eso no es casualidad ni suerte: es la consecuencia de haber elegido lockstep.
+Como las dos máquinas ejecutan el juego entero y solo se intercambian teclas,
+no hay nada del juego que necesite enterarse de que existe una red.

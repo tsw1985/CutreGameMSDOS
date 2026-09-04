@@ -1,9 +1,9 @@
 /* ============================================================
-   SBWAV8.C - Reproductor de WAV 8 bits via DMA con doble buffer
-   Version de DIAGNOSTICO: usa el canal DMA de 8 bits (controlador 1)
-   en vez del de 16 bits, para descartar si el problema esta en el
-   canal de 16 bits concreto de la tarjeta.
-   Turbo C++ 3.0 - modelo de memoria LARGE
+   SBWAV8.C - 8 bit WAV player over DMA with a double buffer
+   DIAGNOSTIC version: it uses the 8 bit DMA channel (controller 1)
+   instead of the 16 bit one, to rule out whether the problem is in
+   this particular card's 16 bit channel.
+   Turbo C++ 3.0 - LARGE memory model
    ============================================================ */
 
 #include <stdio.h>
@@ -13,7 +13,7 @@
 #include <alloc.h>
 #include <conio.h>
 
-/* ---------- Formato WAV ---------- */
+/* ---------- WAV format ---------- */
 
 #pragma pack(push, 1)
 typedef struct {
@@ -38,29 +38,29 @@ typedef struct {
 int leer_header_wav(FILE *f, WavHeader *h)
 {
     if (fread(h, sizeof(WavHeader), 1, f) != 1) {
-        printf("Error leyendo el header (archivo truncado?)\n");
+        printf("Error reading the header (file truncated?)\n");
         return 0;
     }
     if (strncmp(h->riff_id, "RIFF", 4) != 0 ||
         strncmp(h->wave_id, "WAVE", 4) != 0 ||
         strncmp(h->fmt_id,  "fmt ", 4) != 0 ||
         strncmp(h->data_id, "data", 4) != 0) {
-        printf("No es un WAV valido, o tiene chunks extra no soportados\n");
+        printf("Not a valid WAV, or it has extra chunks we do not support\n");
         return 0;
     }
     if (h->audio_format != 1) {
-        printf("Solo se soporta PCM sin comprimir\n");
+        printf("Only uncompressed PCM is supported\n");
         return 0;
     }
     if (h->bits_per_sample != 8) {
-        printf("Esta version de diagnostico solo soporta 8 bits (archivo tiene %u)\n",
+        printf("This diagnostic version only supports 8 bit (the file has %u)\n",
                h->bits_per_sample);
         return 0;
     }
     return 1;
 }
 
-/* ---------- Deteccion de la tarjeta (variable BLASTER) ---------- */
+/* ---------- Card detection (the BLASTER variable) ---------- */
 
 typedef struct {
     unsigned int base_port;
@@ -80,7 +80,7 @@ int detectar_sb(SBConfig *cfg)
     cfg->dma16     = 5;
 
     if (blaster == NULL) {
-        printf("Variable BLASTER no encontrada, uso valores por defecto\n");
+        printf("BLASTER variable not found, using the defaults\n");
         return 0;
     }
 
@@ -98,17 +98,17 @@ int detectar_sb(SBConfig *cfg)
     return 1;
 }
 
-/* ---------- Puertos del DSP ---------- */
+/* ---------- DSP ports ---------- */
 
 #define DSP_RESET(b)       (b + 0x6)
 #define DSP_READ(b)        (b + 0xA)
 #define DSP_WRITE(b)       (b + 0xC)
 #define DSP_READ_STATUS(b) (b + 0xE)
-#define DSP_ACK8(b)        (b + 0xE)   /* para 8 bits el ack de IRQ es el MISMO puerto que el de estado */
+#define DSP_ACK8(b)        (b + 0xE)   /* for 8 bit, the IRQ ack port is the SAME as the status port */
 
 void dsp_write(unsigned base, unsigned char val)
 {
-    while (inp(DSP_WRITE(base)) & 0x80) ;   /* espera a que el puerto quede libre */
+    while (inp(DSP_WRITE(base)) & 0x80) ;   /* wait until the port is free        */
     outp(DSP_WRITE(base), val);
 }
 
@@ -127,7 +127,7 @@ int dsp_reset(unsigned base)
     return 0;
 }
 
-/* ---------- Mixer (registros de volumen) ---------- */
+/* ---------- Mixer (volume registers) ---------- */
 
 #define MIXER_ADDR(b) (b + 0x4)
 #define MIXER_DATA(b) (b + 0x5)
@@ -140,61 +140,61 @@ void mixer_write(unsigned base, unsigned char index, unsigned char value)
 
 void mixer_unmute_max(unsigned base)
 {
-    mixer_write(base, 0x22, 0xFF);   /* volumen maestro (formato antiguo) */
-    mixer_write(base, 0x04, 0xFF);   /* volumen de voz/DAC (formato antiguo) */
-    mixer_write(base, 0x30, 0xFF);   /* volumen maestro izquierdo (SB16) */
-    mixer_write(base, 0x31, 0xFF);   /* volumen maestro derecho (SB16) */
-    mixer_write(base, 0x32, 0xFF);   /* volumen DAC izquierdo (SB16) */
-    mixer_write(base, 0x33, 0xFF);   /* volumen DAC derecho (SB16) */
+    mixer_write(base, 0x22, 0xFF);   /* master volume (old format)      */
+    mixer_write(base, 0x04, 0xFF);   /* voice/DAC volume (old format)   */
+    mixer_write(base, 0x30, 0xFF);   /* master volume left  (SB16)      */
+    mixer_write(base, 0x31, 0xFF);   /* master volume right (SB16)      */
+    mixer_write(base, 0x32, 0xFF);   /* DAC volume left  (SB16)         */
+    mixer_write(base, 0x33, 0xFF);   /* DAC volume right (SB16)         */
 }
 
-/* Lee y muestra el registro 0x81 del mixer: indica que canales DMA
-   tiene la tarjeta habilitados de verdad (bits 0,1,3 = 8 bits;
-   bits 5,6,7 = 16 bits). Util para el diagnostico. */
+/* Reads and prints mixer register 0x81: it says which DMA channels the
+   card really has enabled (bits 0,1,3 = 8 bit; bits 5,6,7 = 16 bit).
+   Useful for diagnosis. */
 void mixer_mostrar_canales_dma(unsigned base)
 {
     unsigned char val;
     outp(MIXER_ADDR(base), 0x81);
     val = inp(MIXER_DATA(base));
-    printf("Mixer reg 0x81 (canales DMA habilitados) = 0x%02X\n", val);
-    printf("  8 bits -> canal0:%d canal1:%d canal3:%d\n",
+    printf("Mixer reg 0x81 (DMA channels enabled) = 0x%02X\n", val);
+    printf("  8 bit  -> ch0:%d ch1:%d ch3:%d\n",
            (val & 0x01) != 0, (val & 0x02) != 0, (val & 0x08) != 0);
-    printf("  16bits -> canal5:%d canal6:%d canal7:%d\n",
+    printf("  16 bit -> ch5:%d ch6:%d ch7:%d\n",
            (val & 0x20) != 0, (val & 0x40) != 0, (val & 0x80) != 0);
 }
 
 void dsp_set_sample_rate(unsigned base, unsigned rate)
 {
-    dsp_write(base, 0x41);              /* fijar frecuencia de salida (SB16) */
+    dsp_write(base, 0x41);              /* set the output rate (SB16)      */
     dsp_write(base, (rate >> 8) & 0xFF);
     dsp_write(base, rate & 0xFF);
 }
 
-/* Arranca la reproduccion en modo auto-init de 8 bits.
-   'num_bytes_bloque' es la longitud de UNA MITAD del buffer, en BYTES
-   (a diferencia de la version de 16 bits, aqui no se divide entre 2). */
+/* Starts playback in 8 bit auto-init mode.
+   'num_bytes_bloque' is the length of ONE HALF of the buffer, in BYTES
+   (unlike the 16 bit version, here it is not divided by 2). */
 void dsp_start_playback_8(unsigned base, unsigned num_bytes_bloque, int stereo)
 {
-    unsigned char modo = 0x00;          /* SIN signo: los WAV de 8 bits son unsigned (0-255) */
+    unsigned char modo = 0x00;          /* UNsigned: 8 bit WAVs run 0-255                    */
     unsigned cuenta = num_bytes_bloque - 1;
 
     if (stereo) modo |= 0x20;
 
-    dsp_write(base, 0xC6);              /* 8 bits, salida, auto-init */
+    dsp_write(base, 0xC6);              /* 8 bit, output, auto-init  */
     dsp_write(base, modo);
     dsp_write(base, cuenta & 0xFF);
     dsp_write(base, (cuenta >> 8) & 0xFF);
 }
 
-/* ---------- Controlador DMA (8237), canales de 8 bits (0-3) ---------- */
+/* ---------- DMA controller (8237), 8 bit channels (0-3) ---------- */
 
 void dma8_setup(int channel, unsigned long phys_addr, unsigned long length_bytes)
 {
     unsigned page, addr, count;
     unsigned addr_port, count_port, page_port;
 
-    /* En el controlador de 8 bits, los puertos de direccion/cuenta de cada
-       canal son consecutivos: canal*2 (direccion) y canal*2+1 (cuenta). */
+    /* On the 8 bit controller, each channel's address/count ports are
+       consecutive: channel*2 (address) and channel*2+1 (count). */
     addr_port  = channel * 2;
     count_port = channel * 2 + 1;
 
@@ -203,19 +203,19 @@ void dma8_setup(int channel, unsigned long phys_addr, unsigned long length_bytes
         case 1: page_port = 0x83; break;
         case 2: page_port = 0x81; break;
         case 3: page_port = 0x82; break;
-        default: return;   /* canal invalido para este controlador */
+        default: return;   /* invalid channel for this controller */
     }
 
-    /* A diferencia del canal de 16 bits, aqui la direccion y la cuenta
-       se expresan directamente en BYTES, sin dividir entre 2. */
+    /* Unlike the 16 bit channel, here the address and the count are
+       given directly in BYTES, with no dividing by 2. */
     page  = (unsigned)((phys_addr >> 16) & 0xFF);
     addr  = (unsigned)(phys_addr & 0xFFFF);
     count = (unsigned)(length_bytes - 1);
 
-    outp(0x0A, 0x04 | channel);         /* enmascara el canal mientras se programa */
-    outp(0x0C, 0x00);                   /* limpia el flip-flop byte alto/bajo */
+    outp(0x0A, 0x04 | channel);         /* mask the channel while programming it   */
+    outp(0x0C, 0x00);                   /* clear the high/low byte flip-flop       */
 
-    /* modo: single (01) | auto-init (1) | lectura mem->dispositivo (10) | canal */
+    /* mode: single (01) | auto-init (1) | read memory->device (10) | channel */
     outp(0x0B, 0x40 | 0x10 | 0x08 | channel);
 
     outp(addr_port, addr & 0xFF);
@@ -225,20 +225,20 @@ void dma8_setup(int channel, unsigned long phys_addr, unsigned long length_bytes
     outp(count_port, count & 0xFF);
     outp(count_port, (count >> 8) & 0xFF);
 
-    outp(0x0A, channel);                /* desenmascara: listo para transferir */
+    outp(0x0A, channel);                /* unmask: ready to transfer               */
 }
 
-/* ---------- Reserva de buffer alineado a un limite de pagina ---------- */
+/* ---------- Allocating a buffer aligned to a page boundary ---------- */
 
-/* Devuelve un puntero ALINEADO dentro del bloque reservado, que es el que se
-   usa para reproducir y para programar el DMA. Ese puntero normalmente NO
-   coincide con el que devolvio farmalloc(), y farfree() solo acepta el
-   original, asi que este se devuelve aparte en 'bloque_original' para poder
-   liberarlo al terminar.
+/* Returns an ALIGNED pointer inside the reserved block, which is the one used
+   for playback and for programming the DMA. That pointer usually does NOT match
+   the one farmalloc() returned, and farfree() only accepts the original, so the
+   original is handed back separately in 'bloque_original' so it can be freed at
+   the end.
 
-   Al salir:
-     - valor de retorno  -> usar para el audio y para el DMA
-     - *bloque_original  -> pasar a farfree() (queda a NULL si fallo la reserva) */
+   On return:
+     - the return value  -> use for the audio and for the DMA
+     - *bloque_original  -> pass to farfree() (left NULL if the alloc failed) */
 char *asignar_buffer_alineado(unsigned long size, unsigned long align, char **bloque_original)
 {
     char *bloque;
@@ -267,12 +267,12 @@ volatile int buffer_listo = 0;
 
 void interrupt isr_sb(void)
 {
-    inp(DSP_ACK8(sb_base));             /* confirma la IRQ de 8 bits ante el DSP */
+    inp(DSP_ACK8(sb_base));             /* acknowledge the 8 bit IRQ to the DSP   */
 
     buffer_listo = 1;
 
-    outp(0x20, 0x20);                   /* EOI al PIC maestro */
-    if (irq_num >= 8) outp(0xA0, 0x20); /* EOI al PIC esclavo si aplica */
+    outp(0x20, 0x20);                   /* EOI to the master PIC */
+    if (irq_num >= 8) outp(0xA0, 0x20); /* EOI to the slave PIC if needed */
 }
 
 void instalar_isr(int irq)
@@ -297,9 +297,9 @@ void restaurar_isr(int irq)
     setvect(vector, old_isr);
 }
 
-/* ---------- Programa principal ---------- */
+/* ---------- Main program ---------- */
 
-#define HALF_SIZE 16384UL               /* 16 KB por mitad */
+#define HALF_SIZE 16384UL               /* 16 KB per half  */
 #define BUF_SIZE  (HALF_SIZE * 2)
 
 int main(int argc, char *argv[])
@@ -308,17 +308,17 @@ int main(int argc, char *argv[])
     WavHeader h;
     SBConfig sb;
     char *buffer;
-    char *buffer_bloque_original;   /* el puntero tal cual lo dio farmalloc: es el que hay que liberar */
+    char *buffer_bloque_original;   /* the pointer exactly as farmalloc gave it: this is the one to free */
     unsigned long fisica;
     int mitad_a_rellenar;
 
     if (argc < 2) {
-        printf("Uso: SBWAV8 archivo.wav\n");
+        printf("Usage: SBWAV8 file.wav\n");
         return 1;
     }
 
     f = fopen(argv[1], "rb");
-    if (!f) { printf("No se pudo abrir el archivo\n"); return 1; }
+    if (!f) { printf("Could not open the file\n"); return 1; }
 
     if (!leer_header_wav(f, &h)) { fclose(f); return 1; }
 
@@ -326,21 +326,21 @@ int main(int argc, char *argv[])
     sb_base = sb.base_port;
     irq_num = sb.irq;
 
-    printf("Tarjeta en %Xh, IRQ %d, DMA8 %d\n", sb_base, irq_num, sb.dma8);
-    printf("WAV: %lu Hz, %u canal(es), %u bits\n",
+    printf("Card at %Xh, IRQ %d, DMA8 %d\n", sb_base, irq_num, sb.dma8);
+    printf("WAV: %lu Hz, %u channel(s), %u bits\n",
            h.sample_rate, h.num_channels, h.bits_per_sample);
 
     if (!dsp_reset(sb_base)) {
-        printf("No se detecta el DSP en el puerto indicado\n");
+        printf("No DSP found at that port\n");
         fclose(f);
         return 1;
     }
 
     mixer_unmute_max(sb_base);
-    mixer_mostrar_canales_dma(sb_base);   /* dato de diagnostico: que canales DMA tiene la tarjeta */
+    mixer_mostrar_canales_dma(sb_base);   /* diagnostics: which DMA channels the card has */
 
-    buffer = asignar_buffer_alineado(BUF_SIZE, 65536UL, &buffer_bloque_original);   /* alineado a 64 KB (limite del canal de 8 bits) */
-    if (!buffer) { printf("Sin memoria para el buffer\n"); fclose(f); return 1; }
+    buffer = asignar_buffer_alineado(BUF_SIZE, 65536UL, &buffer_bloque_original);   /* aligned to 64 KB (the 8 bit channel boundary) */
+    if (!buffer) { printf("Not enough memory for the buffer\n"); fclose(f); return 1; }
 
     fisica = ((unsigned long)FP_SEG(buffer) << 4) + FP_OFF(buffer);
 
@@ -356,7 +356,7 @@ int main(int argc, char *argv[])
 
     mitad_a_rellenar = 0;
 
-    printf("Reproduciendo (8 bits, canal DMA %d)... pulsa una tecla para detener\n", sb.dma8);
+    printf("Playing (8 bit, DMA channel %d)... press any key to stop\n", sb.dma8);
 
     while (!feof(f)) {
         while (!buffer_listo) {
@@ -368,7 +368,7 @@ int main(int argc, char *argv[])
             char *destino = buffer + (mitad_a_rellenar * HALF_SIZE);
             unsigned long leidos = fread(destino, 1, HALF_SIZE, f);
             if (leidos < HALF_SIZE)
-                memset(destino + leidos, 128, HALF_SIZE - leidos); /* silencio = 128 en unsigned 8 bits */
+                memset(destino + leidos, 128, HALF_SIZE - leidos); /* silence = 128 in unsigned 8 bit   */
         }
         mitad_a_rellenar = !mitad_a_rellenar;
     }
@@ -376,18 +376,18 @@ int main(int argc, char *argv[])
     while (!buffer_listo) ;
 
 fin:
-    dsp_write(sb_base, 0xDA);           /* sale del modo auto-init de 8 bits */
+    dsp_write(sb_base, 0xDA);           /* leave 8 bit auto-init mode         */
     restaurar_isr(irq_num);
 
-    /* Aqui ya no hay ni DMA ni IRQ tocando el buffer, asi que ahora si se
-       puede soltar la memoria. Se libera el puntero ORIGINAL de farmalloc,
-       no el alineado que se ha estado usando para reproducir. */
+    /* By now neither the DMA nor the IRQ is touching the buffer, so the memory
+       can finally be released. It frees farmalloc's ORIGINAL pointer, not the
+       aligned one that was used for playback. */
     if (buffer_bloque_original != NULL) {
         farfree(buffer_bloque_original);
         buffer_bloque_original = NULL;
     }
 
     fclose(f);
-    printf("Reproduccion terminada\n");
+    printf("Playback finished\n");
     return 0;
 }

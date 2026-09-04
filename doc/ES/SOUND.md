@@ -4,7 +4,7 @@ Documento de `src/sound.c` y `header/sound.h`. Explica qué hace cada función,
 en qué orden se llaman, cómo las usa el juego y **por qué** está tomada cada
 decisión.
 
-Complementa a `src/sb/FLUJO.md`, que documenta el reproductor original
+Complementa a [`SBWAV8-FLOW.md`](SBWAV8-FLOW.md), que documenta el reproductor original
 `sbwav8.c` del que salió este código.
 
 ---
@@ -508,15 +508,16 @@ Se llama en `main.c:330`, **antes** de `player_free()` y `bmp_delete_buffers()`.
 
 | `src/main.c` | Qué |
 |---|---|
-| `:173` | `sound_init()`, tras `init_graphics()` |
-| `:258` | `sound_update()`, una vez por frame, fuera del `if` de estados |
-| `:692` | `sound_play()` del disparo, **solo si `player_fire_bullet()` devuelve 1** |
-| `:718` / `:720` | `sound_loop()` / `sound_stop()` del motor, según `is_driving` |
-| `:225` `:226` | `sound_stop()` de los dos motores al impactar |
-| `:232` | `sound_play()` de la explosión |
-| `:330` | `sound_shutdown()` al salir |
+| `:269` | `sound_init()`, tras `init_graphics()` |
+| `:417` | `sound_update()`, una vez por frame, fuera del `if` de estados |
+| `:312` | `sound_update()` otra vez, dentro de la espera de red. Ver abajo |
+| `:993` | `sound_play()` del disparo, **solo si `player_fire_bullet()` devuelve 1** |
+| `:1019` / `:1021` | `sound_loop()` / `sound_stop()` del motor, según `is_driving` |
+| `:384` `:385` | `sound_stop()` de los dos motores al impactar |
+| `:391` | `sound_play()` de la explosión |
+| `:501` | `sound_shutdown()` al salir |
 
-Tres decisiones del cableado:
+Cuatro decisiones del cableado:
 
 **El motor usa `is_driving`, no `is_moving`.** `is_moving` lo apaga la
 animación de orugas en cuanto avanza un frame, así que el motor se cortaría
@@ -533,6 +534,13 @@ bucle mientras los tanques arden.
 haría "pum" sin que salga nada. La regla vive en `player_fire_bullet()`, no
 duplicada en `main.c`, para que no se desincronicen si algún día cambian las
 condiciones de disparo.
+
+**En red hay una segunda llamada a `sound_update()`.** En modo red el bucle se
+para a esperar las teclas de la otra máquina, y esa espera puede durar más de
+un frame si la red va mal. Sin llamar al sonido ahí dentro, la tarjeta
+repetiría la última mitad y se oiría un tartamudeo justo en el peor momento.
+Es la misma razón por la que está fuera del `if` de estados, aplicada a la
+otra forma que tiene el bucle de detenerse. Ver `NETWORK.md`.
 
 Cada tanque lleva en su `struct player` qué voz y qué sample usa
 (`sound_engine_voice`, `sound_engine_sample`, `sound_fire_voice`), para que

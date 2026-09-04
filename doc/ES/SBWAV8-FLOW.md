@@ -234,7 +234,11 @@ de la tarjeta; al final es la que suena bien.
 
 ---
 
-## 7. Que hay que tocar para meterlo en el juego
+## 7. Que hubo que tocar para meterlo en el juego
+
+> Esta seccion era el plan. **Ya esta todo hecho**: el resultado es
+> `src/sound.c`, documentado en [`SOUND.md`](SOUND.md). Se conserva aqui
+> porque explica por que ese modulo es como es.
 
 Ahora mismo es un programa autonomo. Para usarlo dentro de `CutreGameMSDOS`:
 

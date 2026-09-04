@@ -1,7 +1,7 @@
-# Makefile para Borland Turbo C 3.0 con NASM
-# Basado en el patrón de Makefile.bor de zlib
+# Makefile for Borland Turbo C 3.0 with NASM
+# Based on the pattern of zlib's Makefile.bor
 
-# Configuracion para Turbo C
+# Turbo C configuration
 MODEL = -mh
 CFLAGS = -O2 $(MODEL) -Iheader
 CC = tcc
@@ -13,7 +13,7 @@ TARGET = bin\game.exe
 
 all: $(TARGET)
 
-# Compilar archivos objeto
+# Compile the object files
 bin\main.obj: src\main.c
 	@if not exist bin mkdir bin
 	$(CC) -c $(CFLAGS) -obin\main.obj src\main.c
@@ -57,16 +57,16 @@ bin\video.obj: src\video.asm
 	$(ASM) $(ASMFLAGS) src\video.asm -o bin\video.obj
 
 
-# Enlazar ejecutable
+# Link the executable
 #
-# DOS solo admite 127 caracteres de argumentos al lanzar un programa, y la
-# lista de .obj ya no cabe: al anadir sound.obj la linea paso de 110 a 127
-# caracteres y MAKE dejo de poder ejecutar tcc, con el error
+# DOS only passes 127 characters of arguments when launching a program, and the
+# list of .obj files no longer fits: adding sound.obj took the line from 110 to
+# 127 characters and MAKE could no longer run tcc, failing with
 # "Fatal: Unable to execute command: tcc".
 #
-# Por eso la lista va en un fichero de respuesta, bin\link.rsp, y a tcc se le
-# pasa con @. La linea baja a 36 caracteres y da igual cuantos .obj se
-# anadan mas adelante.
+# So the list goes in a response file, bin\link.rsp, handed to tcc with @. The
+# line drops to 36 characters and it no longer matters how many .obj files get
+# added later on.
 $(TARGET): \
 	bin\main.obj \
 	bin\util.obj \

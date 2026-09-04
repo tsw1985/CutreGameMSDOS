@@ -1,6 +1,6 @@
 // ============================================================
-//   SBWAV.C - Reproductor de WAV 16 bits via DMA con doble buffer
-//   Turbo C++ 3.0 - modelo de memoria LARGE
+//   SBWAV.C - 16 bit WAV player over DMA with a double buffer
+//   Turbo C++ 3.0 - LARGE memory model
 //   ============================================================ 
 
 // Compile : tcc -ml sbwav.c
@@ -12,7 +12,7 @@
 #include <alloc.h>
 #include <conio.h>
 
-// ---------- Formato WAV ---------- 
+// ---------- WAV format ---------- 
 
 #pragma pack(push, 1)
 typedef struct {
@@ -37,29 +37,29 @@ typedef struct {
 int leer_header_wav(FILE *f, WavHeader *h)
 {
     if (fread(h, sizeof(WavHeader), 1, f) != 1) {
-        printf("Error leyendo el header (archivo truncado?)\n");
+        printf("Error reading the header (file truncated?)\n");
         return 0;
     }
     if (strncmp(h->riff_id, "RIFF", 4) != 0 ||
         strncmp(h->wave_id, "WAVE", 4) != 0 ||
         strncmp(h->fmt_id,  "fmt ", 4) != 0 ||
         strncmp(h->data_id, "data", 4) != 0) {
-        printf("No es un WAV valido, o tiene chunks extra no soportados\n");
+        printf("Not a valid WAV, or it has extra chunks we do not support\n");
         return 0;
     }
     if (h->audio_format != 1) {
-        printf("Solo se soporta PCM sin comprimir\n");
+        printf("Only uncompressed PCM is supported\n");
         return 0;
     }
     if (h->bits_per_sample != 16) {
-        printf("Este reproductor solo soporta 16 bits (archivo tiene %u)\n",
+        printf("This player only supports 16 bit (the file has %u)\n",
                h->bits_per_sample);
         return 0;
     }
     return 1;
 }
 
-// ---------- Deteccion de la tarjeta (variable BLASTER) ---------- 
+// ---------- Card detection (the BLASTER variable) ---------- 
 
 typedef struct {
     unsigned int base_port;
@@ -79,7 +79,7 @@ int detectar_sb(SBConfig *cfg)
     cfg->dma16     = 5;
 
     if (blaster == NULL) {
-        printf("Variable BLASTER no encontrada, uso valores por defecto\n");
+        printf("BLASTER variable not found, using the defaults\n");
         return 0;
     }
 
@@ -97,7 +97,7 @@ int detectar_sb(SBConfig *cfg)
     return 1;
 }
 
-// ---------- Puertos del DSP ---------- 
+// ---------- DSP ports ---------- 
 
 #define DSP_RESET(b)       (b + 0x6)
 #define DSP_READ(b)        (b + 0xA)
@@ -107,7 +107,7 @@ int detectar_sb(SBConfig *cfg)
 
 void dsp_write(unsigned base, unsigned char val)
 {
-    while (inp(DSP_WRITE(base)) & 0x80) ;   // espera a que el puerto quede libre 
+    while (inp(DSP_WRITE(base)) & 0x80) ;   // wait until the port is free        
     outp(DSP_WRITE(base), val);
 }
 
@@ -128,29 +128,29 @@ int dsp_reset(unsigned base)
 
 void dsp_set_sample_rate(unsigned base, unsigned rate)
 {
-    dsp_write(base, 0x41);              // fijar frecuencia de salida (SB16) 
+    dsp_write(base, 0x41);              // set the output rate (SB16)        
     dsp_write(base, (rate >> 8) & 0xFF);
     dsp_write(base, rate & 0xFF);
 }
 
-// Arranca la reproduccion en modo auto-init de 16 bits.
-//   'num_words_bloque' es la longitud de UNA MITAD del buffer, en palabras de 16 bits
-//   (no en bytes). El DSP generara una IRQ cada vez que complete un bloque de ese tamano. 
+// Starts playback in 16 bit auto-init mode.
+//   'num_words_bloque' is the length of ONE HALF of the buffer, in 16 bit words
+//   (not bytes). The DSP raises an IRQ each time it completes a block that size.
 
 void dsp_start_playback_16(unsigned base, unsigned num_words_bloque, int stereo)
 {
-    unsigned char modo = 0x10;          // con signo (los WAV de 16 bits son signed) 
+    unsigned char modo = 0x10;          // signed (16 bit WAVs are signed)           
     unsigned cuenta = num_words_bloque - 1;
 
     if (stereo) modo |= 0x20;
 
-    dsp_write(base, 0xB6);              // 16 bits, salida, auto-init 
+    dsp_write(base, 0xB6);              // 16 bit, output, auto-init  
     dsp_write(base, modo);
     dsp_write(base, cuenta & 0xFF);
     dsp_write(base, (cuenta >> 8) & 0xFF);
 }
 
-// ---------- Controlador DMA (8237), canales de 16 bits (4-7) ---------- 
+// ---------- DMA controller (8237), 16 bit channels (4-7) ---------- 
 
 void dma16_setup(int channel, unsigned long phys_addr, unsigned long length_bytes)
 {
@@ -161,15 +161,15 @@ void dma16_setup(int channel, unsigned long phys_addr, unsigned long length_byte
     static unsigned addr_port[4]  = {0xC0, 0xC4, 0xC8, 0xCC};
     static unsigned count_port[4] = {0xC2, 0xC6, 0xCA, 0xCE};
 
-    // Para canales de 16 bits, la direccion se expresa en PALABRAS, no en bytes 
+    // For 16 bit channels the address is given in WORDS, not in bytes 
     page  = (unsigned)((phys_addr >> 16) & 0xFF);
     addr  = (unsigned)((phys_addr >> 1) & 0xFFFF);
     count = (unsigned)((length_bytes / 2) - 1);
 
-    outp(0xD4, 0x04 | chan_rel);        // enmascara el canal mientras se programa 
-    outp(0xD8, 0x00);                   // limpia el flip-flop byte alto/bajo 
+    outp(0xD4, 0x04 | chan_rel);        // mask the channel while programming it   
+    outp(0xD8, 0x00);                   // clear the high/low byte flip-flop       
 
-    // modo: single (01) | auto-init (1) | lectura mem->dispositivo (10) | canal 
+    // mode: single (01) | auto-init (1) | read memory->device (10) | channel 
     outp(0xD6, 0x40 | 0x10 | 0x08 | chan_rel);
 
     outp(addr_port[chan_rel], addr & 0xFF);
@@ -179,10 +179,10 @@ void dma16_setup(int channel, unsigned long phys_addr, unsigned long length_byte
     outp(count_port[chan_rel], count & 0xFF);
     outp(count_port[chan_rel], (count >> 8) & 0xFF);
 
-    outp(0xD4, chan_rel);               // desenmascara: listo para transferir 
+    outp(0xD4, chan_rel);               // unmask: ready to transfer               
 }
 
-// ---------- Reserva de buffer alineado a un limite de pagina ---------- 
+// ---------- Allocating a buffer aligned to a page boundary ---------- 
 
 char *asignar_buffer_alineado(unsigned long size, unsigned long align)
 {
@@ -196,10 +196,10 @@ char *asignar_buffer_alineado(unsigned long size, unsigned long align)
     resto  = fisica % align;
     if (resto != 0) fisica += (align - resto);
 
-    // Nota didactica: al recalcular el puntero perdemos la referencia original
-    //   de 'bloque' para poder liberarlo con farfree(). Se simplifica aqui porque
-    //  DOS libera toda la memoria del proceso al terminar el programa. En un
-    //  proyecto real conviene guardar 'bloque' aparte. 
+    // Teaching note: recalculating the pointer loses the original reference to
+    //   'bloque', which is what farfree() would need. It is simplified here
+    //   because DOS releases all of the process's memory when the program ends.
+    //   In a real project you should keep 'bloque' separately.
     return (char far *) MK_FP((unsigned)(fisica >> 4), 0);
 }
 
@@ -212,12 +212,12 @@ volatile int buffer_listo = 0;
 
 void interrupt isr_sb(void)
 {
-    inp(DSP_ACK16(sb_base));            // confirma la IRQ de 16 bits ante el DSP 
+    inp(DSP_ACK16(sb_base));            // acknowledge the 16 bit IRQ to the DSP   
 
     buffer_listo = 1;
 
-    outp(0x20, 0x20);                   // EOI al PIC maestro 
-    if (irq_num >= 8) outp(0xA0, 0x20); // EOI al PIC esclavo si aplica 
+    outp(0x20, 0x20);                   // EOI to the master PIC 
+    if (irq_num >= 8) outp(0xA0, 0x20); // EOI to the slave PIC if needed 
 }
 
 void instalar_isr(int irq)
@@ -242,9 +242,9 @@ void restaurar_isr(int irq)
     setvect(vector, old_isr);
 }
 
-// ---------- Programa principal ---------- 
+// ---------- Main program ---------- 
 
-#define HALF_SIZE 16384UL               // 16 KB por mitad 
+#define HALF_SIZE 16384UL               // 16 KB per half  
 #define BUF_SIZE  (HALF_SIZE * 2)
 
 int main(int argc, char *argv[])
@@ -257,12 +257,12 @@ int main(int argc, char *argv[])
     int mitad_a_rellenar;
 
     if (argc < 2) {
-        printf("Uso: SBWAV archivo.wav\n");
+        printf("Usage: SBWAV file.wav\n");
         return 1;
     }
 
     f = fopen(argv[1], "rb");
-    if (!f) { printf("No se pudo abrir el archivo\n"); return 1; }
+    if (!f) { printf("Could not open the file\n"); return 1; }
 
     if (!leer_header_wav(f, &h)) { fclose(f); return 1; }
 
@@ -272,24 +272,24 @@ int main(int argc, char *argv[])
     sb_base = sb.base_port;
     irq_num = sb.irq;
 
-    printf("Tarjeta en %Xh, IRQ %d, DMA16 %d\n", sb_base, irq_num, sb.dma16);
-    printf("WAV: %lu Hz, %u canal(es), %u bits\n",
+    printf("Card at %Xh, IRQ %d, DMA16 %d\n", sb_base, irq_num, sb.dma16);
+    printf("WAV: %lu Hz, %u channel(s), %u bits\n",
            h.sample_rate, h.num_channels, h.bits_per_sample);
 
      
     //       
     if (!dsp_reset(sb_base)) {
-        printf("No se detecta el DSP en el puerto indicado\n");
+        printf("No DSP found at that port\n");
         fclose(f);
         return 1;
     }
 
-    buffer = asignar_buffer_alineado(BUF_SIZE, 131072UL);   // alineado a 128 KB 
-    if (!buffer) { printf("Sin memoria para el buffer\n"); fclose(f); return 1; }
+    buffer = asignar_buffer_alineado(BUF_SIZE, 131072UL);   // aligned to 128 KB 
+    if (!buffer) { printf("Not enough memory for the buffer\n"); fclose(f); return 1; }
 
     fisica = ((unsigned long)FP_SEG(buffer) << 4) + FP_OFF(buffer);
 
-    // Rellenamos las dos mitades ANTES de arrancar, para no arrancar con silencio 
+    // Fill both halves BEFORE starting, so it does not start on silence 
     fread(buffer,             1, HALF_SIZE, f);
     fread(buffer + HALF_SIZE, 1, HALF_SIZE, f);
 
@@ -307,12 +307,12 @@ int main(int argc, char *argv[])
     
     
     
-    // Bloque del DSP = una mitad, expresado en PALABRAS de 16 bits 
+    // DSP block = one half, expressed in 16 bit WORDS 
     dsp_start_playback_16(sb_base, (unsigned)(HALF_SIZE / 2), h.num_channels == 2);
 
-    mitad_a_rellenar = 0;   // la primera mitad que hay que reponer es la 0 
+    mitad_a_rellenar = 0;   // the first half to refill is half 0           
 
-    printf("Reproduciendo... pulsa una tecla para detener\n");
+    printf("Playing... press any key to stop\n");
 
     
     while (!feof(f)) {
@@ -325,16 +325,16 @@ int main(int argc, char *argv[])
             char *destino = buffer + (mitad_a_rellenar * HALF_SIZE);
             unsigned long leidos = fread(destino, 1, HALF_SIZE, f);
             if (leidos < HALF_SIZE)
-                memset(destino + leidos, 0, HALF_SIZE - leidos); // silencio al final 
+                memset(destino + leidos, 0, HALF_SIZE - leidos); // silence at the end 
         }
         mitad_a_rellenar = !mitad_a_rellenar;
     }
 
-    // dejamos que termine de sonar la ultima mitad ya cargada 
+    // let the last half already loaded play out 
     while (!buffer_listo) ;
 
 fin:
-    dsp_write(sb_base, 0xD9);           // sale del modo auto-init de 16 bits 
+    dsp_write(sb_base, 0xD9);           // leave 16 bit auto-init mode         
     
     //end comment here
     restaurar_isr(irq_num);
@@ -342,6 +342,6 @@ fin:
     
     
     fclose(f);
-    printf("Reproduccion terminada\n");
+    printf("Playback finished\n");
     return 0;
 }

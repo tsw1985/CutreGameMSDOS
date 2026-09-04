@@ -9,7 +9,7 @@
 //===========================================================
 
 #include "header\players.h"
-#include "header\bmp.h"     /* solo por WIDTH / HEIGHT: los limites de la pantalla */
+#include "header\bmp.h"     /* only for WIDTH / HEIGHT: the screen bounds */
 #include <alloc.h>
 
 void player_init(struct player *_player){

@@ -21,7 +21,7 @@ unsigned char *buffer_map_collisions_data = NULL;
 
 void bmp_revert_bmp(char *buffer){
 	
-	unsigned char temp_line[320];  // buffer temporal para una linea
+	unsigned char temp_line[320];  // temporary buffer for one line
     int y;
     unsigned char *up_line;
     unsigned char *bottom_line;
@@ -323,7 +323,7 @@ void draw_sprite_to_buffer(unsigned char *sprite,
             
             pixel = sprite[src_offset];
             
-            // Copiar pixel (con transparencia: color 0 = transparente)
+            // Copy the pixel (with transparency: color 0 = transparent)
             if(pixel != 0) {
                 dest_buffer[dest_offset] = pixel;
             }

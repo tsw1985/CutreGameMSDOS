@@ -239,14 +239,20 @@ struct player{
 
 
 		// ---- Sound ----
-		// Which mixer voice and which sample this tank uses. They are here
-		// so process_player_input() stays generic: it drives whichever
-		// player it is given without knowing that player 1 is the one with
-		// engip1.wav. Set in init_players(), see sound.h for the values.
+		// Which engine sound belongs to this tank. It is here so that
+		// process_player_input() stays generic: it drives whichever player it
+		// is given without knowing that player 1 is the one with engip1.wav.
+		//
+		// The number is the one load_sound() gave back, so it is filled in
+		// after the WAVs have been loaded and not in init_players(). A -1
+		// means there is no sound, and every sound call handles that by
+		// quietly doing nothing.
+		//
+		// There are no voice numbers any more: loop_sound() and
+		// stop_looping_sound() both take the sound, and the mixer decides
+		// which voice it goes to on its own.
 
-		unsigned int sound_engine_voice;
-		unsigned int sound_engine_sample;
-		unsigned int sound_fire_voice;
+		int sound_engine_sample;
 
 
 		// ---- Track animation timing ----

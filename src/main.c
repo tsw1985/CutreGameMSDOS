@@ -127,6 +127,26 @@ int network_mode;
 // mode, where this keyboard drives both of them.
 int local_player_is_1;
 
+// ---- The sounds this game uses ----
+//
+// How loud each one is, out of SOUND_VOLUME_MAX. The engines are turned down
+// so a shot can be heard over them, and because two engines flat out plus a
+// shot would clip badly once they are all added together. 64 is twice the
+// recorded level, which the mixer allows and clamps if it goes too far.
+#define SOUND_VOLUME_FIRE 		64
+#define SOUND_VOLUME_ENGINE 	34
+#define SOUND_VOLUME_DIED 		64
+
+// The numbers load_sound() hands back. sound.c knows nothing about any of
+// this: it is a library, and which WAV files exist is the game's business.
+//
+// They start at -1, which every sound call takes to mean "nothing", so the
+// game runs exactly the same when there is no card and nothing was loaded.
+int sound_fire     = -1;
+int sound_engine_1 = -1;
+int sound_engine_2 = -1;
+int sound_died     = -1;
+
 // Install our custom interruption vector
 void install_kbd()   {
 	old_kbd_handler = getvect(IRQ_KEYBOARD);
@@ -263,10 +283,49 @@ int main(int argc, char *argv[]){
 	init_players();
 	init_graphics();
 
-	// Sound is optional: if there is no card sound_init() returns 0, says so
+	// Sound is optional: if there is no card sound_start() returns 0, says so
 	// in the log, and every later sound call does nothing. The game plays
 	// exactly the same, in silence.
-	sound_init();
+	//
+	// sound.c is a library and knows nothing about tanks, so everything that
+	// IS about this game happens right here: where to report problems, which
+	// WAV files to load, and how loud each one has to be.
+	sound_set_log(tanks_log);
+
+	if (sound_start() == 1){
+
+		sound_fire     = load_sound("..\\res\\fire.wav");
+		sound_engine_1 = load_sound("..\\res\\engip1.wav");
+		sound_engine_2 = load_sound("..\\res\\engip2.wav");
+		sound_died     = load_sound("..\\res\\died.wav");
+
+		if (sound_fire == -1){
+			tanks_log("Sound: could not load fire.wav");
+		}
+
+		if (sound_engine_1 == -1){
+			tanks_log("Sound: could not load engip1.wav");
+		}
+
+		if (sound_engine_2 == -1){
+			tanks_log("Sound: could not load engip2.wav");
+		}
+
+		if (sound_died == -1){
+			tanks_log("Sound: could not load died.wav");
+		}
+
+		set_sound_volume(sound_fire,     SOUND_VOLUME_FIRE);
+		set_sound_volume(sound_engine_1, SOUND_VOLUME_ENGINE);
+		set_sound_volume(sound_engine_2, SOUND_VOLUME_ENGINE);
+		set_sound_volume(sound_died,     SOUND_VOLUME_DIED);
+
+		// init_players() ran before any of these files existed in memory, so
+		// this is where each tank finds out which engine sound is its own.
+		player1.sound_engine_sample = sound_engine_1;
+		player2.sound_engine_sample = sound_engine_2;
+
+	}
 
 	// The first round starts running, not burning
 	explosion_pause_counter = 0;
@@ -381,14 +440,13 @@ int main(int argc, char *argv[]){
 				// Cut both engines. The keyboard is not read during the
 				// pause, so nothing else would ever turn them off and they
 				// would keep looping while the tanks burn.
-				sound_stop(player1.sound_engine_voice);
-				sound_stop(player2.sound_engine_voice);
+				stop_looping_sound(player1.sound_engine_sample);
+				stop_looping_sound(player2.sound_engine_sample);
 
-				// The bang. One single voice, so two tanks dying on the same
-				// frame is one explosion and not two on top of each other.
-				// It is longer than the pause and nothing cuts it, so it
-				// carries on ringing into the start of the new round.
-				sound_play(SOUND_VOICE_EXPLOSION, SOUND_SAMPLE_DIED, SOUND_VOLUME_DIED);
+				// The bang. Played once from here and never cut, so it keeps
+				// ringing into the start of the new round: the sound is
+				// longer than the pause itself.
+				play_sound(sound_died);
 
 				// Start the pause. The round is NOT restarted here: the
 				// tanks stay where they were shot, so the explosion can be
@@ -498,7 +556,7 @@ int main(int argc, char *argv[]){
 
 	// Before anything else: while the card is running its DMA is reading
 	// our buffer, so it has to be stopped before that memory is given back
-	sound_shutdown();
+	sound_end();
 
 	// The socket has to go back to the driver, or the next run cannot open
 	// the same one and the game says there is no network
@@ -990,7 +1048,7 @@ void process_player_input(struct player *_player,
 		if (_player->fire_was_pressed == 0){
 
 			if (player_fire_bullet(_player) == 1){
-				sound_play(_player->sound_fire_voice, SOUND_SAMPLE_FIRE, SOUND_VOLUME_FIRE);
+				play_sound(sound_fire);
 			}
 
 		}
@@ -1013,12 +1071,13 @@ void process_player_input(struct player *_player,
 	// Holding a key against a wall still revs, which is what a tank pushing
 	// against something should sound like.
 	//
-	// sound_loop() knows it is already playing this sample and does nothing,
-	// so calling it every frame is free.
+	// loop_sound() knows it is already playing this sound and does nothing,
+	// so calling it every frame is free. Neither call needs a voice number:
+	// the mixer keeps track of which voice this sound went to.
 	if (is_driving == 1){
-		sound_loop(_player->sound_engine_voice, _player->sound_engine_sample, SOUND_VOLUME_ENGINE);
+		loop_sound(_player->sound_engine_sample);
 	}else{
-		sound_stop(_player->sound_engine_voice);
+		stop_looping_sound(_player->sound_engine_sample);
 	}
 
 }
@@ -1434,11 +1493,9 @@ void init_players(){
 	// Nothing has been fired yet, so no fire key is being held down
 	player1.fire_was_pressed = 0;
 
-	// Its own mixer voice for the engine and another for the shot, so the
-	// two tanks never cut each other off
-	player1.sound_engine_voice  = SOUND_VOICE_ENGINE_1;
-	player1.sound_engine_sample = SOUND_SAMPLE_ENGINE_1;
-	player1.sound_fire_voice    = SOUND_VOICE_FIRE_1;
+	// Nothing has been loaded yet at this point, so there is no engine sound
+	// to point at. main() fills it in once the WAV files are in memory.
+	player1.sound_engine_sample = -1;
 
 	player1.canonn_head_top_up_x = 0;
 	player1.canonn_head_top_up_y = 0;
@@ -1465,9 +1522,7 @@ void init_players(){
 
 	player2.fire_was_pressed = 0;
 
-	player2.sound_engine_voice  = SOUND_VOICE_ENGINE_2;
-	player2.sound_engine_sample = SOUND_SAMPLE_ENGINE_2;
-	player2.sound_fire_voice    = SOUND_VOICE_FIRE_2;
+	player2.sound_engine_sample = -1;
 
 	player2.canonn_head_top_up_x = 0;
 	player2.canonn_head_top_up_y = 0;

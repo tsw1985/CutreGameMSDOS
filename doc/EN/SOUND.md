@@ -1,5 +1,8 @@
 # SOUND.md — how the game's sound works
 
+> **Notice.** `src/sound.c` is now a reusable module and the function names have changed: `sound_init()` -> `sound_start()`, `sound_play(voice, sample, volume)` -> `play_sound(id)`, and the WAV files are no longer loaded inside the library. Everything this document explains about the **internals** -- the DMA, the interrupt, the software mixer -- is still exact. For today's API see [SOUND-TUTORIAL.md](SOUND-TUTORIAL.md).
+
+
 A document about `src/sound.c` and `header/sound.h`. It explains what each
 function does, in what order they are called, how the game uses them, and
 **why** each decision was taken.

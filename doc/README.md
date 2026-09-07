@@ -8,6 +8,7 @@ the same files under the same names.*
 
 | | Español | English |
 |---|---|---|
+| **TUTORIAL de sonido / Sound TUTORIAL** | [`ES/TUTORIAL-SONIDO.md`](ES/TUTORIAL-SONIDO.md) | [`EN/SOUND-TUTORIAL.md`](EN/SOUND-TUTORIAL.md) |
 | **MANUAL de red / Network MANUAL** | [`ES/MANUAL-RED.md`](ES/MANUAL-RED.md) | [`EN/NETWORK-MANUAL.md`](EN/NETWORK-MANUAL.md) |
 | **Sonido / Sound** | [`ES/SOUND.md`](ES/SOUND.md) | [`EN/SOUND.md`](EN/SOUND.md) |
 | **Red / Network** | [`ES/NETWORK.md`](ES/NETWORK.md) | [`EN/NETWORK.md`](EN/NETWORK.md) |
@@ -18,6 +19,9 @@ the same files under the same names.*
 
 ### Español
 
+- **TUTORIAL-SONIDO** — **empieza por aqui si quieres USAR el sonido en otro
+  proyecto.** Los cuatro pasos, `play_sound`, `loop_sound`, el volumen, como
+  tienen que ser los WAV, y un programa completo de ejemplo. Nada de tanques.
 - **MANUAL-RED** — **empieza por aquí si quieres aprender.** Un manual de
   cero a jugar en red: por qué mandar posiciones no vale, qué es el
   determinismo, qué es lockstep, qué es IPX, el código en orden de ejecución,
@@ -35,6 +39,9 @@ the same files under the same names.*
 
 ### English
 
+- **SOUND-TUTORIAL** — **start here if you want to USE the sound in another
+  project.** The four steps, `play_sound`, `loop_sound`, volume, what the WAV
+  files have to be, and a complete example program. No tanks anywhere.
 - **NETWORK-MANUAL** — **start here if you want to learn.** A manual from
   nothing to networked play: why sending positions does not work, what
   determinism is, what lockstep is, what IPX is, the code in execution order,

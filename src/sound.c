@@ -13,8 +13,13 @@
 //      when the card has actually asked for more, so it returns straight
 //      away on almost every frame.
 //
-// No printf anywhere: the game is in graphics mode and any printing would
-// paint garbage over the screen. Problems are reported through tanks_log().
+// This file is a LIBRARY: it names no file, knows no game, and can be copied
+// into another program together with header\sound.h and nothing else. What
+// gets loaded and when it is played is decided entirely by the caller.
+//
+// No printf anywhere either: a caller in graphics mode would get garbage
+// painted over its screen. Problems go to whatever sound_set_log() was given,
+// and nowhere at all if it was never called.
 //===========================================================
 
 #include <stdio.h>
@@ -24,7 +29,6 @@
 #include <alloc.h>
 #include <conio.h>     /* inportb() / outportb() */
 #include "header\sound.h"
-#include "header\util.h"
 
 // Output rate of the DSP, and therefore of everything: the card has ONE
 // rate, so a WAV recorded at another one is resampled when it is loaded.
@@ -46,8 +50,6 @@
 // mixing, and it is added back afterwards.
 #define SOUND_SILENCE 		128
 
-// Volumes are out of this, so 64 is full volume
-#define SOUND_VOLUME_MAX 	32//64
 
 
 /* ---------- WAV file format ---------- */
@@ -90,6 +92,7 @@ struct sound_sample {
 	unsigned char far *data;		// the samples, already at SOUND_SAMPLE_RATE
 	unsigned char far *block;		// what farmalloc() returned, the one to free
 	unsigned long length;			// how many samples
+	int volume;						// out of SOUND_VOLUME_MAX, see set_sound_volume()
 
 };
 
@@ -110,8 +113,8 @@ struct sound_voice {
 // first and returns, so the game runs the same without sound.
 static int sound_is_ready = 0;
 
-static struct sound_sample sound_samples[SOUND_TOTAL_SAMPLES];
-static struct sound_voice  sound_voices[SOUND_TOTAL_VOICES];
+static struct sound_sample sound_samples[SOUND_MAX_SAMPLES];
+static struct sound_voice  sound_voices[SOUND_MAX_VOICES];
 
 // The buffer the DMA plays, going round and round over its two halves
 static unsigned char far *sound_buffer = NULL;
@@ -136,6 +139,31 @@ static int sound_isr_installed = 0;
 // back, inside an interrupt: without it the check in sound_update() could
 // be optimised away, since nothing in plain sight ever sets it.
 static volatile int sound_buffer_ready = 0;
+
+
+// Where this library reports problems. NULL, the default, means nowhere.
+//
+// This is what keeps this file free of any game code. Without it, sound.c
+// would have to #include the log of one particular program and could not be
+// copied into the next one as it is. The program hands over its own function
+// once, and sound.c has no idea what that function does with the text.
+static void (*sound_log_function)(char *message) = NULL;
+
+
+static void sound_log(char *message)
+{
+	if (sound_log_function == NULL){
+		return;
+	}
+
+	sound_log_function(message);
+}
+
+
+void sound_set_log(void (*log_function)(char *message))
+{
+	sound_log_function = log_function;
+}
 
 
 /* ---------- DSP ports ---------- */
@@ -424,7 +452,22 @@ static unsigned char far *sound_alloc_dma_buffer(unsigned long size, unsigned lo
 // cheap way, by picking the nearest sample, which for an engine or an
 // explosion is more than good enough, and it happens once at startup so it
 // costs nothing while playing.
-static int sound_load_sample(char *file_name, int sample_id)
+//===========================================================
+// Loads one WAV into memory and hands back the number it is played by.
+//
+// This is the one function a program HAS to call for every sound it wants,
+// and it is what replaced a sound_init() with four file names hard coded
+// inside it. The library does not know, and does not want to know, which
+// sounds your game has: it keeps up to SOUND_MAX_SAMPLES of them and gives
+// each one a number.
+//
+// Everything is resampled to SOUND_SAMPLE_RATE, because the DSP has a single
+// output rate: a 22255 Hz file played at 16000 would come out slow and low
+// pitched. It is done the cheap way, by picking the nearest sample, which
+// for an engine or an explosion is more than good enough, and it happens
+// once at loading time so it costs nothing while playing.
+//===========================================================
+int load_sound(char *file_name)
 {
 	FILE *file;
 	WavHeader header;
@@ -435,22 +478,38 @@ static int sound_load_sample(char *file_name, int sample_id)
 	unsigned long source_length;
 	unsigned long destination_length;
 	unsigned long i;
+	int slot;
+	int sound_id;
 
-	sound_samples[sample_id].data = NULL;
-	sound_samples[sample_id].block = NULL;
-	sound_samples[sample_id].length = 0;
+	// The first slot with nothing in it. Slots are not reused while the
+	// program runs, so a number handed out here stays good until sound_end().
+	sound_id = -1;
+
+	for (slot = 0; slot < SOUND_MAX_SAMPLES; slot++){
+
+		if (sound_samples[slot].data == NULL){
+			sound_id = slot;
+			break;
+		}
+
+	}
+
+	if (sound_id == -1){
+		sound_log("Sound: no free sample slot, raise SOUND_MAX_SAMPLES");
+		return -1;
+	}
 
 	file = fopen(file_name, "rb");
 	if (file == NULL){
-		return 0;
+		return -1;
 	}
 
 	if (fread(&header, sizeof(WavHeader), 1, file) != 1){
 		fclose(file);
-		return 0;
+		return -1;
 	}
 
-	/* only plain 8 bit mono PCM, which is what all our files are */
+	/* only plain 8 bit mono PCM */
 	if (strncmp(header.riff_id, "RIFF", 4) != 0 ||
 	    strncmp(header.wave_id, "WAVE", 4) != 0 ||
 	    strncmp(header.fmt_id,  "fmt ", 4) != 0 ||
@@ -459,7 +518,7 @@ static int sound_load_sample(char *file_name, int sample_id)
 	    header.bits_per_sample != 8 ||
 	    header.num_channels != 1){
 		fclose(file);
-		return 0;
+		return -1;
 	}
 
 	source_length = header.data_size;
@@ -467,14 +526,14 @@ static int sound_load_sample(char *file_name, int sample_id)
 	source = (unsigned char far *)farmalloc(source_length);
 	if (source == NULL){
 		fclose(file);
-		return 0;
+		return -1;
 	}
 	source_block = source;
 
 	if (fread(source, 1, (unsigned int)source_length, file) != source_length){
 		farfree(source_block);
 		fclose(file);
-		return 0;
+		return -1;
 	}
 
 	fclose(file);
@@ -482,11 +541,12 @@ static int sound_load_sample(char *file_name, int sample_id)
 	/* already at the right rate: keep it as it is */
 	if (header.sample_rate == SOUND_SAMPLE_RATE){
 
-		sound_samples[sample_id].data = source;
-		sound_samples[sample_id].block = source_block;
-		sound_samples[sample_id].length = source_length;
+		sound_samples[sound_id].data = source;
+		sound_samples[sound_id].block = source_block;
+		sound_samples[sound_id].length = source_length;
+		sound_samples[sound_id].volume = SOUND_VOLUME_MAX;
 
-		return 1;
+		return sound_id;
 
 	}
 
@@ -496,7 +556,7 @@ static int sound_load_sample(char *file_name, int sample_id)
 	destination = (unsigned char far *)farmalloc(destination_length);
 	if (destination == NULL){
 		farfree(source_block);
-		return 0;
+		return -1;
 	}
 	destination_block = destination;
 
@@ -506,11 +566,12 @@ static int sound_load_sample(char *file_name, int sample_id)
 
 	farfree(source_block);
 
-	sound_samples[sample_id].data = destination;
-	sound_samples[sample_id].block = destination_block;
-	sound_samples[sample_id].length = destination_length;
+	sound_samples[sound_id].data = destination;
+	sound_samples[sound_id].block = destination_block;
+	sound_samples[sound_id].length = destination_length;
+	sound_samples[sound_id].volume = SOUND_VOLUME_MAX;
 
-	return 1;
+	return sound_id;
 }
 
 
@@ -540,7 +601,7 @@ static void sound_mix_half(unsigned char far *destination)
 		sound_mix_buffer[i] = 0;
 	}
 
-	for (voice_index = 0; voice_index < SOUND_TOTAL_VOICES; voice_index++){
+	for (voice_index = 0; voice_index < SOUND_MAX_VOICES; voice_index++){
 
 		voice = &sound_voices[voice_index];
 
@@ -600,20 +661,29 @@ static void sound_mix_half(unsigned char far *destination)
 
 /* ---------- What the game calls ---------- */
 
-int sound_init()
+//===========================================================
+// Starts the card up. Returns 1 if there is sound, 0 if there is not.
+//
+// It loads NO files. That is the whole difference between a library and the
+// sound_init() this grew out of, which had the four WAV files of one
+// particular game written into it and was therefore of no use to any other
+// program. Load yours with load_sound() once this has returned 1.
+//===========================================================
+int sound_start(void)
 {
 	SBConfig card;
 	int i;
 
 	sound_is_ready = 0;
 
-	for (i = 0; i < SOUND_TOTAL_SAMPLES; i++){
+	for (i = 0; i < SOUND_MAX_SAMPLES; i++){
 		sound_samples[i].data = NULL;
 		sound_samples[i].block = NULL;
 		sound_samples[i].length = 0;
+		sound_samples[i].volume = SOUND_VOLUME_MAX;
 	}
 
-	sound_stop_all();
+	stop_all_sounds();
 
 	sound_detect_card(&card);
 	sound_base_port = card.base_port;
@@ -622,29 +692,13 @@ int sound_init()
 
 	/* if the DSP does not answer there is no card: leave quietly */
 	if (sound_dsp_reset(sound_base_port) == 0){
-		tanks_log("Sound: no Sound Blaster found, playing without sound");
+		sound_log("Sound: no Sound Blaster found, playing without sound");
 		return 0;
-	}
-
-	if (sound_load_sample("..\\res\\fire.wav", SOUND_SAMPLE_FIRE) == 0){
-		tanks_log("Sound: could not load fire.wav");
-	}
-
-	if (sound_load_sample("..\\res\\engip1.wav", SOUND_SAMPLE_ENGINE_1) == 0){
-		tanks_log("Sound: could not load engip1.wav");
-	}
-
-	if (sound_load_sample("..\\res\\engip2.wav", SOUND_SAMPLE_ENGINE_2) == 0){
-		tanks_log("Sound: could not load engip2.wav");
-	}
-
-	if (sound_load_sample("..\\res\\died.wav", SOUND_SAMPLE_DIED) == 0){
-		tanks_log("Sound: could not load died.wav");
 	}
 
 	sound_buffer = sound_alloc_dma_buffer(SOUND_BUFFER_SIZE, 65536UL, &sound_buffer_block);
 	if (sound_buffer == NULL){
-		tanks_log("Sound: not enough memory for the DMA buffer");
+		sound_log("Sound: not enough memory for the DMA buffer");
 		return 0;
 	}
 
@@ -670,13 +724,13 @@ int sound_init()
 
 	sound_is_ready = 1;
 
-	tanks_log("Sound: ready");
+	sound_log("Sound: ready");
 
 	return 1;
 }
 
 
-void sound_shutdown()
+void sound_end(void)
 {
 	int i;
 
@@ -698,7 +752,7 @@ void sound_shutdown()
 		sound_buffer = NULL;
 	}
 
-	for (i = 0; i < SOUND_TOTAL_SAMPLES; i++){
+	for (i = 0; i < SOUND_MAX_SAMPLES; i++){
 		if (sound_samples[i].block != NULL){
 			farfree(sound_samples[i].block);
 			sound_samples[i].block = NULL;
@@ -711,7 +765,7 @@ void sound_shutdown()
 }
 
 
-void sound_update()
+void sound_update(void)
 {
 	unsigned char far *destination;
 
@@ -741,55 +795,162 @@ void sound_update()
 }
 
 
-void sound_play(int voice, int sample_id, int volume)
+//===========================================================
+// Finds a voice for a new sound.
+//
+// First choice is one that is not doing anything. If they are all busy, the
+// one closest to finishing is taken over: it was about to go quiet anyway,
+// so it is the least missed.
+//
+// Looping sounds are never taken over, because they are things like an
+// engine that is meant to keep going. If absolutely everything is looping,
+// -1 comes back and the new sound is simply not heard, which is far better
+// than cutting the engine off.
+//===========================================================
+static int sound_find_voice(void)
+{
+	int voice_index;
+	int best_voice;
+	unsigned long best_remaining;
+	unsigned long remaining;
+	struct sound_sample *sample;
+
+	for (voice_index = 0; voice_index < SOUND_MAX_VOICES; voice_index++){
+
+		if (sound_voices[voice_index].is_playing == 0){
+			return voice_index;
+		}
+
+	}
+
+	best_voice = -1;
+	best_remaining = 0;
+
+	for (voice_index = 0; voice_index < SOUND_MAX_VOICES; voice_index++){
+
+		if (sound_voices[voice_index].is_looping == 1){
+			continue;
+		}
+
+		sample = &sound_samples[sound_voices[voice_index].sample_id];
+
+		remaining = sample->length - sound_voices[voice_index].position;
+
+		if (best_voice == -1){
+			best_voice = voice_index;
+			best_remaining = remaining;
+		}else{
+			if (remaining < best_remaining){
+				best_voice = voice_index;
+				best_remaining = remaining;
+			}
+		}
+
+	}
+
+	return best_voice;
+}
+
+
+//===========================================================
+// Is this a sound we can actually play? Everything public checks this, which
+// is why a -1 from load_sound() can be kept and passed around freely: it
+// simply never plays.
+//===========================================================
+static int sound_id_is_valid(int sound_id)
 {
 	if (sound_is_ready == 0){
+		return 0;
+	}
+
+	if (sound_id < 0 || sound_id >= SOUND_MAX_SAMPLES){
+		return 0;
+	}
+
+	if (sound_samples[sound_id].data == NULL){
+		return 0;
+	}
+
+	return 1;
+}
+
+
+void set_sound_volume(int sound_id, int volume)
+{
+	if (sound_id < 0 || sound_id >= SOUND_MAX_SAMPLES){
 		return;
 	}
 
-	if (voice < 0 || voice >= SOUND_TOTAL_VOICES){
-		return;
+	sound_samples[sound_id].volume = volume;
+}
+
+
+int play_sound(int sound_id)
+{
+	int voice;
+
+	if (sound_id_is_valid(sound_id) == 0){
+		return -1;
 	}
 
-	sound_voices[voice].sample_id = sample_id;
-	sound_voices[voice].position = 0;
-	sound_voices[voice].volume = volume;
+	voice = sound_find_voice();
+
+	if (voice == -1){
+		return -1;
+	}
+
+	sound_voices[voice].sample_id  = sound_id;
+	sound_voices[voice].position   = 0;
+	sound_voices[voice].volume     = sound_samples[sound_id].volume;
 	sound_voices[voice].is_looping = 0;
 	sound_voices[voice].is_playing = 1;
+
+	return voice;
 }
 
 
-void sound_loop(int voice, int sample_id, int volume)
+int loop_sound(int sound_id)
 {
-	if (sound_is_ready == 0){
-		return;
+	int voice_index;
+	int voice;
+
+	if (sound_id_is_valid(sound_id) == 0){
+		return -1;
 	}
 
-	if (voice < 0 || voice >= SOUND_TOTAL_VOICES){
-		return;
+	// Already looping this very sound: leave it exactly as it is. This is
+	// what lets the caller ask for the engine on every single frame while a
+	// key is held, without the sound starting from the beginning seventy
+	// times a second, which would just be a click.
+	for (voice_index = 0; voice_index < SOUND_MAX_VOICES; voice_index++){
+
+		if (sound_voices[voice_index].is_playing == 1 &&
+		    sound_voices[voice_index].is_looping == 1 &&
+		    sound_voices[voice_index].sample_id == sound_id){
+			return voice_index;
+		}
+
 	}
 
-	// Already looping this very sample: leave it alone. This is what lets
-	// the caller ask for the engine on every single frame while the key is
-	// held, without the sound starting from the beginning 70 times a second,
-	// which would just be a click.
-	if (sound_voices[voice].is_playing == 1 &&
-	    sound_voices[voice].is_looping == 1 &&
-	    sound_voices[voice].sample_id == sample_id){
-		return;
+	voice = sound_find_voice();
+
+	if (voice == -1){
+		return -1;
 	}
 
-	sound_voices[voice].sample_id = sample_id;
-	sound_voices[voice].position = 0;
-	sound_voices[voice].volume = volume;
+	sound_voices[voice].sample_id  = sound_id;
+	sound_voices[voice].position   = 0;
+	sound_voices[voice].volume     = sound_samples[sound_id].volume;
 	sound_voices[voice].is_looping = 1;
 	sound_voices[voice].is_playing = 1;
+
+	return voice;
 }
 
 
-void sound_stop(int voice)
+void stop_sound(int voice)
 {
-	if (voice < 0 || voice >= SOUND_TOTAL_VOICES){
+	if (voice < 0 || voice >= SOUND_MAX_VOICES){
 		return;
 	}
 
@@ -799,11 +960,27 @@ void sound_stop(int voice)
 }
 
 
-void sound_stop_all()
+void stop_looping_sound(int sound_id)
+{
+	int voice_index;
+
+	for (voice_index = 0; voice_index < SOUND_MAX_VOICES; voice_index++){
+
+		if (sound_voices[voice_index].is_playing == 1 &&
+		    sound_voices[voice_index].is_looping == 1 &&
+		    sound_voices[voice_index].sample_id == sound_id){
+			stop_sound(voice_index);
+		}
+
+	}
+}
+
+
+void stop_all_sounds(void)
 {
 	int i;
 
-	for (i = 0; i < SOUND_TOTAL_VOICES; i++){
-		sound_stop(i);
+	for (i = 0; i < SOUND_MAX_VOICES; i++){
+		stop_sound(i);
 	}
 }

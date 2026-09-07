@@ -45,6 +45,21 @@
 #define SOUND_HALF_SIZE 	512
 #define SOUND_BUFFER_SIZE 	(SOUND_HALF_SIZE * 2)
 
+// How much of the song is kept in memory, waiting to be played.
+//
+// A song is NOT loaded: at 16000 bytes a second, one minute would be 937 KB
+// and would not fit in a DOS machine at all. It is read from the file as it
+// plays, and this is how far ahead we stay.
+//
+// 8192 bytes is half a second of music. That is the margin before the music
+// is heard to break up if the game stalls, and it also means the disk is only
+// touched about four times a second instead of on every frame.
+#define SONG_BUFFER_SIZE 	8192
+
+// When less than this is left, go and read more. Half the buffer, so every
+// read is worth doing and there is always a quarter of a second in hand.
+#define SONG_REFILL_LEVEL 	4096
+
 // In unsigned 8 bit audio the middle of the wave, ie. silence, is 128 and
 // not 0. Samples are turned into signed values by subtracting it before
 // mixing, and it is added back afterwards.
@@ -139,6 +154,31 @@ static int sound_isr_installed = 0;
 // back, inside an interrupt: without it the check in sound_update() could
 // be optimised away, since nothing in plain sight ever sets it.
 static volatile int sound_buffer_ready = 0;
+
+/* ---------- The song ---------- */
+
+// The song is a channel of its own, not one of the voices. A voice plays
+// something that is already in memory; this one is fed from a file that stays
+// open for as long as the music lasts.
+static FILE *song_file = NULL;
+
+static int song_is_playing = 0;
+static int song_volume = SOUND_SONG_DEFAULT_VOLUME;
+
+// The music waiting to be played. song_position is where the mixer reads,
+// song_fill is how much of the buffer holds real music.
+static unsigned char song_buffer[SONG_BUFFER_SIZE];
+static unsigned int  song_position = 0;
+static unsigned int  song_fill = 0;
+
+// Where the audio starts in the file, how long it is, and how much of it is
+// still to be read on this lap. When the last one is 0 we go back to the
+// start and the song begins again.
+static unsigned long song_data_start = 0;
+static unsigned long song_data_size = 0;
+static unsigned long song_bytes_left = 0;
+
+static char sound_log_text[100];
 
 
 // Where this library reports problems. NULL, the default, means nowhere.
@@ -641,6 +681,31 @@ static void sound_mix_half(unsigned char far *destination)
 
 	}
 
+	// The song, mixed in exactly like a voice. The only difference is where
+	// the bytes come from: song_refill() puts them there from the file, a
+	// little at a time, instead of them all being in memory at once.
+	if (song_is_playing == 1){
+
+		for (i = 0; i < SOUND_HALF_SIZE; i++){
+
+			// The buffer ran dry, which means the disk did not keep up. The
+			// rest of this half is left silent and the music carries on from
+			// the same place once more has been read: a gap, not a jump.
+			if (song_position >= song_fill){
+				break;
+			}
+
+			value = (int)song_buffer[song_position] - SOUND_SILENCE;
+			value = (value * song_volume) / SOUND_VOLUME_MAX;
+
+			sound_mix_buffer[i] = sound_mix_buffer[i] + value;
+
+			song_position = song_position + 1;
+
+		}
+
+	}
+
 	for (i = 0; i < SOUND_HALF_SIZE; i++){
 
 		value = sound_mix_buffer[i];
@@ -656,6 +721,216 @@ static void sound_mix_half(unsigned char far *destination)
 		destination[i] = (unsigned char)(value + SOUND_SILENCE);
 
 	}
+}
+
+
+/* ---------- The song: reading it as it plays ---------- */
+
+//===========================================================
+// Tops the song buffer back up from the file.
+//
+// Called from sound_update() every time a half has been mixed, which is about
+// 31 times a second, but it only touches the disk when less than
+// SONG_REFILL_LEVEL bytes are left. That works out at roughly four reads a
+// second, of about 4 KB each: 16 KB a second, which any disk can manage
+// without the game noticing.
+//
+// Going round at the end of the song happens right here, in the middle of a
+// read, so the last byte of the song and the first byte of the next lap end
+// up next to each other in the buffer. The loop is seamless.
+//===========================================================
+static void song_refill(void)
+{
+	unsigned int remaining;
+	unsigned int space;
+	unsigned int wanted;
+	unsigned int got;
+	int attempts;
+
+	if (song_is_playing == 0){
+		return;
+	}
+
+	if (song_file == NULL){
+		return;
+	}
+
+	remaining = song_fill - song_position;
+
+	// Still plenty in hand: leave the disk alone. This is the usual case.
+	if (remaining > SONG_REFILL_LEVEL){
+		return;
+	}
+
+	// Slide what is left to the front, so the rest of the buffer is free
+	// space again. It is at most SONG_REFILL_LEVEL bytes, four times a
+	// second, which costs nothing.
+	if (remaining > 0){
+		memmove(song_buffer, song_buffer + song_position, remaining);
+	}
+
+	song_fill     = remaining;
+	song_position = 0;
+
+	// Bounded on purpose: filling the buffer takes one read, or two when the
+	// song ends in the middle of it. If a broken file made neither work, this
+	// must not turn into a loop with no way out.
+	attempts = 0;
+
+	while (song_fill < SONG_BUFFER_SIZE){
+
+		attempts = attempts + 1;
+
+		if (attempts > 4){
+			break;
+		}
+
+		space = SONG_BUFFER_SIZE - song_fill;
+
+		// Never read past the end of the audio: what follows it in the file
+		// is not music, and the next lap has to start at the beginning
+		if ((unsigned long)space > song_bytes_left){
+			wanted = (unsigned int)song_bytes_left;
+		}else{
+			wanted = space;
+		}
+
+		if (wanted == 0){
+
+			// Nothing left on this lap and nothing to loop round to either:
+			// the file has no audio in it at all
+			if (song_data_size == 0){
+				break;
+			}
+
+		}else{
+
+			got = (unsigned int)fread(song_buffer + song_fill, 1, wanted, song_file);
+
+			song_fill       = song_fill + got;
+			song_bytes_left = song_bytes_left - (unsigned long)got;
+
+			// Shorter than its header claimed, or the read failed. Treat it
+			// as the end and go round.
+			if (got < wanted){
+				song_bytes_left = 0;
+			}
+
+		}
+
+		if (song_bytes_left == 0){
+			fseek(song_file, song_data_start, SEEK_SET);
+			song_bytes_left = song_data_size;
+		}
+
+	}
+}
+
+
+void stop_song(void)
+{
+	song_is_playing = 0;
+
+	if (song_file != NULL){
+		fclose(song_file);
+		song_file = NULL;
+	}
+
+	song_position = 0;
+	song_fill     = 0;
+
+	song_data_start = 0;
+	song_data_size  = 0;
+	song_bytes_left = 0;
+}
+
+
+void set_song_volume(int volume)
+{
+	song_volume = volume;
+}
+
+
+//===========================================================
+// Starts a song playing in the background, on a loop, until stop_song().
+//
+// Only one song at a time: this replaces whatever was playing.
+//
+// Unlike load_sound(), which reads the whole file into memory and resamples
+// it once, this one reads the file as it goes and therefore cannot convert
+// anything on the way past. The WAV has to arrive at exactly the rate the
+// card runs at, which is what the last check below is about.
+//===========================================================
+int play_song(char *file_name)
+{
+	WavHeader header;
+
+	stop_song();
+
+	if (sound_is_ready == 0){
+		return 0;
+	}
+
+	song_file = fopen(file_name, "rb");
+
+	if (song_file == NULL){
+		sound_log("Song: could not open the file");
+		return 0;
+	}
+
+	if (fread(&header, sizeof(WavHeader), 1, song_file) != 1){
+		sound_log("Song: the file is too short to be a WAV");
+		fclose(song_file);
+		song_file = NULL;
+		return 0;
+	}
+
+	// The plain 44 byte header, which is what sox writes. A file carrying
+	// extra chunks before the audio would fail here.
+	if (strncmp(header.riff_id, "RIFF", 4) != 0 ||
+	    strncmp(header.wave_id, "WAVE", 4) != 0 ||
+	    strncmp(header.fmt_id,  "fmt ", 4) != 0 ||
+	    strncmp(header.data_id, "data", 4) != 0){
+		sound_log("Song: not a plain 44 byte header WAV, convert it with sox");
+		fclose(song_file);
+		song_file = NULL;
+		return 0;
+	}
+
+	if (header.audio_format != 1 ||
+	    header.bits_per_sample != 8 ||
+	    header.num_channels != 1){
+		sound_log("Song: the WAV has to be 8 bit mono PCM");
+		fclose(song_file);
+		song_file = NULL;
+		return 0;
+	}
+
+	if (header.sample_rate != SOUND_SAMPLE_RATE){
+		sprintf(sound_log_text, "Song: the WAV is at %lu Hz and it has to be %d Hz",
+		        header.sample_rate, SOUND_SAMPLE_RATE);
+		sound_log(sound_log_text);
+		fclose(song_file);
+		song_file = NULL;
+		return 0;
+	}
+
+	song_data_start = sizeof(WavHeader);
+	song_data_size  = header.data_size;
+	song_bytes_left = header.data_size;
+
+	song_position = 0;
+	song_fill     = 0;
+
+	song_is_playing = 1;
+
+	// Fill it before the first note is due, so the music starts now and not
+	// half a second from now
+	song_refill();
+
+	sound_log("Song: playing");
+
+	return 1;
 }
 
 
@@ -684,6 +959,7 @@ int sound_start(void)
 	}
 
 	stop_all_sounds();
+	stop_song();
 
 	sound_detect_card(&card);
 	sound_base_port = card.base_port;
@@ -733,6 +1009,10 @@ int sound_start(void)
 void sound_end(void)
 {
 	int i;
+
+	// The song file has to be closed, and the music has to stop being mixed,
+	// before the card is stopped and the memory handed back
+	stop_song();
 
 	// Order matters, and it is the same reason as always: while the card is
 	// still running, the DMA is reading this memory behind our back. Stop
@@ -786,6 +1066,10 @@ void sound_update(void)
 	destination = sound_buffer + (sound_half_to_fill * SOUND_HALF_SIZE);
 
 	sound_mix_half(destination);
+
+	// Straight after mixing, so the music that was just consumed is put back.
+	// Almost every time this finds there is still plenty and returns.
+	song_refill();
 
 	if (sound_half_to_fill == 0){
 		sound_half_to_fill = 1;

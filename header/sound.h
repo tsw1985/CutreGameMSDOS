@@ -40,6 +40,10 @@
 //          loop_sound(engine);          /* over and over */
 //          stop_looping_sound(engine);  /* enough of that */
 //
+//      And for background music, of any length at all:
+//
+//          play_song("..\\res\\music.wav");
+//
 //   4. Before leaving the program, without fail:
 //
 //          sound_end();
@@ -74,6 +78,14 @@
 // then goes past what a byte holds is clamped by the mixer, so it distorts
 // instead of wrapping round, which would turn a loud shot into a nasty crack.
 #define SOUND_VOLUME_MAX 		32
+
+// What a song starts at, unless set_song_volume() says otherwise.
+//
+// Half, and deliberately so: unlike an effect, a song is sounding ALL the
+// time, so it is added to everything else on every single sample. At full
+// volume it would leave no room for the effects on top and the mixer would
+// spend the whole game clamping.
+#define SOUND_SONG_DEFAULT_VOLUME 	16
 
 
 // ---------- Starting and stopping ----------
@@ -134,6 +146,37 @@ int play_sound(int sound_id);
 // frame while a key is held down, without the sound restarting seventy times
 // a second, which would just be a click.
 int loop_sound(int sound_id);
+
+
+// ---------- Background music ----------
+
+// Starts a song playing behind everything else, on a loop, until stop_song().
+// Returns 1 if it is playing, 0 if it could not be started.
+//
+// A song is NOT loaded into memory: at 16000 bytes a second one minute would
+// be 937 KB, which does not fit in a DOS machine at all. It is read from the
+// file as it plays, half a second at a time, so the length of the song makes
+// no difference to the memory it costs. It is always SONG_BUFFER_SIZE.
+//
+// That is also why the file has to be EXACTLY 8 bit mono PCM at
+// SOUND_SAMPLE_RATE (16000 Hz). load_sound() can convert a file because it
+// does it once at startup; there is nowhere to do that while streaming.
+// Convert it beforehand:
+//
+//     sox song.mp3 -b 8 -c 1 -e unsigned-integer -r 16000 music.wav
+//
+// The file is left open for as long as the music lasts, and going round at
+// the end is seamless: there is no gap and no click.
+//
+// Only one song at a time. Calling it again replaces whatever was playing.
+int play_song(char *file_name);
+
+// Stops the music and closes the file.
+void stop_song(void);
+
+// How loud the music is, out of SOUND_VOLUME_MAX, from now on. It starts at
+// SOUND_SONG_DEFAULT_VOLUME.
+void set_song_volume(int volume);
 
 
 // ---------- Silence ----------

@@ -325,6 +325,15 @@ int main(int argc, char *argv[]){
 		player1.sound_engine_sample = sound_engine_1;
 		player2.sound_engine_sample = sound_engine_2;
 
+		// Background music. Unlike the effects above it is NOT loaded: it is
+		// read from the file while it plays, so a one minute song costs the
+		// same 8 KB as a five second one and loops for ever.
+		//
+		// Drop any 8 bit mono 16000 Hz WAV in res\\ under this name. If it is
+		// not there, play_song() says so in the log and the game carries on
+		// perfectly well without music.
+		play_song("..\\res\\prody8.wav");
+
 	}
 
 	// The first round starts running, not burning

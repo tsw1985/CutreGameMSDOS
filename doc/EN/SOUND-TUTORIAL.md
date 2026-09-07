@@ -208,7 +208,95 @@ plays at its original level.
 
 ---
 
-## 5. What the WAVs have to be
+## 5. Background music
+
+A song **cannot be loaded into memory**. At 16000 bytes a second, one minute
+is 937 KB, and that does not fit in a DOS machine by any stretch.
+
+So `play_song()` does not load it: **it reads the file as it plays**.
+
+```c
+play_song("..\\res\\music.wav");
+```
+
+And that is it. It plays underneath everything, on a loop, until you call
+`stop_song()`. Shots, engines and everything else carry on exactly as before
+on top of it.
+
+### What it costs
+
+| | |
+|---|---|
+| Memory | **8 KB**, however long the song is |
+| Disk reads | ~4 a second, about 4 KB each |
+| Disk speed needed | 16 KB/s |
+| Margin before it is heard to break up | ~0.5 seconds |
+
+The length makes **no difference**: one minute, five, or half an hour cost the
+same 8 KB, because only half a second of music is ever in memory.
+
+### The loop has no seam
+
+When it reaches the end of the file it goes back to the start **in the middle
+of a read**, so the last byte of the song and the first byte of the next lap
+end up next to each other inside the buffer. There is no silence and no click
+between laps.
+
+### The condition: exactly 16000 Hz
+
+It is the one extra requirement over `load_sound()`, and it matters:
+
+**The song has to be at 16000 Hz, 8 bit, mono already.**
+
+Effects are converted for you because that happens once, at startup. A song
+read a piece at a time has nowhere to be converted on the way past, so you
+convert it beforehand:
+
+```
+sox song.mp3 -b 8 -c 1 -e unsigned-integer -r 16000 music.wav
+```
+
+One minute gives you a file of about **937 KB on disk**. On disk that does not
+matter; it only ever mattered in memory.
+
+If the rate is not exact, `play_song()` returns 0 and the log tells you what
+it found:
+
+```
+Song: the WAV is at 22050 Hz and it has to be 16000 Hz
+```
+
+### Volume
+
+Music starts at **16 out of 32**, half, and deliberately so: it is sounding
+*all the time*, so it is added to everything else on every single sample. At
+full volume it would leave no room for the effects and the mixer would spend
+the whole game clamping.
+
+```c
+set_song_volume(10);    /* further into the background */
+```
+
+If you hear distortion when firing with the music on, this is the first thing
+to turn down.
+
+### If the disk does not keep up
+
+If the buffer empties because the game stalled for more than half a second,
+**silence is inserted** and the music carries on from where it was as soon as
+there is data again. It does not jump or skip ahead: a gap, not a lurch.
+
+If it happens often, raise `SONG_BUFFER_SIZE` in `sound.c` from 8192 to 16384
+or 32768. It costs memory but buys 1 or 2 seconds of margin.
+
+### One song at a time
+
+`play_song()` replaces whatever was playing and closes its file. To change
+track, just call it again.
+
+---
+
+## 6. What the WAVs have to be
 
 This is the first thing to check when a sound "does not play":
 
@@ -237,7 +325,7 @@ WAV 8-bit unsigned PCM*.
 
 ---
 
-## 6. Finding out what is going on (optional)
+## 7. Finding out what is going on (optional)
 
 The library is **silent by default**. It never prints anything.
 
@@ -273,7 +361,7 @@ any file of yours in order to write to your log.
 
 ---
 
-## 7. A complete program, start to finish
+## 8. A complete program, start to finish
 
 This compiles and works as it is:
 
@@ -346,7 +434,7 @@ Notice that `sound_update()` is outside the `if (kbhit())`. It has to run on
 
 ---
 
-## 8. Full reference
+## 9. Full reference
 
 | Function | What it does |
 | --- | --- |
@@ -360,6 +448,9 @@ Notice that `sound_update()` is outside the `if (kbhit())`. It has to run on
 | `stop_looping_sound(id)` | Stops that looping sound |
 | `stop_sound(voice)` | Stops that particular voice |
 | `stop_all_sounds()` | Complete silence |
+| `play_song(path)` | **Looping background music, streamed from disk** |
+| `stop_song()` | Stops the music and closes the file |
+| `set_song_volume(vol)` | Music volume. Starts at 16 |
 | `sound_set_log(function)` | Where to report problems. Optional |
 
 Constants you may change in `sound.h`:
@@ -376,6 +467,8 @@ And inside `sound.c`, if you ever need them:
 | --- | --- | --- |
 | `SOUND_SAMPLE_RATE` | 16000 | The rate everything comes out at |
 | `SOUND_HALF_SIZE` | 512 | How long the card takes to ask for more (32 ms) |
+| `SONG_BUFFER_SIZE` | 8192 | How much music is kept ahead (0.5 s) |
+| `SONG_REFILL_LEVEL` | 4096 | When it goes to the disk for more |
 
 Lowering `SOUND_HALF_SIZE` makes shots heard sooner, but leaves less margin if
 a frame takes too long. Raising it is safer but the sound lags behind the
@@ -383,7 +476,7 @@ picture.
 
 ---
 
-## 9. Common mistakes
+## 10. Common mistakes
 
 | Symptom | Almost certainly |
 | --- | --- |
@@ -394,6 +487,9 @@ picture.
 | The machine hangs on exit | `sound_end()` is missing |
 | One sound cuts another off | All 8 voices are full. Raise `SOUND_MAX_VOICES` |
 | Everything sounds distorted | Volumes too high adding up. Turn the background ones down |
+| `play_song()` returns 0 | The song is not at exactly 16000 Hz, or not 8 bit mono. Check the log |
+| The music breaks up now and then | The disk is not keeping up. Raise `SONG_BUFFER_SIZE` in `sound.c` |
+| Distortion when firing with music on | Lower `set_song_volume()` and the background volumes |
 
 ### About the BLASTER variable
 
@@ -412,7 +508,7 @@ In DOSBox it is already set for you.
 
 ---
 
-## 10. And how this repository's game uses it
+## 11. And how this repository's game uses it
 
 This is exactly how `src/main.c` does it:
 
@@ -430,6 +526,10 @@ if (sound_start() == 1){
     set_sound_volume(sound_engine_1, 34);
     set_sound_volume(sound_engine_2, 34);
     set_sound_volume(sound_died,     64);
+
+    // Background music. Just drop the WAV into res\ under that name; if it
+    // is not there, play_song() says so in the log and the game runs without.
+    play_song("..\\res\\music.wav");
 
 }
 ```

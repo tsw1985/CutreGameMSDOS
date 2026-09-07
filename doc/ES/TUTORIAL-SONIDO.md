@@ -207,7 +207,94 @@ nunca, todo suena a su nivel original.
 
 ---
 
-## 5. Cómo tienen que ser los WAV
+## 5. Música de fondo
+
+Una canción **no se puede cargar en memoria**. A 16000 bytes por segundo, un
+minuto son 937 KB, y en una máquina DOS eso no cabe de ninguna manera.
+
+Por eso `play_song()` no la carga: **la va leyendo del fichero mientras suena**.
+
+```c
+play_song("..\\res\\micancion.wav");
+```
+
+Y ya está. Suena de fondo, en bucle, hasta que llames a `stop_song()`. Los
+disparos, los motores y todo lo demás siguen funcionando exactamente igual
+por encima.
+
+### Lo que cuesta
+
+| | |
+|---|---|
+| Memoria | **8 KB**, dure lo que dure la canción |
+| Lecturas de disco | ~4 por segundo, de unos 4 KB |
+| Velocidad de disco necesaria | 16 KB/s |
+| Margen antes de que se oiga un corte | ~0,5 segundos |
+
+La duración **da igual**: un minuto, cinco o media hora cuestan los mismos
+8 KB, porque en memoria solo hay medio segundo de música por delante.
+
+### El bucle no tiene costura
+
+Cuando llega al final del fichero vuelve al principio **en mitad de una
+lectura**, así que el último byte de la canción y el primero de la vuelta
+siguiente acaban pegados dentro del buffer. No hay ni silencio ni clic entre
+vueltas.
+
+### La condición: 16000 Hz exactos
+
+Es el único requisito extra respecto a `load_sound()`, y es importante:
+
+**La canción tiene que estar ya a 16000 Hz, 8 bits, mono.**
+
+Los efectos se convierten solos porque eso se hace una vez, al arrancar. Una
+canción que se lee a trozos no tiene dónde convertirse sobre la marcha, así
+que la conviertes tú antes:
+
+```
+sox cancion.mp3 -b 8 -c 1 -e unsigned-integer -r 16000 micancion.wav
+```
+
+Un minuto te dará un fichero de unos **937 KB en disco**. En disco no importa,
+solo importaba en memoria.
+
+Si la frecuencia no es exacta, `play_song()` devuelve 0 y el log te dice qué
+encontró:
+
+```
+Song: the WAV is at 22050 Hz and it has to be 16000 Hz
+```
+
+### El volumen
+
+La música arranca a **16 sobre 32**, la mitad, y es a propósito: está sonando
+*todo el rato*, así que se suma a todo lo demás en cada muestra. A tope no
+dejaría sitio a los efectos y el mezclador se pasaría la partida recortando.
+
+```c
+set_song_volume(10);    /* todavia mas de fondo */
+```
+
+Si oyes distorsión al disparar con la música puesta, esto es lo primero que
+hay que bajar.
+
+### Si el disco no llega a tiempo
+
+Si el buffer se vacía porque el juego se quedó parado más de medio segundo,
+**se mete silencio** y la música continúa desde donde iba en cuanto haya
+datos otra vez. No salta ni se adelanta: es un hueco, no un tirón.
+
+Si pasa a menudo, sube `SONG_BUFFER_SIZE` en `sound.c` de 8192 a 16384 o
+32768. Cuesta memoria, pero te da 1 o 2 segundos de margen.
+
+### Solo una canción a la vez
+
+`play_song()` sustituye a la que estuviera sonando y cierra su fichero. Para
+cambiar de pista, la llamas otra vez y ya está.
+
+---
+
+## 6. Cómo tienen que ser los WAV
 
 Esto es lo primero que hay que mirar cuando un sonido "no se oye":
 
@@ -236,7 +323,7 @@ WAV 8-bit PCM sin signo*.
 
 ---
 
-## 6. Enterarte de lo que pasa (opcional)
+## 7. Enterarte de lo que pasa (opcional)
 
 La librería es **muda por defecto**. No imprime nada, nunca.
 
@@ -271,7 +358,7 @@ ningún fichero tuyo para escribir en tu log.
 
 ---
 
-## 7. Un programa completo, de principio a fin
+## 8. Un programa completo, de principio a fin
 
 Esto compila y funciona tal cual:
 
@@ -344,7 +431,7 @@ ejecutarse en **todas** las vueltas del bucle, se pulse una tecla o no.
 
 ---
 
-## 8. Referencia completa
+## 9. Referencia completa
 
 | Función | Qué hace |
 | --- | --- |
@@ -358,6 +445,9 @@ ejecutarse en **todas** las vueltas del bucle, se pulse una tecla o no.
 | `stop_looping_sound(id)` | Para ese sonido en bucle |
 | `stop_sound(voz)` | Para esa voz concreta |
 | `stop_all_sounds()` | Silencio total |
+| `play_song(ruta)` | **Música de fondo en bucle, leída del disco** |
+| `stop_song()` | Para la música y cierra el fichero |
+| `set_song_volume(vol)` | Volumen de la música. Empieza en 16 |
 | `sound_set_log(función)` | Dónde contar los problemas. Opcional |
 
 Constantes que puedes tocar en `sound.h`:
@@ -374,6 +464,8 @@ Y dentro de `sound.c`, si alguna vez lo necesitas:
 | --- | --- | --- |
 | `SOUND_SAMPLE_RATE` | 16000 | La frecuencia a la que sale todo |
 | `SOUND_HALF_SIZE` | 512 | Cuánto tarda la tarjeta en pedir más (32 ms) |
+| `SONG_BUFFER_SIZE` | 8192 | Cuánta música se lleva por delante (0,5 s) |
+| `SONG_REFILL_LEVEL` | 4096 | Cuándo se va al disco a por más |
 
 Bajar `SOUND_HALF_SIZE` hace que los disparos se oigan antes, pero deja menos
 margen si un frame tarda mucho. Subirlo es más seguro pero el sonido va por
@@ -381,7 +473,7 @@ detrás de la imagen.
 
 ---
 
-## 9. Errores típicos
+## 10. Errores típicos
 
 | Síntoma | Causa casi segura |
 | --- | --- |
@@ -392,6 +484,9 @@ detrás de la imagen.
 | La máquina se cuelga al salir | Falta `sound_end()` |
 | Un sonido corta a otro | Se han llenado las 8 voces. Sube `SOUND_MAX_VOICES` |
 | Todo suena distorsionado | Volúmenes demasiado altos sumándose. Baja los de fondo |
+| `play_song()` devuelve 0 | La canción no está a 16000 Hz exactos, o no es 8 bits mono. Mira el log |
+| La música se corta a ratos | El disco no llega. Sube `SONG_BUFFER_SIZE` en `sound.c` |
+| Distorsiona al disparar con música | Baja `set_song_volume()` y los volúmenes de fondo |
 
 ### Sobre la variable BLASTER
 
@@ -410,7 +505,7 @@ En DOSBox ya viene puesta sola.
 
 ---
 
-## 10. Y para el juego de este repositorio
+## 11. Y para el juego de este repositorio
 
 Así es exactamente como lo usa `src/main.c`:
 
@@ -428,6 +523,10 @@ if (sound_start() == 1){
     set_sound_volume(sound_engine_1, 34);
     set_sound_volume(sound_engine_2, 34);
     set_sound_volume(sound_died,     64);
+
+    // Musica de fondo. Basta con dejar el WAV en res\ con ese nombre; si no
+    // esta, play_song() lo dice en el log y el juego sigue sin musica.
+    play_song("..\\res\\micancion.wav");
 
 }
 ```

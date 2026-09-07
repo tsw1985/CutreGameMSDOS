@@ -209,8 +209,8 @@ nunca, todo suena a su nivel original.
 
 ## 5. Música de fondo
 
-Una canción **no se puede cargar en memoria**. A 16000 bytes por segundo, un
-minuto son 937 KB, y en una máquina DOS eso no cabe de ninguna manera.
+Una canción **no se puede cargar en memoria**. A 44100 bytes por segundo, un
+minuto son 2,6 MB, y en una máquina DOS eso no cabe de ninguna manera.
 
 Por eso `play_song()` no la carga: **la va leyendo del fichero mientras suena**.
 
@@ -226,13 +226,13 @@ por encima.
 
 | | |
 |---|---|
-| Memoria | **8 KB**, dure lo que dure la canción |
-| Lecturas de disco | ~4 por segundo, de unos 4 KB |
-| Velocidad de disco necesaria | 16 KB/s |
-| Margen antes de que se oiga un corte | ~0,5 segundos |
+| Memoria | **16 KB**, dure lo que dure la canción |
+| Lecturas de disco | ~5 por segundo, de unos 8 KB |
+| Velocidad de disco necesaria | 44 KB/s |
+| Margen antes de que se oiga un corte | ~0,37 segundos |
 
 La duración **da igual**: un minuto, cinco o media hora cuestan los mismos
-8 KB, porque en memoria solo hay medio segundo de música por delante.
+16 KB, porque en memoria solo hay un tercio de segundo de música por delante.
 
 ### El bucle no tiene costura
 
@@ -241,28 +241,28 @@ lectura**, así que el último byte de la canción y el primero de la vuelta
 siguiente acaban pegados dentro del buffer. No hay ni silencio ni clic entre
 vueltas.
 
-### La condición: 16000 Hz exactos
+### La condición: 44100 Hz exactos
 
 Es el único requisito extra respecto a `load_sound()`, y es importante:
 
-**La canción tiene que estar ya a 16000 Hz, 8 bits, mono.**
+**La canción tiene que estar ya a 44100 Hz, 8 bits, mono.**
 
 Los efectos se convierten solos porque eso se hace una vez, al arrancar. Una
 canción que se lee a trozos no tiene dónde convertirse sobre la marcha, así
 que la conviertes tú antes:
 
 ```
-sox cancion.mp3 -b 8 -c 1 -e unsigned-integer -r 16000 micancion.wav
+sox cancion.mp3 -b 8 -c 1 -e unsigned-integer -r 44100 micancion.wav
 ```
 
-Un minuto te dará un fichero de unos **937 KB en disco**. En disco no importa,
+Un minuto te dará un fichero de unos **2,6 MB en disco**. En disco no importa,
 solo importaba en memoria.
 
 Si la frecuencia no es exacta, `play_song()` devuelve 0 y el log te dice qué
 encontró:
 
 ```
-Song: the WAV is at 22050 Hz and it has to be 16000 Hz
+Song: the WAV is at 22050 Hz and it has to be 44100 Hz
 ```
 
 ### El volumen
@@ -284,8 +284,8 @@ Si el buffer se vacía porque el juego se quedó parado más de medio segundo,
 **se mete silencio** y la música continúa desde donde iba en cuanto haya
 datos otra vez. No salta ni se adelanta: es un hueco, no un tirón.
 
-Si pasa a menudo, sube `SONG_BUFFER_SIZE` en `sound.c` de 8192 a 16384 o
-32768. Cuesta memoria, pero te da 1 o 2 segundos de margen.
+Si pasa a menudo, sube `SONG_BUFFER_SIZE` en `sound.c` de 16384 a 32768 o
+65536. Cuesta memoria, pero te da el doble o el cuádruple de margen.
 
 ### Solo una canción a la vez
 
@@ -308,18 +308,50 @@ Esto es lo primero que hay que mirar cuando un sonido "no se oye":
 Los tres primeros son obligatorios: si no se cumplen, `load_sound()` devuelve
 -1 y ese sonido no existe.
 
-La frecuencia da igual: si el WAV está grabado a 22050 Hz y la tarjeta va a
-16000, **se convierte solo al cargarlo**. Se hace una vez, al arrancar, así
-que no cuesta nada mientras juegas.
+La frecuencia da igual **en los efectos**: si el WAV está grabado a 22050 Hz
+y la tarjeta va a 44100, **se convierte solo al cargarlo**. Se hace una vez, al
+arrancar, así que no cuesta nada mientras juegas. (La música es la excepción:
+como se lee del disco sobre la marcha, esa sí tiene que venir ya a 44100.)
+
+> **Ojo con la duración de los efectos.** Ningún sonido puede pasar de **65535
+> bytes** una vez convertido, porque las muestras se recorren con un puntero
+> `far` y su desplazamiento da la vuelta a los 64 KB. A 44100 Hz eso son
+> **1,49 segundos por efecto**. Si te pasas, la parte que sobra sonaría a
+> basura. Para algo más largo, o lo dejas en música, o bajas
+> `SOUND_SAMPLE_RATE`.
 
 Para convertir un fichero con `sox`:
 
 ```
-sox entrada.wav -b 8 -c 1 -e unsigned-integer -r 16000 salida.wav
+sox entrada.wav -b 8 -c 1 -e unsigned-integer -r 44100 salida.wav
 ```
 
 Y con Audacity: *Pista → Convertir a mono*, luego *Archivo → Exportar →
 WAV 8-bit PCM sin signo*.
+
+---
+
+### Recomendación: prepáralos ya a 44100 de todas formas
+
+La conversión automática funciona, pero **conviértelos tú fuera del juego
+igualmente**. No es una manía: nos costó un sonido desaparecido descubrirlo.
+
+Cuando un WAV llega con otra frecuencia, `load_sound()` tiene que:
+
+1. reservar memoria para el fichero original,
+2. reservar memoria para la versión convertida,
+3. convertir,
+4. **liberar el original**, dejando un agujero en la memoria.
+
+Con cuatro efectos eso son cuatro picos de memoria y tres agujeros. En un DOS
+de 640 KB, el último efecto en cargarse no encontró un hueco de su tamaño y
+simplemente dejó de sonar, **sin ningún mensaje de error**.
+
+Si el fichero ya viene a 44100, la función entra por la otra rama: reserva un
+único buffer, se lo queda, y no libera nada. Ni picos ni agujeros.
+
+Y de regalo suena mejor: `load_sound()` remuestrea por la vía rápida (repite
+la muestra más cercana) y `sox` hace un trabajo bastante más fino.
 
 ---
 
@@ -352,6 +384,14 @@ A partir de ahí te contará cosas como `Sound: ready` o `Sound: no Sound
 Blaster found, playing without sound`.
 
 Si nunca llamas a `sound_set_log()`, no pasa nada: sigue funcionando, callada.
+
+El juego de este repositorio hace exactamente eso: le pasa `tanks_log`, que
+escribe en **`game.log`**, en el mismo directorio desde el que se ejecuta (o
+sea, `bin\game.log`). Desde el sistema anfitrión se puede seguir en vivo:
+
+```
+tail -f bin/game.log
+```
 
 Y esto es además lo que hace que `sound.c` sea copiable: no tiene que incluir
 ningún fichero tuyo para escribir en tu log.
@@ -462,10 +502,10 @@ Y dentro de `sound.c`, si alguna vez lo necesitas:
 
 | Constante | Valor | Qué es |
 | --- | --- | --- |
-| `SOUND_SAMPLE_RATE` | 16000 | La frecuencia a la que sale todo |
-| `SOUND_HALF_SIZE` | 512 | Cuánto tarda la tarjeta en pedir más (32 ms) |
-| `SONG_BUFFER_SIZE` | 8192 | Cuánta música se lleva por delante (0,5 s) |
-| `SONG_REFILL_LEVEL` | 4096 | Cuándo se va al disco a por más |
+| `SOUND_SAMPLE_RATE` | 44100 | La frecuencia a la que sale todo |
+| `SOUND_HALF_SIZE` | 2048 | Cuánto tarda la tarjeta en pedir más (46 ms) |
+| `SONG_BUFFER_SIZE` | 16384 | Cuánta música se lleva por delante (0,37 s) |
+| `SONG_REFILL_LEVEL` | 8192 | Cuándo se va al disco a por más |
 
 Bajar `SOUND_HALF_SIZE` hace que los disparos se oigan antes, pero deja menos
 margen si un frame tarda mucho. Subirlo es más seguro pero el sonido va por
@@ -484,7 +524,7 @@ detrás de la imagen.
 | La máquina se cuelga al salir | Falta `sound_end()` |
 | Un sonido corta a otro | Se han llenado las 8 voces. Sube `SOUND_MAX_VOICES` |
 | Todo suena distorsionado | Volúmenes demasiado altos sumándose. Baja los de fondo |
-| `play_song()` devuelve 0 | La canción no está a 16000 Hz exactos, o no es 8 bits mono. Mira el log |
+| `play_song()` devuelve 0 | La canción no está a 44100 Hz exactos, o no es 8 bits mono. Mira el log |
 | La música se corta a ratos | El disco no llega. Sube `SONG_BUFFER_SIZE` en `sound.c` |
 | Distorsiona al disparar con música | Baja `set_song_volume()` y los volúmenes de fondo |
 

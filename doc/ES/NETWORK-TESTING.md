@@ -66,7 +66,7 @@ ping al servidor. Cada fallo dice que pasa y como arreglarlo.
 
 ## Donde estan los logs
 
-Cada instancia escribe su log en `k:\game.log`, y cada conf monta una K:
+Cada instancia escribe su log en `bin\game.log`, y cada conf monta una K:
 **distinta** a proposito: con una compartida, las dos copias se machacarian el
 log la una a la otra justo donde mas falta hace.
 

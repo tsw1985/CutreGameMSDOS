@@ -68,7 +68,7 @@ it.
 
 ## Where the logs are
 
-Each instance writes its log to `k:\game.log`, and every conf mounts a
+Each instance writes its log to `bin\game.log`, and every conf mounts a
 **different** K: drive on purpose: with a shared one the two copies would
 overwrite each other's log, right where you need it most.
 

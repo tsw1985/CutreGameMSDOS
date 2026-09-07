@@ -2015,7 +2015,7 @@ molesto pero recuperable; no queremos cortar una partida por eso.
 
 ## 26. Qué mirar en el log
 
-Todo esto va a `k:\game.log`, porque en modo gráfico no se puede imprimir nada.
+Todo esto va a `bin\game.log`, porque en modo gráfico no se puede imprimir nada.
 
 | Línea | Qué significa |
 |---|---|

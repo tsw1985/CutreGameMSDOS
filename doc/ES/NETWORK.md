@@ -391,7 +391,7 @@ principio y no como un añadido.
 
 Así que cada 30 frames (`NET_CHECKSUM_INTERVAL`) cada máquina manda un número
 que resume **todo** su estado, y la otra lo compara con el suyo del mismo
-frame. Si no coinciden, sale en `tanks.log`:
+frame. Si no coinciden, sale en `game.log`:
 
 ```
 NET DESYNC at frame 1830: mine 41234 theirs 41199
@@ -606,7 +606,7 @@ Todas en `header/net.h`.
 
 ---
 
-## 12. Diagnóstico: qué mirar en `tanks.log`
+## 12. Diagnóstico: qué mirar en `game.log`
 
 | Línea | Qué significa |
 |---|---|

@@ -153,17 +153,18 @@ int loop_sound(int sound_id);
 // Starts a song playing behind everything else, on a loop, until stop_song().
 // Returns 1 if it is playing, 0 if it could not be started.
 //
-// A song is NOT loaded into memory: at 16000 bytes a second one minute would
-// be 937 KB, which does not fit in a DOS machine at all. It is read from the
-// file as it plays, half a second at a time, so the length of the song makes
-// no difference to the memory it costs. It is always SONG_BUFFER_SIZE.
+// A song is NOT loaded into memory: at 44100 bytes a second one minute would
+// be 2.6 MB, which does not fit in a DOS machine at all. It is read from the
+// file as it plays, a fraction of a second at a time, so the length of the
+// song makes no difference to the memory it costs. It is always
+// SONG_BUFFER_SIZE, whether the song lasts one minute or one hour.
 //
 // That is also why the file has to be EXACTLY 8 bit mono PCM at
-// SOUND_SAMPLE_RATE (16000 Hz). load_sound() can convert a file because it
+// SOUND_SAMPLE_RATE (44100 Hz). load_sound() can convert a file because it
 // does it once at startup; there is nowhere to do that while streaming.
 // Convert it beforehand:
 //
-//     sox song.mp3 -b 8 -c 1 -e unsigned-integer -r 16000 music.wav
+//     sox song.mp3 -b 8 -c 1 -e unsigned-integer -r 44100 music.wav
 //
 // The file is left open for as long as the music lasts, and going round at
 // the end is seamless: there is no gap and no click.

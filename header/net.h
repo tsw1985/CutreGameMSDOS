@@ -69,7 +69,7 @@
 // In lockstep a desync is invisible: each machine keeps showing a game that
 // makes perfect sense, just a different one. So every so often each side
 // sends a checksum of its whole game state and compares it with its own.
-// Without this you chase the bug for days; with it, tanks.log tells you the
+// Without this you chase the bug for days; with it, game.log tells you the
 // exact frame it broke on.
 #define NET_CHECKSUM_INTERVAL 	30
 
@@ -143,7 +143,7 @@ void net_advance_frame(void);
 int net_connection_lost(void);
 
 // 1 when the two machines have computed different states. The game carries
-// on, but tanks.log has the frame it happened on.
+// on, but game.log has the frame it happened on.
 int net_desync_detected(void);
 
 // The frame being simulated, for the log

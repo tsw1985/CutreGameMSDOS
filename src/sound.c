@@ -32,33 +32,54 @@
 
 // Output rate of the DSP, and therefore of everything: the card has ONE
 // rate, so a WAV recorded at another one is resampled when it is loaded.
-#define SOUND_SAMPLE_RATE 	16000
+//
+// 44100 is the most an SB16 will do, and it is what the DSP command used in
+// sound_dsp_set_sample_rate() (0x41) is for. An original 1989 Sound Blaster
+// tops out at 22050, so on one of those this has to come down.
+//
+// Raising this is NOT free, and the cost is not the music: a song is streamed
+// and its length costs nothing. It is the EFFECTS, which load_sound() holds
+// in memory converted to this rate. At 44100 the four effects of this game
+// take 176 KB instead of 64 KB.
+//
+// And there is a hard ceiling: no single sound may exceed 65535 bytes,
+// because the samples are reached through a far pointer and its offset wraps
+// at 64 KB. At 44100 that is 1.49 seconds per effect. The longest one here
+// comes to 57470 bytes, 88% of the limit, so there is not much room left.
+#define SOUND_SAMPLE_RATE 	44100
 
 // Size of each half of the double buffer, in bytes = samples.
 //
-// This is a compromise. At 16000 Hz, 512 bytes is 32 ms of sound: that is
-// how long the card takes to ask for more, and also the worst case delay
-// before a new shot is heard. Smaller means a snappier shot but leaves less
-// margin for a slow frame; bigger is safer but the shot lags behind the
-// picture. The main loop runs at about 70 Hz (14 ms), so there is room for
-// two frames inside every half.
-#define SOUND_HALF_SIZE 	512
+// This one has to move WITH the rate above, and the reason is not speed.
+// sound_update() is called once per frame, and the main loop is tied to the
+// vertical retrace at about 70 Hz, so it comes round every 14.3 ms whatever
+// the machine is. If the card asks for a refill more often than that, it runs
+// dry and repeats what it already had, and no amount of CPU fixes it.
+//
+//     44100 Hz,  512 samples -> a refill every 11.6 ms   too often, stutters
+//     44100 Hz, 1024 samples -> a refill every 23.2 ms   tight
+//     44100 Hz, 2048 samples -> a refill every 46.4 ms   three frames of room
+//
+// The price of a bigger half is latency: 2048 samples is 46 ms between firing
+// and hearing the shot. That is the trade, and 46 ms is not noticeable.
+#define SOUND_HALF_SIZE 	2048
 #define SOUND_BUFFER_SIZE 	(SOUND_HALF_SIZE * 2)
 
 // How much of the song is kept in memory, waiting to be played.
 //
-// A song is NOT loaded: at 16000 bytes a second, one minute would be 937 KB
+// A song is NOT loaded: at 44100 bytes a second, one minute would be 2.6 MB
 // and would not fit in a DOS machine at all. It is read from the file as it
-// plays, and this is how far ahead we stay.
+// plays, and this is how far ahead we stay. The song can therefore be as long
+// as you like: only this buffer is ever in memory.
 //
-// 8192 bytes is half a second of music. That is the margin before the music
-// is heard to break up if the game stalls, and it also means the disk is only
-// touched about four times a second instead of on every frame.
-#define SONG_BUFFER_SIZE 	8192
+// 16384 bytes is 0.37 seconds of music at 44100. That is the margin before
+// the music is heard to break up if the game stalls, and it means the disk is
+// touched about five times a second instead of on every frame.
+#define SONG_BUFFER_SIZE 	16384
 
 // When less than this is left, go and read more. Half the buffer, so every
-// read is worth doing and there is always a quarter of a second in hand.
-#define SONG_REFILL_LEVEL 	4096
+// read is worth doing and there is always a fifth of a second in hand.
+#define SONG_REFILL_LEVEL 	8192
 
 // In unsigned 8 bit audio the middle of the wave, ie. silence, is 128 and
 // not 0. Samples are turned into signed values by subtracting it before
@@ -488,8 +509,8 @@ static unsigned char far *sound_alloc_dma_buffer(unsigned long size, unsigned lo
 // SOUND_SAMPLE_RATE.
 //
 // Resampling is needed because the DSP has a single output rate: a 22255 Hz
-// file played at 16000 would come out slow and low pitched. It is done the
-// cheap way, by picking the nearest sample, which for an engine or an
+// file played at another rate comes out at the wrong speed and pitch. It is
+// done the cheap way, by picking the nearest sample, which for an engine or an
 // explosion is more than good enough, and it happens once at startup so it
 // costs nothing while playing.
 //===========================================================
@@ -502,7 +523,7 @@ static unsigned char far *sound_alloc_dma_buffer(unsigned long size, unsigned lo
 // each one a number.
 //
 // Everything is resampled to SOUND_SAMPLE_RATE, because the DSP has a single
-// output rate: a 22255 Hz file played at 16000 would come out slow and low
+// output rate: a 22255 Hz file played at 44100 would come out fast and high
 // pitched. It is done the cheap way, by picking the nearest sample, which
 // for an engine or an explosion is more than good enough, and it happens
 // once at loading time so it costs nothing while playing.

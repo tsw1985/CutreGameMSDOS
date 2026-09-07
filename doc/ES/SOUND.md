@@ -627,7 +627,7 @@ los dos `echo`** (y si un `echo` se hiciera muy largo, pártelo en otro `>>`).
 
 ## 8. Si algo no suena
 
-Mira `tanks.log`. `sound_init()` deja ahí el diagnóstico, porque en modo
+Mira `game.log`. `sound_init()` deja ahí el diagnóstico, porque en modo
 gráfico no se puede imprimir nada por pantalla:
 
 | Línea en el log | Qué pasa |

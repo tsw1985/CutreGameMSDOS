@@ -497,7 +497,7 @@ int main(int argc, char *argv[]){
 
 
    		// 6. Log the current direction, but only once every LOG_INTERVAL_FRAMES
-   		//    frames, so we do not flood tanks.log thousands of times per second
+   		//    frames, so we do not flood game.log thousands of times per second
    		log_frame_counter = log_frame_counter + 1;
    		if (log_frame_counter >= LOG_INTERVAL_FRAMES){
    			log_frame_counter = 0;
@@ -593,7 +593,7 @@ int main(int argc, char *argv[]){
 		}
 
 		if (net_desync_detected() == 1){
-			printf("The two machines went out of step. See tanks.log.\n");
+			printf("The two machines went out of step. See game.log.\n");
 		}
 
 		printf("Final score: player 1 %u - player 2 %u\n", player1.wins, player2.wins);

@@ -2022,7 +2022,7 @@ annoying but survivable; we do not want to end a game over that.
 
 ## 26. What to look for in the log
 
-All of this goes to `k:\game.log`, because in graphics mode nothing can be
+All of this goes to `bin\game.log`, because in graphics mode nothing can be
 printed.
 
 | Line | What it means |

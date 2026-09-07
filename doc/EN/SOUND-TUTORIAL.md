@@ -210,8 +210,8 @@ plays at its original level.
 
 ## 5. Background music
 
-A song **cannot be loaded into memory**. At 16000 bytes a second, one minute
-is 937 KB, and that does not fit in a DOS machine by any stretch.
+A song **cannot be loaded into memory**. At 44100 bytes a second, one minute
+is 2.6 MB, and that does not fit in a DOS machine by any stretch.
 
 So `play_song()` does not load it: **it reads the file as it plays**.
 
@@ -227,13 +227,13 @@ on top of it.
 
 | | |
 |---|---|
-| Memory | **8 KB**, however long the song is |
-| Disk reads | ~4 a second, about 4 KB each |
-| Disk speed needed | 16 KB/s |
-| Margin before it is heard to break up | ~0.5 seconds |
+| Memory | **16 KB**, however long the song is |
+| Disk reads | ~5 a second, about 8 KB each |
+| Disk speed needed | 44 KB/s |
+| Margin before it is heard to break up | ~0.37 seconds |
 
 The length makes **no difference**: one minute, five, or half an hour cost the
-same 8 KB, because only half a second of music is ever in memory.
+same 16 KB, because only a third of a second of music is ever in memory.
 
 ### The loop has no seam
 
@@ -242,28 +242,28 @@ of a read**, so the last byte of the song and the first byte of the next lap
 end up next to each other inside the buffer. There is no silence and no click
 between laps.
 
-### The condition: exactly 16000 Hz
+### The condition: exactly 44100 Hz
 
 It is the one extra requirement over `load_sound()`, and it matters:
 
-**The song has to be at 16000 Hz, 8 bit, mono already.**
+**The song has to be at 44100 Hz, 8 bit, mono already.**
 
 Effects are converted for you because that happens once, at startup. A song
 read a piece at a time has nowhere to be converted on the way past, so you
 convert it beforehand:
 
 ```
-sox song.mp3 -b 8 -c 1 -e unsigned-integer -r 16000 music.wav
+sox song.mp3 -b 8 -c 1 -e unsigned-integer -r 44100 music.wav
 ```
 
-One minute gives you a file of about **937 KB on disk**. On disk that does not
+One minute gives you a file of about **2.6 MB on disk**. On disk that does not
 matter; it only ever mattered in memory.
 
 If the rate is not exact, `play_song()` returns 0 and the log tells you what
 it found:
 
 ```
-Song: the WAV is at 22050 Hz and it has to be 16000 Hz
+Song: the WAV is at 22050 Hz and it has to be 44100 Hz
 ```
 
 ### Volume
@@ -286,8 +286,8 @@ If the buffer empties because the game stalled for more than half a second,
 **silence is inserted** and the music carries on from where it was as soon as
 there is data again. It does not jump or skip ahead: a gap, not a lurch.
 
-If it happens often, raise `SONG_BUFFER_SIZE` in `sound.c` from 8192 to 16384
-or 32768. It costs memory but buys 1 or 2 seconds of margin.
+If it happens often, raise `SONG_BUFFER_SIZE` in `sound.c` from 16384 to 32768
+or 65536. It costs memory but buys twice or four times the margin.
 
 ### One song at a time
 
@@ -310,18 +310,49 @@ This is the first thing to check when a sound "does not play":
 The first three are compulsory: if they are not met, `load_sound()` returns -1
 and that sound does not exist.
 
-The rate does not matter: if the WAV was recorded at 22050 Hz and the card
-runs at 16000, it is **converted when loaded**. It happens once, at startup,
-so it costs nothing while playing.
+The rate does not matter **for effects**: if the WAV was recorded at 22050 Hz
+and the card runs at 44100, it is **converted when loaded**. It happens once, at
+startup, so it costs nothing while playing. (Music is the exception: it is read
+from disk as it goes, so that one has to arrive at 44100 already.)
+
+> **Mind how long an effect is.** No single sound may exceed **65535 bytes**
+> once converted, because the samples are reached through a `far` pointer whose
+> offset wraps at 64 KB. At 44100 Hz that is **1.49 seconds per effect**. Go
+> over and the excess plays as garbage. For anything longer, either make it
+> music or lower `SOUND_SAMPLE_RATE`.
 
 To convert a file with `sox`:
 
 ```
-sox input.wav -b 8 -c 1 -e unsigned-integer -r 16000 output.wav
+sox input.wav -b 8 -c 1 -e unsigned-integer -r 44100 output.wav
 ```
 
 And in Audacity: *Track → Split Stereo to Mono*, then *File → Export →
 WAV 8-bit unsigned PCM*.
+
+---
+
+### Recommendation: prepare them at 44100 anyway
+
+The automatic conversion works, but **convert them yourself outside the game
+all the same**. This is not fussiness: it cost us a sound that vanished.
+
+When a WAV arrives at a different rate, `load_sound()` has to:
+
+1. reserve memory for the original file,
+2. reserve memory for the converted version,
+3. convert,
+4. **free the original**, leaving a hole in memory.
+
+With four effects that is four memory peaks and three holes. On a 640 KB DOS
+machine the last effect to load could not find a hole its size and simply
+stopped playing, **with no error message at all**.
+
+If the file already arrives at 44100, the function takes the other branch: it
+reserves a single buffer, keeps it, and frees nothing. No peaks, no holes.
+
+And it sounds better as a bonus: `load_sound()` resamples the cheap way (it
+repeats the nearest sample) and `sox` does a rather better job.
 
 ---
 
@@ -355,6 +386,14 @@ Blaster found, playing without sound`.
 
 If you never call `sound_set_log()`, nothing bad happens: it carries on
 working, quietly.
+
+This repository's game does exactly that: it hands over `tanks_log`, which
+writes to **`game.log`** in the directory the game is run from (that is,
+`bin\game.log`). From the host you can follow it live:
+
+```
+tail -f bin/game.log
+```
 
 And this is also what makes `sound.c` copyable: it does not have to include
 any file of yours in order to write to your log.
@@ -465,10 +504,10 @@ And inside `sound.c`, if you ever need them:
 
 | Constant | Value | What it is |
 | --- | --- | --- |
-| `SOUND_SAMPLE_RATE` | 16000 | The rate everything comes out at |
-| `SOUND_HALF_SIZE` | 512 | How long the card takes to ask for more (32 ms) |
-| `SONG_BUFFER_SIZE` | 8192 | How much music is kept ahead (0.5 s) |
-| `SONG_REFILL_LEVEL` | 4096 | When it goes to the disk for more |
+| `SOUND_SAMPLE_RATE` | 44100 | The rate everything comes out at |
+| `SOUND_HALF_SIZE` | 2048 | How long the card takes to ask for more (46 ms) |
+| `SONG_BUFFER_SIZE` | 16384 | How much music is kept ahead (0.37 s) |
+| `SONG_REFILL_LEVEL` | 8192 | When it goes to the disk for more |
 
 Lowering `SOUND_HALF_SIZE` makes shots heard sooner, but leaves less margin if
 a frame takes too long. Raising it is safer but the sound lags behind the
@@ -487,7 +526,7 @@ picture.
 | The machine hangs on exit | `sound_end()` is missing |
 | One sound cuts another off | All 8 voices are full. Raise `SOUND_MAX_VOICES` |
 | Everything sounds distorted | Volumes too high adding up. Turn the background ones down |
-| `play_song()` returns 0 | The song is not at exactly 16000 Hz, or not 8 bit mono. Check the log |
+| `play_song()` returns 0 | The song is not at exactly 44100 Hz, or not 8 bit mono. Check the log |
 | The music breaks up now and then | The disk is not keeping up. Raise `SONG_BUFFER_SIZE` in `sound.c` |
 | Distortion when firing with music on | Lower `set_song_volume()` and the background volumes |
 

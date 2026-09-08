@@ -4,20 +4,27 @@
 #include <bios.h>
 #include <string.h>
 #include <stdlib.h>
-#include "header\util.h"
 #include "header\net.h"
 
 //===========================================================
-// IPX transport and lockstep synchronisation. See net.h for the why.
+// Sending bytes from one program to another, on top of IPX.
 //
-// This file is split in three layers, bottom to top:
+// This file is a LIBRARY: it names no program, knows no game, and can be
+// copied into another project together with header\net.h and nothing else.
+// What travels and what it means is decided entirely by the caller.
 //
-//   1. Talking to the IPX driver at all  (ipx_* functions)
-//   2. Our packet on top of IPX          (net_transmit / net_receive)
-//   3. Lockstep: the input ring buffers  (net_set_local_input and friends)
+// It is split in two layers, bottom to top:
 //
-// It knows NOTHING about tanks. It moves one byte of keys per frame and
-// compares a checksum somebody else works out.
+//   1. Talking to the IPX driver at all   (the ipx_* functions)
+//   2. Our envelope on top of IPX         (net_send / net_receive)
+//
+// The lockstep synchronisation this grew out of is NOT here any more: it
+// lives in lockstep.c, on top of these functions, because keeping frames of
+// keys in step is one particular program's problem and not the network's.
+//
+// No printf outside the pairing functions, which run in text mode on purpose
+// and say so in net.h. Everything else goes to whatever net_set_log() was
+// given, and nowhere at all if it was never called.
 //===========================================================
 
 
@@ -34,29 +41,33 @@
 #define IPX_FUNCTION_GET_ADDRESS		0x0009
 
 // Our socket number. Any value from 0x8000 up is fair game for an
-// application; it just has to be the SAME on both machines, since it is what
+// application; it just has to be the SAME in both programs, since it is what
 // tells our packets apart from anything else on the wire.
+//
+// Change it if you want two different programs of yours to be able to run on
+// the same network without hearing each other.
 //
 // It travels big endian (high byte first), which is the opposite of how the
 // 8086 stores an int, hence net_swap16() everywhere a socket is written.
 #define NET_SOCKET_NUMBER 				0x869C
 
 // Packet type 4 is "PEP", an ordinary unsequenced datagram: fire and forget,
-// no acknowledgement, no ordering. Exactly what a game wants.
+// no acknowledgement, no ordering. Exactly what this library promises.
 #define IPX_PACKET_TYPE 				4
 
 // How many receive buffers are left posted with the driver at once.
 //
 // More than one on purpose: while we are dealing with a packet its buffer
 // belongs to us, not to the driver, and a packet arriving right then would
-// be dropped if it were the only one. Four is far more than 70 packets a
-// second ever needs.
+// be dropped if it were the only one.
 #define NET_LISTEN_ECB_COUNT 			4
 
-// What kind of packet this is
+// What kind of packet this is. HELLO and HELLO_ACK are the library's own
+// pairing chatter and never reach the caller; DATA is everything a program
+// ever sends.
 #define NET_TYPE_HELLO 					1
 #define NET_TYPE_HELLO_ACK 				2
-#define NET_TYPE_INPUT 					3
+#define NET_TYPE_DATA 					3
 
 // First 4 bytes of every packet of ours. Anything on our socket that does
 // not start with this is somebody else's traffic and is thrown away.
@@ -70,7 +81,7 @@
 
 // A quarter of a second between HELLO broadcasts while looking for the other
 // machine. Short, because the gap between the two copies pairing is what
-// they will have to catch up on once the game starts.
+// they will have to catch up on once they start.
 #define NET_HELLO_INTERVAL_TICKS 		5L
 
 
@@ -82,7 +93,7 @@
 //
 // The layout is fixed by Novell down to the byte, so nothing here may be
 // reordered, resized or padded. Turbo C aligns structures on bytes by
-// default (-a-), which is what we need; net_init() logs the sizes so a
+// default (-a-), which is what we need; net_start() logs the sizes so a
 // wrong one shows up straight away instead of as mysterious garbage.
 //===========================================================
 struct ipx_ecb {
@@ -124,34 +135,32 @@ struct ipx_header {
 };
 
 //===========================================================
-// What we actually send. 30 bytes, and the IPX header in front of it is 30
-// bytes on its own: the header costs as much as the payload.
+// Our own envelope, wrapped round whatever the caller handed us.
 //
-// That is the reason NET_REDUNDANCY exists. Sending 1 byte of keys or 8
-// costs the same packet, so we may as well send the last 8 frames every
-// time and never need a retransmission.
+// 12 bytes in front of the data, and the IPX header in front of that is 30
+// more. Worth knowing when you decide how much to put in one net_send():
+// sending 3 bytes costs a 45 byte packet, and so does sending 30.
 //===========================================================
-struct net_payload {
+struct net_envelope {
 
 	unsigned char  magic[4];				// "CTRE", so we ignore other traffic
 	unsigned char  type;					// NET_TYPE_*
-	unsigned char  count;					// INPUT: how many entries of inputs[] are real
-	unsigned long  instance_id;				// who sent it, and who gets to be player 1
-	unsigned long  base_frame;				// INPUT: the frame inputs[0] belongs to
-	unsigned char  inputs[NET_REDUNDANCY];	// keys for base_frame .. base_frame+count-1
-	unsigned char  has_checksum;			// 1 if the two fields below mean anything
-	unsigned char  padding;					// keeps the long below on an even offset
-	unsigned long  checksum_frame;			// which frame the checksum was taken on
-	unsigned int   checksum_value;
+	unsigned char  reserved;				// keeps the long below on an even offset
+	unsigned long  instance_id;				// who sent it
+	unsigned int   length;					// how many bytes of data[] are real
+	unsigned char  data[NET_MAX_DATA];		// the caller's bytes, untouched
 
 };
 
 struct net_packet {
 
-	struct ipx_header  header;
-	struct net_payload payload;
+	struct ipx_header   header;
+	struct net_envelope envelope;
 
 };
+
+// Everything in a packet that is not the caller's data
+#define NET_PACKET_OVERHEAD (sizeof(struct net_packet) - NET_MAX_DATA)
 
 
 // Where the driver lives. Found once by ipx_detect() and far called from
@@ -159,7 +168,7 @@ struct net_packet {
 static unsigned int ipx_entry_segment;
 static unsigned int ipx_entry_offset;
 
-// 1 once net_init() has found the driver and opened the socket
+// 1 once net_start() has found the driver and opened the socket
 static int net_is_running = 0;
 
 // One ECB and one buffer for sending, several for receiving
@@ -174,6 +183,15 @@ static struct net_packet listen_packet[NET_LISTEN_ECB_COUNT];
 // must not read a packet that never arrived.
 static unsigned char listen_is_posted[NET_LISTEN_ECB_COUNT];
 
+// Messages that have arrived and are waiting for net_receive() to collect
+// them. A ring: head is where the next one goes in, tail is where the next
+// one comes out.
+static unsigned char queue_data[NET_QUEUE_SIZE][NET_MAX_DATA];
+static unsigned int  queue_length[NET_QUEUE_SIZE];
+static int queue_head = 0;
+static int queue_tail = 0;
+static int queue_count = 0;
+
 // Broadcast: "every node on this network"
 static unsigned char broadcast_node[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
@@ -182,54 +200,52 @@ static unsigned char local_node[6];
 static unsigned char remote_node[6];
 
 // A number picked at random when the program starts. It does two jobs: it
-// tells our own packets from theirs, and the lower of the two decides who
-// gets to be player 1, with no negotiation of any kind.
+// tells our own packets from theirs, and the caller can use the two of them
+// to settle things with no negotiation, see net_get_local_id() in net.h.
 static unsigned long local_instance_id;
 static unsigned long remote_instance_id;
 
-static int paired_with_opponent = 0;
-static int is_player1 = 0;
-
-// ---- Lockstep state ----
-
-// The frame being simulated right now. Both machines are always on the same
-// one: that is the whole point.
-static unsigned long simulation_frame;
-
-// Our own keys, indexed by frame. Written NET_INPUT_DELAY frames ahead of
-// where they are read, so our input is applied as late as the other one.
-static unsigned char local_input_value[NET_INPUT_BUFFER_SIZE];
-
-// Their keys. Each slot remembers which frame it holds, so a stale entry
-// from a lap ago can never be mistaken for the one we are waiting for.
-static unsigned long remote_input_frame[NET_INPUT_BUFFER_SIZE];
-static unsigned char remote_input_value[NET_INPUT_BUFFER_SIZE];
-static unsigned char remote_input_valid[NET_INPUT_BUFFER_SIZE];
-
-// Our own checksums, kept so one arriving from the other machine a few
-// frames late still finds the frame it belongs to
-static unsigned long local_checksum_frame[NET_INPUT_BUFFER_SIZE];
-static unsigned int  local_checksum_value[NET_INPUT_BUFFER_SIZE];
-static unsigned char local_checksum_valid[NET_INPUT_BUFFER_SIZE];
-
-// The checksum waiting for a packet to ride along on
-static unsigned long pending_checksum_frame;
-static unsigned int  pending_checksum_value;
-static unsigned char pending_checksum_ready;
-static unsigned int  checksum_countdown;
+// Bit 0x01 = we have heard from them. Bit 0x02 = they have answered us.
+static int pairing_state = 0;
+static int is_connected = 0;
 
 // BIOS tick when the last packet arrived, for the timeout
 static long last_packet_tick;
-
-static int connection_lost = 0;
-static int desync_detected = 0;
+static int  connection_lost = 0;
 
 // Counters for the log, so a bad run can be read afterwards
 static unsigned long total_packets_sent;
 static unsigned long total_packets_received;
-static unsigned long total_waits;
+static unsigned long total_messages_dropped;
 
-static char net_log_text[80];
+static char net_log_text[100];
+
+
+// Where this library reports problems. NULL, the default, means nowhere.
+//
+// This is what keeps this file free of any program's code. Without it, net.c
+// would have to #include the log of one particular program and could not be
+// copied into the next one as it is. The caller hands over its own function
+// once, and net.c has no idea what that function does with the text.
+static void (*net_log_function)(char *message) = NULL;
+
+
+static void net_log(char *message){
+
+	if (net_log_function == NULL){
+		return;
+	}
+
+	net_log_function(message);
+
+}
+
+
+void net_set_log(void (*log_function)(char *message)){
+
+	net_log_function = log_function;
+
+}
 
 
 //===========================================================
@@ -403,7 +419,7 @@ static unsigned int ipx_socket_call(unsigned int function, unsigned int socket_h
 
 //===========================================================
 // Asks the driver what our own node address is: 4 bytes of network and 6 of
-// node. We only care about the node, and only to print it in the log.
+// node. We only care about the node, and only to put it in the log.
 //
 // Our own packets are told apart by instance_id, not by this, precisely so
 // that a driver that answers this call badly cannot break the pairing.
@@ -433,8 +449,8 @@ static void net_post_listen(int index){
 
 	// NULL on purpose. IPX can call a routine of ours the moment a packet
 	// lands, but that routine would run at interrupt time, in the middle of
-	// whatever the game was doing, with all the reentrancy problems that
-	// brings. Looking at in_use once a frame is enough and cannot go wrong.
+	// whatever the program was doing, with all the reentrancy problems that
+	// brings. Looking at in_use once a loop is enough and cannot go wrong.
 	listen_ecb[index].esr_address = (void far (*)())0;
 
 	listen_ecb[index].socket_number    = net_swap16(NET_SOCKET_NUMBER);
@@ -452,10 +468,9 @@ static void net_post_listen(int index){
 //===========================================================
 // Is the driver still busy with the last packet we gave it?
 //
-// This MUST be asked before net_build_header() is called, not just before
-// net_transmit(): while a send is in flight the driver owns send_packet, and
-// building the next payload into it would rewrite a packet already on its
-// way out.
+// This MUST be asked before the next payload is built, not just before it is
+// sent: while a send is in flight the driver owns send_packet, and writing
+// the next message into it would rewrite a packet already on its way out.
 //===========================================================
 static int net_send_is_busy(void){
 
@@ -473,14 +488,15 @@ static int net_send_is_busy(void){
 
 
 //===========================================================
-// Sends whatever is already sitting in send_packet.payload to one node.
+// Sends whatever is already sitting in send_packet.envelope to one node.
 //
-// Never waits. If the previous send has not finished the packet is simply
-// dropped, because while the driver owns send_packet we must not write to
-// it. Nothing is lost that matters: the next packet carries the last
-// NET_REDUNDANCY frames of keys anyway.
+// Only the bytes that are really used travel: a 3 byte message is a 45 byte
+// packet, not a 522 byte one. IPX is told the true length twice, once in its
+// own header and once in the ECB fragment, and both have to agree.
 //===========================================================
-static int net_transmit(unsigned char *destination_node){
+static int net_transmit(unsigned char *destination_node, unsigned int data_length){
+
+	unsigned int packet_size;
 
 	if (net_is_running == 0){
 		return 0;
@@ -490,12 +506,14 @@ static int net_transmit(unsigned char *destination_node){
 		return 0;
 	}
 
+	packet_size = (unsigned int)NET_PACKET_OVERHEAD + data_length;
+
 	// ---- The IPX header: who it is going to ----
 
 	memset(&send_packet.header, 0, sizeof(struct ipx_header));
 
 	send_packet.header.checksum    = 0xFFFF;
-	send_packet.header.length      = net_swap16(sizeof(struct net_packet));
+	send_packet.header.length      = net_swap16(packet_size);
 	send_packet.header.packet_type = IPX_PACKET_TYPE;
 
 	// Network 0 means "the one I am on". Anything else would need a router,
@@ -510,11 +528,11 @@ static int net_transmit(unsigned char *destination_node){
 
 	memset(&send_ecb, 0, sizeof(struct ipx_ecb));
 
-	send_ecb.esr_address     = (void far (*)())0;
-	send_ecb.socket_number   = net_swap16(NET_SOCKET_NUMBER);
-	send_ecb.fragment_count  = 1;
+	send_ecb.esr_address      = (void far (*)())0;
+	send_ecb.socket_number    = net_swap16(NET_SOCKET_NUMBER);
+	send_ecb.fragment_count   = 1;
 	send_ecb.fragment_address = (void far *)&send_packet;
-	send_ecb.fragment_size    = sizeof(struct net_packet);
+	send_ecb.fragment_size    = packet_size;
 
 	// On a flat network the next hop IS the destination. A router would need
 	// IPX function 2 to work out something different, and there is no router.
@@ -530,19 +548,19 @@ static int net_transmit(unsigned char *destination_node){
 
 
 //===========================================================
-// Fills in the part of the payload that every packet carries
+// Fills in the part of the envelope that every packet carries
 //===========================================================
-static void net_build_header(unsigned char packet_type){
+static void net_build_envelope(unsigned char packet_type, unsigned int data_length){
 
-	memset(&send_packet.payload, 0, sizeof(struct net_payload));
+	send_packet.envelope.magic[0] = NET_MAGIC_0;
+	send_packet.envelope.magic[1] = NET_MAGIC_1;
+	send_packet.envelope.magic[2] = NET_MAGIC_2;
+	send_packet.envelope.magic[3] = NET_MAGIC_3;
 
-	send_packet.payload.magic[0] = NET_MAGIC_0;
-	send_packet.payload.magic[1] = NET_MAGIC_1;
-	send_packet.payload.magic[2] = NET_MAGIC_2;
-	send_packet.payload.magic[3] = NET_MAGIC_3;
-
-	send_packet.payload.type        = packet_type;
-	send_packet.payload.instance_id = local_instance_id;
+	send_packet.envelope.type        = packet_type;
+	send_packet.envelope.reserved    = 0;
+	send_packet.envelope.instance_id = local_instance_id;
+	send_packet.envelope.length      = data_length;
 
 }
 
@@ -552,26 +570,32 @@ static void net_build_header(unsigned char packet_type){
 //===========================================================
 static int net_packet_is_valid(struct net_packet *packet){
 
-	if (packet->payload.magic[0] != NET_MAGIC_0){
+	if (packet->envelope.magic[0] != NET_MAGIC_0){
 		return 0;
 	}
 
-	if (packet->payload.magic[1] != NET_MAGIC_1){
+	if (packet->envelope.magic[1] != NET_MAGIC_1){
 		return 0;
 	}
 
-	if (packet->payload.magic[2] != NET_MAGIC_2){
+	if (packet->envelope.magic[2] != NET_MAGIC_2){
 		return 0;
 	}
 
-	if (packet->payload.magic[3] != NET_MAGIC_3){
+	if (packet->envelope.magic[3] != NET_MAGIC_3){
 		return 0;
 	}
 
 	// Our own broadcast finding its way back to us. On real Ethernet a card
 	// does not hear itself and this never happens, but it costs nothing to
 	// be sure.
-	if (packet->payload.instance_id == local_instance_id){
+	if (packet->envelope.instance_id == local_instance_id){
+		return 0;
+	}
+
+	// A length longer than the buffer it came in means the packet is corrupt
+	// or somebody else is using our socket. Either way it is not ours.
+	if (packet->envelope.length > NET_MAX_DATA){
 		return 0;
 	}
 
@@ -581,69 +605,35 @@ static int net_packet_is_valid(struct net_packet *packet){
 
 
 //===========================================================
-// LAYER 3 - LOCKSTEP
+// LAYER 2 - MESSAGES
 //===========================================================
 
 //===========================================================
-// Files one frame of the other machine's keys.
+// Puts one arrived message at the back of the queue.
 //
-// Frames already simulated are dropped: they are no use, we have moved on.
-// Frames further ahead than the ring is long are dropped too, or they would
-// land on top of a frame we still need.
+// If the queue is full the OLDEST is thrown away rather than the new one. On
+// a link that is falling behind, the newest news is the news worth keeping,
+// and a program that reads its messages every loop never sees this happen.
 //===========================================================
-static void net_store_remote_input(unsigned long frame, unsigned char input_bits){
+static void net_queue_push(unsigned char *data, unsigned int length){
 
-	unsigned int index;
+	if (queue_count == NET_QUEUE_SIZE){
 
-	if (frame < simulation_frame){
-		return;
+		queue_tail = (queue_tail + 1) % NET_QUEUE_SIZE;
+		queue_count = queue_count - 1;
+
+		total_messages_dropped = total_messages_dropped + 1;
+
 	}
 
-	if (frame >= simulation_frame + NET_INPUT_BUFFER_SIZE){
-		return;
+	if (length > 0){
+		memcpy(queue_data[queue_head], data, length);
 	}
 
-	index = (unsigned int)(frame & (NET_INPUT_BUFFER_SIZE - 1));
+	queue_length[queue_head] = length;
 
-	remote_input_frame[index] = frame;
-	remote_input_value[index] = input_bits;
-	remote_input_valid[index] = 1;
-
-}
-
-
-//===========================================================
-// Compares a checksum from the other machine against our own for that frame.
-//
-// If they differ the two machines are simulating different games. It cannot
-// be repaired from here, but it is written down: without this line a desync
-// looks like nothing at all, because each screen carries on making sense.
-//===========================================================
-static void net_check_remote_checksum(unsigned long frame, unsigned int value){
-
-	unsigned int index;
-
-	index = (unsigned int)(frame & (NET_INPUT_BUFFER_SIZE - 1));
-
-	if (local_checksum_valid[index] == 0){
-		return;
-	}
-
-	if (local_checksum_frame[index] != frame){
-		return;
-	}
-
-	if (local_checksum_value[index] == value){
-		return;
-	}
-
-	if (desync_detected == 0){
-		sprintf(net_log_text, "NET DESYNC at frame %lu: mine %u theirs %u",
-		        frame, local_checksum_value[index], value);
-		tanks_log(net_log_text);
-	}
-
-	desync_detected = 1;
+	queue_head = (queue_head + 1) % NET_QUEUE_SIZE;
+	queue_count = queue_count + 1;
 
 }
 
@@ -653,64 +643,46 @@ static void net_check_remote_checksum(unsigned long frame, unsigned int value){
 //===========================================================
 static void net_handle_packet(struct net_packet *packet){
 
-	unsigned int  entry;
-	unsigned long frame;
-
 	total_packets_received = total_packets_received + 1;
 	last_packet_tick = biostime(0, 0L);
 
-	if (packet->payload.type == NET_TYPE_HELLO){
+	if (packet->envelope.type == NET_TYPE_HELLO){
 
-		// They are here. Remember who they are and answer them directly, so
-		// they know we are here too: neither side starts until BOTH have
-		// seen the other, or one would run off and start playing on its own.
-		remote_instance_id = packet->payload.instance_id;
+		// Somebody is looking for us. Remember who they are and answer them
+		// directly, so they know we are here too.
+		//
+		// This is answered ALWAYS, not only while pairing. A program that is
+		// already up and running is exactly what a late arrival needs to
+		// hear from, and it is also what covers an answer of ours that got
+		// lost: they simply ask again and this replies again.
+		remote_instance_id = packet->envelope.instance_id;
 		memcpy(remote_node, packet->header.source_node, 6);
 
 		if (net_send_is_busy() == 0){
-			net_build_header(NET_TYPE_HELLO_ACK);
-			net_transmit(remote_node);
+			net_build_envelope(NET_TYPE_HELLO_ACK, 0);
+			net_transmit(remote_node, 0);
 		}
 
-		paired_with_opponent = paired_with_opponent | 0x01;
+		pairing_state = pairing_state | 0x01;
 
 		return;
 
 	}
 
-	if (packet->payload.type == NET_TYPE_HELLO_ACK){
+	if (packet->envelope.type == NET_TYPE_HELLO_ACK){
 
-		remote_instance_id = packet->payload.instance_id;
+		remote_instance_id = packet->envelope.instance_id;
 		memcpy(remote_node, packet->header.source_node, 6);
 
-		paired_with_opponent = paired_with_opponent | 0x02;
+		pairing_state = pairing_state | 0x02;
 
 		return;
 
 	}
 
-	if (packet->payload.type == NET_TYPE_INPUT){
+	if (packet->envelope.type == NET_TYPE_DATA){
 
-		// The last NET_REDUNDANCY frames of their keys, so one lost packet
-		// is covered by the next without anybody asking for it again
-		entry = 0;
-		while (entry < packet->payload.count){
-
-			if (entry >= NET_REDUNDANCY){
-				break;
-			}
-
-			frame = packet->payload.base_frame + (unsigned long)entry;
-			net_store_remote_input(frame, packet->payload.inputs[entry]);
-
-			entry = entry + 1;
-
-		}
-
-		if (packet->payload.has_checksum == 1){
-			net_check_remote_checksum(packet->payload.checksum_frame,
-			                          packet->payload.checksum_value);
-		}
+		net_queue_push(packet->envelope.data, packet->envelope.length);
 
 		return;
 
@@ -719,13 +691,7 @@ static void net_handle_packet(struct net_packet *packet){
 }
 
 
-//===========================================================
-// Picks up everything the driver has for us and hands the buffers back.
-//
-// Cheap, and safe to call as often as you like: it is the only thing that
-// ever moves data in, so any loop that waits MUST call it.
-//===========================================================
-void net_poll(void){
+void net_update(void){
 
 	int index;
 
@@ -769,42 +735,116 @@ void net_poll(void){
 }
 
 
+int net_send(void *data, int length){
+
+	if (net_is_running == 0){
+		return 0;
+	}
+
+	if (is_connected == 0){
+		return 0;
+	}
+
+	// Refused rather than chopped in half. Silently sending the first
+	// NET_MAX_DATA bytes would look like it worked and lose the rest.
+	if (length < 0 || length > NET_MAX_DATA){
+		net_log("NET: message too long, raise NET_MAX_DATA or send it in pieces");
+		return 0;
+	}
+
+	// The driver is still holding the previous packet. Dropping this one is
+	// the whole reason net_send() never blocks: the caller gets a 0 and
+	// decides for itself whether that matters.
+	if (net_send_is_busy() == 1){
+		return 0;
+	}
+
+	net_build_envelope(NET_TYPE_DATA, (unsigned int)length);
+
+	if (length > 0){
+		memcpy(send_packet.envelope.data, data, (unsigned int)length);
+	}
+
+	return net_transmit(remote_node, (unsigned int)length);
+
+}
+
+
+int net_receive(void *buffer, int max_length){
+
+	unsigned int length;
+	int slot;
+
+	if (queue_count == 0){
+		return 0;
+	}
+
+	// The slot is taken out of the queue FIRST and read afterwards. Reading
+	// it through queue_tail after moving queue_tail on would read the next
+	// message instead of this one.
+	slot = queue_tail;
+	length = queue_length[slot];
+
+	queue_tail = (queue_tail + 1) % NET_QUEUE_SIZE;
+	queue_count = queue_count - 1;
+
+	// Thrown away rather than truncated. Half a message looks exactly like a
+	// whole one to the caller, and that is a bug that takes days to find.
+	if (max_length < 0 || length > (unsigned int)max_length){
+		net_log("NET: a message did not fit in the buffer and was dropped");
+		return 0;
+	}
+
+	if (length > 0){
+		memcpy(buffer, queue_data[slot], length);
+	}
+
+	return (int)length;
+
+}
+
+
 //===========================================================
-// Finds the driver, opens the socket, and gets everything ready to listen.
+// STARTING AND STOPPING
 //===========================================================
-int net_init(void){
+
+int net_start(void){
 
 	int index;
 
-	net_is_running   = 0;
-	connection_lost  = 0;
-	desync_detected  = 0;
-	paired_with_opponent = 0;
+	net_is_running  = 0;
+	is_connected    = 0;
+	connection_lost = 0;
+	pairing_state   = 0;
+
+	queue_head  = 0;
+	queue_tail  = 0;
+	queue_count = 0;
 
 	total_packets_sent     = 0;
 	total_packets_received = 0;
-	total_waits            = 0;
+	total_messages_dropped = 0;
 
 	// A structure that is the wrong size means the compiler has padded it,
 	// and IPX would then read every field from the wrong place. Logging the
 	// sizes turns that from a baffling crash into one obvious line.
-	sprintf(net_log_text, "NET sizes: ecb=%u header=%u packet=%u (want 42/30/60)",
+	sprintf(net_log_text, "NET sizes: ecb=%u header=%u overhead=%u (want 42/30/42)",
 	        (unsigned int)sizeof(struct ipx_ecb),
 	        (unsigned int)sizeof(struct ipx_header),
-	        (unsigned int)sizeof(struct net_packet));
-	tanks_log(net_log_text);
+	        (unsigned int)NET_PACKET_OVERHEAD);
+	net_log(net_log_text);
 
 	if (ipx_detect() == 0){
-		tanks_log("NET: no IPX driver found (int 2F/7A00 said no)");
+		net_log("NET: no IPX driver found (int 2F/7A00 said no)");
 		return 0;
 	}
 
 	sprintf(net_log_text, "NET: IPX driver entry at %04X:%04X",
 	        ipx_entry_segment, ipx_entry_offset);
-	tanks_log(net_log_text);
+	net_log(net_log_text);
 
 	if (ipx_socket_call(IPX_FUNCTION_OPEN_SOCKET, net_swap16(NET_SOCKET_NUMBER)) != 0){
-		tanks_log("NET: could not open the socket, another copy may be running");
+		net_log("NET: could not open the socket, another copy may be running");
 		return 0;
 	}
 
@@ -823,7 +863,7 @@ int net_init(void){
 	        local_node[0], local_node[1], local_node[2],
 	        local_node[3], local_node[4], local_node[5],
 	        local_instance_id);
-	tanks_log(net_log_text);
+	net_log(net_log_text);
 
 	// Hand every receive buffer to the driver before anything else, or the
 	// first packets to arrive have nowhere to land
@@ -841,364 +881,177 @@ int net_init(void){
 }
 
 
-//===========================================================
-// Gives the socket back. If this is skipped the driver keeps our socket and
-// our buffers, and the next run cannot open the same socket.
-//===========================================================
-void net_shutdown(void){
+void net_end(void){
 
 	if (net_is_running == 0){
 		return;
 	}
 
-	sprintf(net_log_text, "NET: sent %lu, received %lu, waited %lu frames",
-	        total_packets_sent, total_packets_received, total_waits);
-	tanks_log(net_log_text);
+	sprintf(net_log_text, "NET: sent %lu, received %lu, dropped %lu",
+	        total_packets_sent, total_packets_received, total_messages_dropped);
+	net_log(net_log_text);
 
 	ipx_socket_call(IPX_FUNCTION_CLOSE_SOCKET, net_swap16(NET_SOCKET_NUMBER));
 
 	net_is_running = 0;
+	is_connected   = 0;
 
 }
 
 
 //===========================================================
-// Looks for the other machine. Text mode, before the game switches to VGA,
-// so it can say what is happening.
-//
-// Both copies do exactly the same thing: shout HELLO to everybody, answer
-// any HELLO they hear, and wait until they have BOTH heard a HELLO and
-// received an answer to their own. Only then is it certain that the other
-// side also knows the game is on, and both can start at frame 0 together.
-//
-// Pairing on the first HELLO alone would not do: the faster machine would
-// run off and start the game while the slower one was still waiting for an
-// answer that was never coming.
+// FINDING THE OTHER MACHINE
 //===========================================================
-int net_find_opponent(void){
+
+//===========================================================
+// The one loop all three pairing functions are made of.
+//
+// It shouts HELLO every quarter of a second if it is supposed to shout, and
+// waits until pairing_state has the bits it was told to wait for. Answering
+// somebody else's HELLO is not done here: net_handle_packet() does that
+// always, whether we are pairing or not.
+//
+//   wanted 0x01  "I have heard from them"    - the server, which only listens
+//   wanted 0x02  "they have answered me"     - the client, which shouts
+//   wanted 0x03  both                        - two equals finding each other
+//
+// Returns 1 when paired, 0 on timeout or if a key was pressed.
+//===========================================================
+static int net_pair(int seconds, int do_broadcast, int wanted_state){
 
 	long start_tick;
 	long now_tick;
 	long next_hello_tick;
-	int  index;
-	int  extra_acks;
-	int  ack_attempts;
+	long limit_ticks;
 
 	if (net_is_running == 0){
 		return 0;
 	}
 
-	printf("\n");
-	printf("Looking for the other player...\n");
-	printf("(both machines must be running the game, press any key to give up)\n");
-	printf("\n");
+	limit_ticks = (long)seconds * NET_TICKS_PER_SECOND;
 
 	start_tick      = biostime(0, 0L);
 	next_hello_tick = start_tick;
 
-	while (paired_with_opponent != 0x03){
+	while ((pairing_state & wanted_state) != wanted_state){
 
 		now_tick = biostime(0, 0L);
 
-		if (now_tick >= next_hello_tick){
+		if (do_broadcast == 1){
 
-			next_hello_tick = now_tick + NET_HELLO_INTERVAL_TICKS;
+			if (now_tick >= next_hello_tick){
 
-			if (net_send_is_busy() == 0){
-				net_build_header(NET_TYPE_HELLO);
-				net_transmit(broadcast_node);
+				next_hello_tick = now_tick + NET_HELLO_INTERVAL_TICKS;
+
+				if (net_send_is_busy() == 0){
+					net_build_envelope(NET_TYPE_HELLO, 0);
+					net_transmit(broadcast_node, 0);
+				}
+
+				printf(".");
+
 			}
-
-			printf(".");
 
 		}
 
-		net_poll();
+		net_update();
 
-		if (now_tick - start_tick > NET_DISCOVERY_SECONDS * NET_TICKS_PER_SECOND){
+		if (now_tick - start_tick > limit_ticks){
 			printf("\n\nNobody answered.\n");
-			tanks_log("NET: discovery timed out");
+			net_log("NET: pairing timed out");
 			return 0;
 		}
 
 		if (kbhit()){
 			getch();
 			printf("\n\nCancelled.\n");
-			tanks_log("NET: discovery cancelled by the user");
+			net_log("NET: pairing cancelled by the user");
 			return 0;
 		}
 
 	}
 
-	// A few more answers on the way out. We only get here because they
-	// answered us, so they have already heard our HELLO, but the answer WE
-	// sent them may have been the one that got lost. These cost nothing.
-	extra_acks  = 0;
-	ack_attempts = 0;
-
-	while (extra_acks < 3){
-
-		if (net_send_is_busy() == 0){
-			net_build_header(NET_TYPE_HELLO_ACK);
-			net_transmit(remote_node);
-			extra_acks = extra_acks + 1;
-		}
-
-		net_poll();
-
-		// Bounded on purpose. If the driver never frees the send buffer this
-		// must not turn into a loop with no way out: the answers are a
-		// courtesy, not something worth hanging the game for.
-		ack_attempts = ack_attempts + 1;
-
-		if (ack_attempts > 100){
-			break;
-		}
-
-	}
-
-	// Who drives which tank, settled without a word being exchanged about
-	// it: both machines compare the same two numbers and reach the same
-	// answer. The lower id is player 1, the tank at the bottom.
-	if (local_instance_id < remote_instance_id){
-		is_player1 = 1;
-	}else{
-		is_player1 = 0;
-	}
-
-	// Everything starts at frame 0, on both machines.
-	//
-	// The first NET_INPUT_DELAY frames have no keys behind them, on either
-	// side, so they are filled in as "nothing pressed" and marked as already
-	// received. Without this both machines would sit waiting for an input
-	// for frame 0 that neither of them ever sent.
-	simulation_frame = 0;
-
-	index = 0;
-	while (index < NET_INPUT_BUFFER_SIZE){
-		local_input_value[index]  = 0;
-		remote_input_frame[index] = 0;
-		remote_input_value[index] = 0;
-		remote_input_valid[index] = 0;
-		local_checksum_valid[index] = 0;
-		index = index + 1;
-	}
-
-	index = 0;
-	while (index < NET_INPUT_DELAY){
-		local_input_value[index]  = 0;
-		remote_input_frame[index] = (unsigned long)index;
-		remote_input_value[index] = 0;
-		remote_input_valid[index] = 1;
-		index = index + 1;
-	}
-
-	pending_checksum_ready = 0;
-	checksum_countdown     = NET_CHECKSUM_INTERVAL;
-
+	is_connected    = 1;
 	last_packet_tick = biostime(0, 0L);
-	connection_lost  = 0;
+	connection_lost = 0;
 
 	printf("\n\nConnected.\n");
 
-	if (is_player1 == 1){
-		printf("You are PLAYER 1, the tank at the bottom.\n");
-	}else{
-		printf("You are PLAYER 2, the tank at the top.\n");
-	}
-
-	printf("Both machines drive with the cursor keys and fire with keypad 5.\n");
-
-	sprintf(net_log_text, "NET: paired. them id %lu node %02X%02X%02X%02X%02X%02X, we are player %d",
+	sprintf(net_log_text, "NET: paired with id %lu node %02X%02X%02X%02X%02X%02X",
 	        remote_instance_id,
 	        remote_node[0], remote_node[1], remote_node[2],
-	        remote_node[3], remote_node[4], remote_node[5],
-	        2 - is_player1);
-	tanks_log(net_log_text);
+	        remote_node[3], remote_node[4], remote_node[5]);
+	net_log(net_log_text);
 
 	return 1;
 
 }
 
 
-int net_is_player1(void){
+int net_wait_for_client(int seconds){
 
-	return is_player1;
+	printf("\n");
+	printf("Waiting for the other machine to connect...\n");
+	printf("(press any key to give up)\n");
+	printf("\n");
 
-}
-
-
-unsigned long net_get_frame(void){
-
-	return simulation_frame;
-
-}
-
-
-//===========================================================
-// Files our own keys for the frame NET_INPUT_DELAY ahead of the one being
-// simulated.
-//
-// This is the whole input delay in one line. Our keys go in at
-// simulation_frame + NET_INPUT_DELAY and are read back out at
-// simulation_frame, which is exactly as late as the other machine's arrive.
-//===========================================================
-void net_set_local_input(unsigned char input_bits){
-
-	unsigned long target_frame;
-	unsigned int  index;
-
-	target_frame = simulation_frame + NET_INPUT_DELAY;
-	index = (unsigned int)(target_frame & (NET_INPUT_BUFFER_SIZE - 1));
-
-	local_input_value[index] = input_bits;
+	// Listens only. It is paired the moment it has heard a HELLO, because
+	// net_handle_packet() has already answered it by then. If that answer
+	// got lost the client simply asks again, and it is answered again.
+	return net_pair(seconds, 0, 0x01);
 
 }
 
 
-//===========================================================
-// Sends our last NET_REDUNDANCY frames of keys, plus a checksum when one is
-// due to go out.
-//===========================================================
-void net_send_input(void){
+int net_connect_to_server(int seconds){
 
-	unsigned long newest_frame;
-	unsigned long frame;
-	unsigned int  count;
-	unsigned int  entry;
-	unsigned int  index;
+	printf("\n");
+	printf("Looking for the server...\n");
+	printf("(press any key to give up)\n");
+	printf("\n");
 
-	if (net_is_running == 0){
-		return;
-	}
-
-	// Busy sending the last one. Skipping is fine, that is what the
-	// redundancy is for: the next packet carries this frame too.
-	if (net_send_is_busy() == 1){
-		return;
-	}
-
-	newest_frame = simulation_frame + NET_INPUT_DELAY;
-
-	// At the very start there are not NET_REDUNDANCY frames to look back on
-	// yet, so send only the ones that exist
-	if (newest_frame + 1 < NET_REDUNDANCY){
-		count = (unsigned int)(newest_frame + 1);
-	}else{
-		count = NET_REDUNDANCY;
-	}
-
-	net_build_header(NET_TYPE_INPUT);
-
-	send_packet.payload.count      = (unsigned char)count;
-	send_packet.payload.base_frame = newest_frame - (unsigned long)count + 1;
-
-	entry = 0;
-	while (entry < count){
-
-		frame = send_packet.payload.base_frame + (unsigned long)entry;
-		index = (unsigned int)(frame & (NET_INPUT_BUFFER_SIZE - 1));
-
-		send_packet.payload.inputs[entry] = local_input_value[index];
-
-		entry = entry + 1;
-
-	}
-
-	if (pending_checksum_ready == 1){
-
-		send_packet.payload.has_checksum   = 1;
-		send_packet.payload.checksum_frame = pending_checksum_frame;
-		send_packet.payload.checksum_value = pending_checksum_value;
-
-		pending_checksum_ready = 0;
-
-	}
-
-	net_transmit(remote_node);
+	// Shouts, and waits for an answer. Waiting for the ANSWER and not just
+	// for any packet is what makes sure the server knows about us too.
+	return net_pair(seconds, 1, 0x02);
 
 }
 
 
-//===========================================================
-// Have they sent us the keys for the frame we are about to simulate?
-//
-// While this is 0 the game must stand still. That is the price of lockstep,
-// and the input delay is what keeps it from being paid very often.
-//===========================================================
-int net_has_remote_input(void){
+int net_find_peer(int seconds){
 
-	unsigned int index;
+	printf("\n");
+	printf("Looking for the other machine...\n");
+	printf("(both must be running the program, press any key to give up)\n");
+	printf("\n");
 
-	index = (unsigned int)(simulation_frame & (NET_INPUT_BUFFER_SIZE - 1));
-
-	if (remote_input_valid[index] == 0){
-		return 0;
-	}
-
-	if (remote_input_frame[index] != simulation_frame){
-		return 0;
-	}
-
-	return 1;
+	// Both sides do exactly the same thing: shout, answer whoever shouts,
+	// and wait until they have BOTH heard a HELLO and had their own answered.
+	//
+	// Waiting for both bits is not fussiness. Pairing on the first HELLO
+	// alone would let the faster machine run off and start while the slower
+	// one was still waiting for an answer that was never coming.
+	return net_pair(seconds, 1, 0x03);
 
 }
 
 
-unsigned char net_get_remote_input(void){
+int net_is_connected(void){
 
-	unsigned int index;
-
-	index = (unsigned int)(simulation_frame & (NET_INPUT_BUFFER_SIZE - 1));
-
-	return remote_input_value[index];
+	return is_connected;
 
 }
 
 
-unsigned char net_get_local_input(void){
+unsigned long net_get_local_id(void){
 
-	unsigned int index;
-
-	index = (unsigned int)(simulation_frame & (NET_INPUT_BUFFER_SIZE - 1));
-
-	return local_input_value[index];
+	return local_instance_id;
 
 }
 
 
-//===========================================================
-// Takes the checksum of the state after this frame has been simulated. Kept
-// for comparing, and every NET_CHECKSUM_INTERVAL frames one is put aside to
-// travel on the next packet.
-//===========================================================
-void net_set_local_checksum(unsigned int checksum){
+unsigned long net_get_remote_id(void){
 
-	unsigned int index;
-
-	index = (unsigned int)(simulation_frame & (NET_INPUT_BUFFER_SIZE - 1));
-
-	local_checksum_frame[index] = simulation_frame;
-	local_checksum_value[index] = checksum;
-	local_checksum_valid[index] = 1;
-
-	checksum_countdown = checksum_countdown - 1;
-
-	if (checksum_countdown == 0){
-
-		checksum_countdown     = NET_CHECKSUM_INTERVAL;
-		pending_checksum_frame = simulation_frame;
-		pending_checksum_value = checksum;
-		pending_checksum_ready = 1;
-
-	}
-
-}
-
-
-void net_advance_frame(void){
-
-	simulation_frame = simulation_frame + 1;
+	return remote_instance_id;
 
 }
 
@@ -1206,8 +1059,8 @@ void net_advance_frame(void){
 //===========================================================
 // Nothing at all for NET_TIMEOUT_SECONDS means the other machine has gone.
 //
-// Needed because the wait for an input has no other way out: without a
-// timeout the game would sit there for ever if the other side crashed or
+// Needed because a wait for a message has no other way out: without a
+// timeout a program would sit there for ever if the other side crashed or
 // somebody closed the window.
 //===========================================================
 int net_connection_lost(void){
@@ -1215,6 +1068,10 @@ int net_connection_lost(void){
 	long now_tick;
 
 	if (net_is_running == 0){
+		return 0;
+	}
+
+	if (is_connected == 0){
 		return 0;
 	}
 
@@ -1226,8 +1083,7 @@ int net_connection_lost(void){
 
 	if (now_tick - last_packet_tick > NET_TIMEOUT_SECONDS * NET_TICKS_PER_SECOND){
 
-		sprintf(net_log_text, "NET: connection lost at frame %lu", simulation_frame);
-		tanks_log(net_log_text);
+		net_log("NET: connection lost");
 
 		connection_lost = 1;
 
@@ -1236,23 +1092,5 @@ int net_connection_lost(void){
 	}
 
 	return 0;
-
-}
-
-
-int net_desync_detected(void){
-
-	return desync_detected;
-
-}
-
-
-//===========================================================
-// Counts one frame spent waiting for the other machine, for the log. A big
-// number here means the input delay is too small for the link.
-//===========================================================
-void net_count_wait(void){
-
-	total_waits = total_waits + 1;
 
 }

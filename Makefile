@@ -48,6 +48,11 @@ bin\net.obj: src\net.c
 	@if not exist bin mkdir bin
 	$(CC) -c $(CFLAGS) -obin\net.obj src\net.c
 
+
+bin\lockstep.obj: src\lockstep.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\lockstep.obj src\lockstep.c
+
 	
 ################################################	
 #                                 ASM FILES                                             # 	
@@ -75,10 +80,11 @@ $(TARGET): \
 	bin\players.obj \
 	bin\gameloop.obj \
 	bin\sound.obj \
-	bin\net.obj
+	bin\net.obj \
+	bin\lockstep.obj
 	@echo bin\main.obj bin\util.obj bin\video.obj > bin\link.rsp
 	@echo bin\bmp.obj bin\players.obj bin\gameloop.obj >> bin\link.rsp
-	@echo bin\sound.obj bin\net.obj >> bin\link.rsp
+	@echo bin\sound.obj bin\net.obj bin\lockstep.obj >> bin\link.rsp
 	$(LD) $(LDFLAGS) -ebin\game.exe @bin\link.rsp
 
 clean:

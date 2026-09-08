@@ -1,5 +1,7 @@
 # Manual: how the game was made to work over the network
 
+> **Notice.** `src/net.c` has since been split in two: the IPX transport stayed in `src/net.c` and the lockstep synchronisation moved to `src/lockstep.c`, with some function names changing along the way. Every idea explained here -- determinism, lockstep, the input delay, IPX -- is still exact, and the code it walks through is still all there, just across two files. For today's API see [NETWORK-TUTORIAL.md](NETWORK-TUTORIAL.md).
+
 From nothing to two tanks fighting across two computers.
 
 ---

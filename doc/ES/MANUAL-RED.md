@@ -1,5 +1,7 @@
 # Manual: cómo se hizo que el juego funcione en red
 
+> **Aviso.** `src/net.c` se ha partido en dos desde entonces: el transporte IPX se quedó en `src/net.c` y la sincronización lockstep se mudó a `src/lockstep.c`, y por el camino cambiaron algunos nombres de función. Todas las ideas que se explican aquí -- determinismo, lockstep, el retardo de entrada, IPX -- siguen siendo exactas, y el código que recorre sigue estando entero, sólo que repartido en dos ficheros. Para la API de hoy mira [TUTORIAL-RED.md](TUTORIAL-RED.md).
+
 De cero a dos tanques peleando entre dos ordenadores.
 
 ---

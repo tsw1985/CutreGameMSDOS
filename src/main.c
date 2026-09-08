@@ -8,6 +8,7 @@
 #include "header\players.h"
 #include "header\sound.h"
 #include "header\net.h"
+#include "header\lockstep.h"
 
 //===========================================================
 // The game: main loop, keyboard, collisions against the map, and drawing.

@@ -1,5 +1,7 @@
 # NETWORK.md — how the game's network play works
 
+> **Notice.** `src/net.c` has since been split in two: the IPX transport stayed in `src/net.c`, which is now a reusable library, and the lockstep synchronisation moved to `src/lockstep.c`. Some names changed with it: `net_init()`/`net_poll()` and the input functions now live in `lockstep.c`, and the transport calls itself `net_start()`, `net_send()` and `net_receive()`. Everything this document explains about the **internals** -- IPX, the ECBs, lockstep, the input delay, desync detection -- is still exact. For today's API see [NETWORK-TUTORIAL.md](NETWORK-TUTORIAL.md).
+
 A document about `src/net.c` and `header/net.h`, and about the changes the
 network brought to `src/main.c`. It explains what each function does, why each
 decision was taken, and how to set up two machines to try it.

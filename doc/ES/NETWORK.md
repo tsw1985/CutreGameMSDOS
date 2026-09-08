@@ -1,5 +1,7 @@
 # NETWORK.md — cómo funciona el juego en red
 
+> **Aviso.** `src/net.c` se ha partido en dos desde entonces: el transporte IPX se quedó en `src/net.c`, que ahora es una librería reutilizable, y la sincronización lockstep se mudó a `src/lockstep.c`. Con ello cambiaron algunos nombres: `net_init()`/`net_poll()` y las funciones de entrada viven ahora en `lockstep.c`, y el transporte se llama `net_start()`, `net_send()` y `net_receive()`. Todo lo que este documento explica sobre las **tripas** -- IPX, los ECB, el lockstep, el retardo de entrada, la detección de desincronización -- sigue siendo exacto. Para la API de hoy mira [TUTORIAL-RED.md](TUTORIAL-RED.md).
+
 Documento de `src/net.c` y `header/net.h`, y de los cambios que la red trajo a
 `src/main.c`. Explica qué hace cada función, por qué está tomada cada decisión,
 y cómo montar las dos máquinas para probarlo.

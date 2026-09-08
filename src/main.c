@@ -328,11 +328,14 @@ int main(int argc, char *argv[]){
 
 		// Background music. Unlike the effects above it is NOT loaded: it is
 		// read from the file while it plays, so a one minute song costs the
-		// same 8 KB as a five second one and loops for ever.
+		// same 16 KB as a five second one and loops for ever.
 		//
-		// Drop any 8 bit mono 16000 Hz WAV in res\\ under this name. If it is
-		// not there, play_song() says so in the log and the game carries on
-		// perfectly well without music.
+		// Drop an 8 bit mono 44100 Hz WAV in res\\ under this name. Unlike the
+		// effects, the rate has to be EXACTLY that: load_sound() can convert a
+		// file because it does it once at startup, and there is nowhere to do
+		// that while streaming. If it is not there, or it is at another rate,
+		// play_song() says so in the log and the game carries on perfectly well
+		// without music.
 		play_song("..\\res\\prody8.wav");
 
 	}

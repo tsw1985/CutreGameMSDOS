@@ -197,7 +197,14 @@ int player_fire_bullet(struct player *_player){
 void player_move_bullet(struct player *_player){
 
 	// One step in the direction it was fired. Only geometry: whether the
-	// bullet is still on screen. Walls and tanks are the caller's business.
+	// bullet is still inside the MAP. Not the screen: with a map bigger than
+	// one screen a bullet flies happily through parts nobody is looking at,
+	// and it has to keep flying. Walls and tanks are the caller's business.
+	//
+	// This is a safety net, not a game rule: the maps are drawn with a solid
+	// border, so a bullet always hits a wall long before it gets here. What it
+	// stops is a badly drawn map turning into an unsigned position that wraps
+	// round past 65535.
 	//
 	// The edges are checked BEFORE moving, like move_sprite() does: the
 	// positions are unsigned, so subtracting past 0 would wrap round to
@@ -216,7 +223,7 @@ void player_move_bullet(struct player *_player){
 
 	}else if (_player->bullet_direction == MOVE_DOWN){
 
-		if (_player->bullet_position_y + BULLET_PIXEL_TO_MOVE + TANK_BULLET_HEIGHT <= HEIGHT){
+		if (_player->bullet_position_y + BULLET_PIXEL_TO_MOVE + TANK_BULLET_HEIGHT <= (unsigned int)map_height){
 			_player->bullet_position_y = _player->bullet_position_y + BULLET_PIXEL_TO_MOVE;
 		}else{
 			_player->bullet_is_flying = 0;
@@ -232,7 +239,7 @@ void player_move_bullet(struct player *_player){
 
 	}else{ // MOVE_RIGHT
 
-		if (_player->bullet_position_x + BULLET_PIXEL_TO_MOVE + TANK_BULLET_WIDTH <= WIDTH){
+		if (_player->bullet_position_x + BULLET_PIXEL_TO_MOVE + TANK_BULLET_WIDTH <= (unsigned int)map_width){
 			_player->bullet_position_x = _player->bullet_position_x + BULLET_PIXEL_TO_MOVE;
 		}else{
 			_player->bullet_is_flying = 0;

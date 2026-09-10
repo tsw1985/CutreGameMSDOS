@@ -91,6 +91,22 @@
 #define PLAYER2_START_Y 			16
 #define PLAYER2_START_DIRECTION 	MOVE_DOWN
 
+// Same thing for the 640x400 map of /bigmap. It needs its own pair for a
+// very concrete reason: that map has a solid border 17 pixels thick, so
+// PLAYER2_START_Y of 16 lands INSIDE the top wall and the tank would be
+// stuck from the first frame.
+//
+// These two are diagonally opposite, one in the bottom left room and one in
+// the top right one, so the two tanks start out of sight of each other and
+// have to go looking.
+#define BIG_PLAYER1_START_X 			166
+#define BIG_PLAYER1_START_Y 			299
+#define BIG_PLAYER1_START_DIRECTION 	MOVE_UP
+
+#define BIG_PLAYER2_START_X 			483
+#define BIG_PLAYER2_START_Y 			106
+#define BIG_PLAYER2_START_DIRECTION 	MOVE_DOWN
+
 // Offset of the cannon tip inside the 18x18 sprite box, one pair per
 // direction. This is the point that decides whether the tank can advance,
 // and it is also where its bullet is born.

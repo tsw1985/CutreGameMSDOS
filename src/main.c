@@ -3,6 +3,7 @@
 #include <dos.h>
 #include <string.h>
 #include <bios.h>
+#include <alloc.h>
 #include "header\util.h"
 #include "header\bmp.h"
 #include "header\players.h"
@@ -26,10 +27,6 @@
 #define LOG_INTERVAL_FRAMES 70
 
 #define SCREEN_SIZE 			64000
-
-// Palette index that marks a wall in cutrecol.bmp. That file only uses 2
-// colors: 3 (floor) and 252 (wall).
-#define COLLISION_COLOR 		252
 
 // Keyboards Directions
 #define DIRECTION_UP			0
@@ -100,6 +97,7 @@ unsigned char read_input_from_keys(unsigned char key_up_code,
 unsigned int compute_state_checksum();
 void set_text_mode();
 void draw_to_buffer();
+void update_camera(int snap_to_target);
 void draw_explosion(struct player *_player);
 void update_keyboard();
 
@@ -124,6 +122,17 @@ int log_frame_counter;
 // players on this same keyboard. Set from the command line: game.exe /net
 int network_mode;
 
+// 1 when the big 640x400 map is being used instead of the single screen one.
+// Set from the command line: game.exe /bigmap. The two flags are
+// independent: /bigmap on its own is the way to try the camera out without
+// needing a second machine.
+//
+// In a network game BOTH machines have to be started with the same flag. If
+// they are not, the maps differ, the walls differ, and the two simulations
+// come apart. That is what map_width in the checksum is there to catch: it
+// turns an incomprehensible game into a desync report in the log.
+int big_map_mode;
+
 // Which tank THIS machine drives over the network. Meaningless in local
 // mode, where this keyboard drives both of them.
 int local_player_is_1;
@@ -134,9 +143,9 @@ int local_player_is_1;
 // so a shot can be heard over them, and because two engines flat out plus a
 // shot would clip badly once they are all added together. 64 is twice the
 // recorded level, which the mixer allows and clamps if it goes too far.
-#define SOUND_VOLUME_FIRE 		64
-#define SOUND_VOLUME_ENGINE 	34
-#define SOUND_VOLUME_DIED 		64
+#define SOUND_VOLUME_FIRE 		16 //64
+#define SOUND_VOLUME_ENGINE 	12 //34
+#define SOUND_VOLUME_DIED 		34 //64
 
 // The numbers load_sound() hands back. sound.c knows nothing about any of
 // this: it is a library, and which WAV files exist is the game's business.
@@ -214,9 +223,13 @@ int main(int argc, char *argv[]){
 
 	tanks_log("Starting game ...");
 
+	sprintf(log_message_text, "Free memory at start: %lu bytes", (unsigned long)coreleft());
+	tanks_log(log_message_text);
+
 	// game.exe /net plays against another machine. game.exe on its own is
 	// the two players on one keyboard game that was here before.
 	network_mode        = 0;
+	big_map_mode        = 0;
 	local_player_is_1   = 1;
 	connection_was_lost = 0;
 
@@ -229,6 +242,14 @@ int main(int argc, char *argv[]){
 
 		if (stricmp(argv[argument_index], "-net") == 0){
 			network_mode = 1;
+		}
+
+		if (stricmp(argv[argument_index], "/bigmap") == 0){
+			big_map_mode = 1;
+		}
+
+		if (stricmp(argv[argument_index], "-bigmap") == 0){
+			big_map_mode = 1;
 		}
 
 		argument_index = argument_index + 1;
@@ -283,6 +304,22 @@ int main(int argc, char *argv[]){
 	setup_screen();
 	init_players();
 	init_graphics();
+
+	// The camera has to be aimed AFTER init_graphics(), not before.
+	//
+	// init_players() ends by calling restart_game(), which aims it too, but at
+	// that point bmp_init_buffers() has not run yet: map_width is still the
+	// 320 it starts life with, the clamp decides the camera cannot move, and
+	// it gets pinned at 0,0. On the big map that would put the first frame in
+	// the top left corner with the tank nowhere near it.
+	update_camera(1);
+
+	// What we ended up with. Worth having in the log: the big map is the only
+	// thing here that can fail to fit, and if farmalloc() ever comes back NULL
+	// this line is what says so before anything strange happens.
+	sprintf(log_message_text, "Map %dx%d  free memory now: %lu bytes",
+	        map_width, map_height, (unsigned long)coreleft());
+	tanks_log(log_message_text);
 
 	// Sound is optional: if there is no card sound_start() returns 0, says so
 	// in the log, and every later sound call does nothing. The game plays
@@ -541,13 +578,16 @@ int main(int argc, char *argv[]){
    			tanks_log(log_message_text);*/
 
    			// Also log the FUTURE cannon tip (one PIXEL_TO_MOVE step ahead
-   			// in the current facing direction), read from the same
-   			// collision map buffer_map_collisions_data used by the
-   			// collision check above, so the log always shows exactly what
-   			// the check is really seeing
+   			// in the current facing direction), asked of bmp_is_wall(), the
+   			// very same function the collision check above uses, so the log
+   			// always shows exactly what the check is really seeing.
+   			//
+   			// The coordinates are WORLD ones, and the camera is logged next to
+   			// them: when something looks wrong on screen, the first question is
+   			// always whether the tank moved or the window did.
    			player_update_future_collision_points(&player1, player1.current_direction);
-   			cannon_tip_pixel_value = bmp_get_collision_pixel(player1.future_cannon_tip_x, player1.future_cannon_tip_y);
-   			sprintf(log_message_text, "Future cannon tip (%u,%u) = %u", player1.future_cannon_tip_x, player1.future_cannon_tip_y, cannon_tip_pixel_value);
+   			cannon_tip_pixel_value = (unsigned int)bmp_is_wall((int)player1.future_cannon_tip_x, (int)player1.future_cannon_tip_y);
+   			sprintf(log_message_text, "Future cannon tip (%u,%u) wall=%u camera (%d,%d)", player1.future_cannon_tip_x, player1.future_cannon_tip_y, cannon_tip_pixel_value, camera_x, camera_y);
    			tanks_log(log_message_text);
    		}
 
@@ -707,6 +747,19 @@ unsigned int compute_state_checksum(){
 
 	checksum = checksum + (explosion_pause_counter * 71);
 
+	// The size of the world, which never changes during a game, is in here on
+	// purpose. It is not state: it is a tripwire. If one machine was started
+	// with /bigmap and the other without it, the walls are in different places
+	// and the two simulations drift apart in a way that is very hard to read
+	// from the outside. This turns that into a clean desync report on the
+	// first check.
+	//
+	// camera_x and camera_y must NEVER be added here. Each machine follows its
+	// own tank, so they are legitimately different, and putting them in would
+	// report a desync on frame one of every network game.
+	checksum = checksum + ((unsigned int)map_width * 73);
+	checksum = checksum + ((unsigned int)map_height * 79);
+
 	return checksum;
 
 }
@@ -767,20 +820,26 @@ void update_player_animation(struct player *_player){
 // player_update_future_collision_points() has just worked out: the cannon
 // tip and both tracks. All three are needed, see players.h.
 //
-// Always read from buffer_map_collisions_data, never from VGA memory: that
-// buffer never has the tanks drawn on top of it.
+// Always read from the collision mask, never from VGA memory: that mask
+// never has the tanks drawn on top of it, and it covers the WHOLE world, not
+// just the part being shown. Both matter. The second one is what lets this
+// machine work out whether the OTHER tank, off in a room nobody here can
+// see, has run into something. If that answer differed between the two
+// machines the game would come apart.
+//
+// These are WORLD coordinates. The camera has nothing to do with any of it.
 //===========================================================
 int is_blocked_by_wall(struct player *_player){
 
-	if (bmp_get_collision_pixel(_player->future_cannon_tip_x, _player->future_cannon_tip_y) == COLLISION_COLOR){
+	if (bmp_is_wall((int)_player->future_cannon_tip_x, (int)_player->future_cannon_tip_y) == 1){
 		return 1;
 	}
 
-	if (bmp_get_collision_pixel(_player->future_track1_x, _player->future_track1_y) == COLLISION_COLOR){
+	if (bmp_is_wall((int)_player->future_track1_x, (int)_player->future_track1_y) == 1){
 		return 1;
 	}
 
-	if (bmp_get_collision_pixel(_player->future_track2_x, _player->future_track2_y) == COLLISION_COLOR){
+	if (bmp_is_wall((int)_player->future_track2_x, (int)_player->future_track2_y) == 1){
 		return 1;
 	}
 
@@ -923,11 +982,44 @@ int bullet_has_hit_tank(struct player *_player, struct player *_other){
 //===========================================================
 void restart_game(){
 
-	player_reset(&player1, PLAYER1_START_X, PLAYER1_START_Y, PLAYER1_START_DIRECTION);
-	player_reset(&player2, PLAYER2_START_X, PLAYER2_START_Y, PLAYER2_START_DIRECTION);
+	if (big_map_mode == 1){
+
+		player_reset(&player1, BIG_PLAYER1_START_X, BIG_PLAYER1_START_Y, BIG_PLAYER1_START_DIRECTION);
+		player_reset(&player2, BIG_PLAYER2_START_X, BIG_PLAYER2_START_Y, BIG_PLAYER2_START_DIRECTION);
+
+	}else{
+
+		player_reset(&player1, PLAYER1_START_X, PLAYER1_START_Y, PLAYER1_START_DIRECTION);
+		player_reset(&player2, PLAYER2_START_X, PLAYER2_START_Y, PLAYER2_START_DIRECTION);
+
+	}
+
+	// Put the camera straight on the tank instead of letting it slide over
+	// from wherever the last round ended. There is nothing to follow smoothly
+	// from when everything has just been teleported.
+	update_camera(1);
 
 }
 
+//===========================================================
+// Moves the tank one step. WORLD coordinates.
+//
+// There is no screen limit in here any more, and that is deliberate. What
+// stops the tank is the WALL, checked by is_blocked_by_wall() before this is
+// ever called, and both maps are drawn with a solid border around the whole
+// world. The limit stopped being code and became part of the picture.
+//
+// That border has to be at least 8 pixels thick, and the reason is this
+// function: the tank only ever stands on positions PIXEL_TO_MOVE apart, so a
+// wall one pixel thick can sit at a coordinate the tank never lands on and
+// get walked straight through. The maps have 16 to 33 pixels, which is
+// plenty.
+//
+// The two >= PIXEL_TO_MOVE tests below are NOT limits, and they stay. The
+// positions are unsigned, so 1 - 2 is not -1, it is 65535, and everything
+// downstream would then read a long way outside the map. With a proper
+// border they never fire; they are there for the day a map is drawn wrong.
+//===========================================================
 void move_sprite(struct player *_player, int direction){
 
 	// Remember facing direction so draw_to_buffer() can pick the right sprite
@@ -943,11 +1035,7 @@ void move_sprite(struct player *_player, int direction){
 
 	}else if (direction == MOVE_DOWN){
 
-		if (_player->position_y + PIXEL_TO_MOVE <=  ( HEIGHT ) - TANK_HEIGHT ){
-			_player->position_y = _player->position_y + PIXEL_TO_MOVE;
-		}else{
-			_player->position_y = HEIGHT - TANK_HEIGHT ;
-		}
+		_player->position_y = _player->position_y + PIXEL_TO_MOVE;
 
 	}else if (direction == MOVE_LEFT){
 
@@ -959,11 +1047,7 @@ void move_sprite(struct player *_player, int direction){
 
 	}else if (direction == MOVE_RIGHT){
 
-		if (_player->position_x + PIXEL_TO_MOVE <= WIDTH - TANK_WIDTH){
-			_player->position_x = _player->position_x + PIXEL_TO_MOVE;
-		}else{
-			_player->position_x = WIDTH - TANK_WIDTH;
-		}
+		_player->position_x = _player->position_x + PIXEL_TO_MOVE;
 
 	}
 
@@ -1140,14 +1224,50 @@ int update_bullet(struct player *_player, struct player *_other){
 
 	}
 
-	if (bmp_get_collision_pixel(_player->bullet_position_x + BULLET_CENTER_X,
-	                            _player->bullet_position_y + BULLET_CENTER_Y) == COLLISION_COLOR){
+	if (bmp_is_wall((int)(_player->bullet_position_x + BULLET_CENTER_X),
+	                (int)(_player->bullet_position_y + BULLET_CENTER_Y)) == 1){
 		_player->bullet_is_flying = 0;
 	}
 
 	return 0;
 
 }
+
+//===========================================================
+// Points the camera at the tank THIS machine is driving.
+//
+// Over the network each machine follows its own tank, so the two cameras
+// hold different values and that is exactly right: the camera is not part of
+// the game. It never goes into the checksum, no rule ever reads it, and the
+// two simulations stay identical while showing completely different parts of
+// the map.
+//
+// In a local game there is one screen and two tanks, so it follows player 1
+// and player 2 has to make do. /bigmap on its own is for trying the camera
+// out, not for playing two up.
+//
+// snap_to_target = 1 jumps there at once, for the start of a round.
+//===========================================================
+void update_camera(int snap_to_target){
+
+	struct player *target;
+
+	target = &player1;
+
+	if (network_mode == 1){
+		if (local_player_is_1 == 0){
+			target = &player2;
+		}
+	}
+
+	if (snap_to_target == 1){
+		bmp_camera_snap((int)target->position_x, (int)target->position_y, TANK_WIDTH, TANK_HEIGHT);
+	}else{
+		bmp_camera_follow((int)target->position_x, (int)target->position_y, TANK_WIDTH, TANK_HEIGHT);
+	}
+
+}
+
 
 void draw_to_buffer(){
 
@@ -1157,8 +1277,14 @@ void draw_to_buffer(){
 	char *sprite_to_draw_player1;
 	char *sprite_to_draw_player2;
 
-	// Copy again original map to current buffer to show in screen
-	memcpy(buffer_background_image_data,buffer_original_background_bmp,SCREEN_SIZE);
+	// Where the window is going to be BEFORE anything is painted, so the map
+	// and everything standing on it agree about the same frame.
+	update_camera(0);
+
+	// The visible 320x200 window of the map, copied in as the background. On
+	// the normal one screen map the camera is pinned at 0,0 and this comes out
+	// as exactly the same 64000 bytes it always copied.
+	bmp_draw_world_window(buffer_background_image_data);
 
 
 	/* DRAW FRAME of each animation list, according to the direction the player is facing */
@@ -1250,8 +1376,8 @@ void draw_to_buffer(){
 		draw_sprite_to_buffer(sprite_to_draw_player1,
 					  TANK_WIDTH,
 					  TANK_HEIGHT,
-					  player1.position_x,
-					  player1.position_y,
+					  (int)player1.position_x - camera_x,
+					  (int)player1.position_y - camera_y,
 					  buffer_background_image_data);
 
 	}
@@ -1266,8 +1392,8 @@ void draw_to_buffer(){
 		draw_sprite_to_buffer(sprite_to_draw_player2,
 					  TANK_WIDTH,
 					  TANK_HEIGHT,
-					  player2.position_x,
-					  player2.position_y,
+					  (int)player2.position_x - camera_x,
+					  (int)player2.position_y - camera_y,
 					  buffer_background_image_data);
 
 	}
@@ -1281,8 +1407,8 @@ void draw_to_buffer(){
 		draw_sprite_to_buffer(player1.sprite_tank_bullet,
 					  TANK_BULLET_WIDTH,
 					  TANK_BULLET_HEIGHT,
-					  player1.bullet_position_x,
-					  player1.bullet_position_y,
+					  (int)player1.bullet_position_x - camera_x,
+					  (int)player1.bullet_position_y - camera_y,
 					  buffer_background_image_data);
 	}
 
@@ -1291,8 +1417,8 @@ void draw_to_buffer(){
 		draw_sprite_to_buffer(player2.sprite_tank_bullet,
 					  TANK_BULLET_WIDTH,
 					  TANK_BULLET_HEIGHT,
-					  player2.bullet_position_x,
-					  player2.bullet_position_y,
+					  (int)player2.bullet_position_x - camera_x,
+					  (int)player2.bullet_position_y - camera_y,
 					  buffer_background_image_data);
 	}
 
@@ -1319,8 +1445,8 @@ void draw_explosion(struct player *_player){
 	draw_sprite_to_buffer(sprite_to_draw,
 				  EXPLOSION_WIDTH,
 				  EXPLOSION_HEIGHT,
-				  _player->position_x + EXPLOSION_OFFSET_X,
-				  _player->position_y + EXPLOSION_OFFSET_Y,
+				  (int)(_player->position_x + EXPLOSION_OFFSET_X) - camera_x,
+				  (int)(_player->position_y + EXPLOSION_OFFSET_Y) - camera_y,
 				  buffer_background_image_data);
 
 }
@@ -1338,19 +1464,30 @@ void init_graphics(){
 	//============================================
 
 
-	//  Create all buffers
-	bmp_init_buffers();
-	// Save a original copy of map file
-	// This create a backup of the original file in a buffer
-	bmp_fill_background_in_main_buffer("..\\res\\cutre.bmp");
-	//bmp_fill_background_in_main_buffer("..\\res\\cutrecol.bmp");  // <--- FOR TESTING
+	// Which world are we playing in. The buffers are sized from this, so it
+	// has to be the first thing that happens.
+	//
+	// The two maps go through EXACTLY the same code from here on. A 320x200
+	// world is just one where the window covers everything and the camera can
+	// never move, so the normal game is not a special case of anything: it
+	// falls out of the general one.
+	if (big_map_mode == 1){
 
-	//load map collision
-	bmp_fill_background_collision_in_buffer("..\\res\\cutrecol.bmp");
+		bmp_init_buffers(640, 400);
 
+		bmp_fill_background_in_main_buffer("..\\res\\big.bmp");
+		bmp_fill_background_collision_in_buffer("..\\res\\bigcol.bmp");
+		bmp_extract_pallete_from_file("..\\res\\big.bmp");
 
-	// Extract the pallete colors to save it un DAC
-	bmp_extract_pallete_from_file("..\\res\\cutre.bmp");
+	}else{
+
+		bmp_init_buffers(WIDTH, HEIGHT);
+
+		bmp_fill_background_in_main_buffer("..\\res\\cutre.bmp");
+		bmp_fill_background_collision_in_buffer("..\\res\\cutrecol.bmp");
+		bmp_extract_pallete_from_file("..\\res\\cutre.bmp");
+
+	}
 	// Set the pallete data into the VGA DAC
 	bmp_write_pallete_data_into_dac(buffer_palleta_data);
 
@@ -1376,9 +1513,12 @@ void init_graphics(){
     bmp_revert_bmp(buffer_sprites_data);
 
     // ============================
-	// Extract the background_image data from background file
+	// First frame of background, so there is something sensible on screen
+	// before the loop paints anything. It comes out of the map already in
+	// memory, not out of the file: with a map bigger than one screen the file
+	// does not hold a 320x200 picture anywhere.
 	// ============================
-	bmp_fill_buffer_with_image_data_from_file(buffer_background_image_data, file_background_image_game);
+	bmp_draw_world_window(buffer_background_image_data);
 
 	// ============================
     // Fill player 1 with animation TANK_UP and
@@ -1475,7 +1615,13 @@ void init_graphics(){
 	bmp_extract_sprite(buffer_sprites_data, 192 , 32 , EXPLOSION_WIDTH, EXPLOSION_HEIGHT, player2.sprite_tank_explosion2);
 
 
-
+	// Every sprite has been cut out by now, so the 320x200 sheet they came
+	// from is 64000 bytes of nothing for the rest of the game. Handing it back
+	// here is most of what pays for the big map.
+	//
+	// NOTHING may read buffer_sprites_data after this line. Adding a sprite
+	// means adding it above, not later.
+	bmp_free_sprite_sheet();
 
 }
 

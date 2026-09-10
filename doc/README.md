@@ -10,6 +10,7 @@ the same files under the same names.*
 |---|---|---|
 | **TUTORIAL de sonido / Sound TUTORIAL** | [`ES/TUTORIAL-SONIDO.md`](ES/TUTORIAL-SONIDO.md) | [`EN/SOUND-TUTORIAL.md`](EN/SOUND-TUTORIAL.md) |
 | **TUTORIAL de red / Network TUTORIAL** | [`ES/TUTORIAL-RED.md`](ES/TUTORIAL-RED.md) | [`EN/NETWORK-TUTORIAL.md`](EN/NETWORK-TUTORIAL.md) |
+| **MANUAL de camara / Camera MANUAL** | [`ES/MANUAL-CAMARA.md`](ES/MANUAL-CAMARA.md) | [`EN/CAMERA-MANUAL.md`](EN/CAMERA-MANUAL.md) |
 | **MANUAL de red / Network MANUAL** | [`ES/MANUAL-RED.md`](ES/MANUAL-RED.md) | [`EN/NETWORK-MANUAL.md`](EN/NETWORK-MANUAL.md) |
 | **Sonido / Sound** | [`ES/SOUND.md`](ES/SOUND.md) | [`EN/SOUND.md`](EN/SOUND.md) |
 | **Red / Network** | [`ES/NETWORK.md`](ES/NETWORK.md) | [`EN/NETWORK.md`](EN/NETWORK.md) |
@@ -26,6 +27,11 @@ the same files under the same names.*
 - **TUTORIAL-RED** — **empieza por aqui si quieres USAR la red en otro
   proyecto.** Los cinco pasos, `net_send` y `net_receive`, servidor y cliente,
   un chat completo de ejemplo y como enviar un fichero. Nada de tanques.
+- **MANUAL-CAMARA** — **empieza por aquí si quieres entender la cámara y el
+  mapa grande.** De cero: los dos sistemas de coordenadas, la ventana, el
+  recorte de sprites, la zona muerta, la máscara de colisión de un bit por
+  píxel, por qué la cámara no puede entrar en el checksum de red, y la
+  gestión de memoria de DOS con la historia completa del bug de `died.wav`.
 - **MANUAL-RED** — **empieza por aquí si quieres aprender.** Un manual de
   cero a jugar en red: por qué mandar posiciones no vale, qué es el
   determinismo, qué es lockstep, qué es IPX, el código en orden de ejecución,
@@ -49,6 +55,11 @@ the same files under the same names.*
 - **NETWORK-TUTORIAL** — **start here if you want to USE the network in
   another project.** The five steps, `net_send` and `net_receive`, server and
   client, a complete chat example and how to send a file. No tanks anywhere.
+- **CAMERA-MANUAL** — **start here if you want to understand the camera and
+  the big map.** From nothing: the two coordinate systems, the window, sprite
+  clipping, the dead zone, the one-bit-per-pixel collision mask, why the camera
+  must never enter the network checksum, and DOS memory management with the
+  full story of the `died.wav` bug.
 - **NETWORK-MANUAL** — **start here if you want to learn.** A manual from
   nothing to networked play: why sending positions does not work, what
   determinism is, what lockstep is, what IPX is, the code in execution order,

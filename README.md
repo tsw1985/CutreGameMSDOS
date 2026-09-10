@@ -61,6 +61,45 @@ Sound is optional: if no Sound Blaster is found the game runs exactly the
 same, in silence. It reads the `BLASTER` environment variable to locate the
 card, and falls back to A220 I5 D1.
 
+### The three modes
+
+| Mode | Command line | What it is |
+|---|---|---|
+| **local** | `game.exe` | Two players on one keyboard, one screen, the 320x200 map |
+| **net** | `game.exe /net` | Two machines, the same 320x200 map, one tank each |
+| **supernet** | `game.exe /net /bigmap` | Two machines on the 640x400 map, each with its own scrolling camera |
+
+One script per mode, and none of them needs a path edited by hand:
+
+```bash
+./launch_game_local.sh              # local
+
+./launch_game_both.sh               # net,      both windows on THIS machine
+./launch_game_both.sh -b            # supernet, both windows on THIS machine
+
+./launch_game_server.sh             # net,      two real machines
+./launch_game_client.sh <ip>
+
+./launch_game_server.sh -b          # supernet, two real machines
+./launch_game_client.sh <ip> -b
+```
+
+`launch_game_both.sh` is the one to use for testing: it starts two DOSBox
+windows side by side, joined over the loopback, so you get both tanks without
+a second machine and without typing an IP anywhere.
+
+**In net and supernet, both machines have to be started the same way.** One on
+`/bigmap` and the other not is two different maps, with the walls in different
+places, and the two simulations come apart. The game catches it (the size of
+the map is part of the state checksum, so it reports a desync rather than
+going quietly wrong) but catching it is not the same as not doing it.
+
+**supernet is the only mode with a camera**, and that is not an oversight. A
+camera can only follow one tank. Over the network that is exactly right, each
+machine follows its own and hunting for the other one is the game. On one
+keyboard it would leave the second player driving blind, so `/bigmap` without
+`/net` is refused and the game falls back to the normal map.
+
 ### Network play
 
 Two machines can play each other over IPX. One acts as the **server** and the
@@ -207,6 +246,46 @@ desde ahí, porque busca los recursos en `..\res\`.
 El sonido es opcional: si no encuentra una Sound Blaster el juego funciona
 exactamente igual, en silencio. Lee la variable de entorno `BLASTER` para
 localizar la tarjeta, y si no está asume A220 I5 D1.
+
+### Los tres modos
+
+| Modo | Línea de órdenes | Qué es |
+|---|---|---|
+| **local** | `game.exe` | Dos jugadores en el mismo teclado, una pantalla, el mapa de 320x200 |
+| **net** | `game.exe /net` | Dos máquinas, el mismo mapa de 320x200, un tanque cada una |
+| **supernet** | `game.exe /net /bigmap` | Dos máquinas en el mapa de 640x400, cada una con su cámara |
+
+Un script por modo, y ninguno necesita que toques una ruta a mano:
+
+```bash
+./launch_game_local.sh              # local
+
+./launch_game_both.sh               # net,      las dos ventanas en ESTA máquina
+./launch_game_both.sh -b            # supernet, las dos ventanas en ESTA máquina
+
+./launch_game_server.sh             # net,      dos máquinas de verdad
+./launch_game_client.sh <ip>
+
+./launch_game_server.sh -b          # supernet, dos máquinas de verdad
+./launch_game_client.sh <ip> -b
+```
+
+`launch_game_both.sh` es el que conviene para probar: levanta dos ventanas de
+DOSBox una al lado de la otra, unidas por el loopback, así tienes los dos
+tanques sin segunda máquina y sin escribir ninguna IP.
+
+**En net y supernet las dos máquinas tienen que arrancarse igual.** Una con
+`/bigmap` y la otra sin él son dos mapas distintos, con los muros en sitios
+distintos, y las dos simulaciones se separan. El juego lo detecta (el tamaño
+del mapa entra en el checksum de estado, así que avisa de desincronización en
+vez de volverse loco en silencio), pero detectarlo no es lo mismo que no
+hacerlo.
+
+**supernet es el único modo con cámara**, y no es un olvido. Una cámara solo
+puede seguir a un tanque. En red eso es justo lo correcto: cada máquina sigue
+al suyo, y buscar al otro es el juego. En un solo teclado dejaría al segundo
+jugador conduciendo a ciegas, así que `/bigmap` sin `/net` se rechaza y el
+juego arranca en el mapa normal.
 
 ### Juego en red
 

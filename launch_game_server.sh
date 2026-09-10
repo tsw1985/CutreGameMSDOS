@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
 # ============================================================
-# Starts the game over the network, acting as the tunnel SERVER.
+# MODE: NET  or  SUPERNET, acting as the tunnel SERVER.
 #
 # This is the machine to start FIRST. It brings up the IPX tunnel and joins
 # it as a player: it plays too, it is not a separate process.
 #
-#   ./launch_game_server.sh                    (port 5213)
+#   ./launch_game_server.sh                    net       (320x200 map)
+#   ./launch_game_server.sh -b                 supernet  (640x400 map + camera)
 #   ./launch_game_server.sh -p 6000            (another port)
 #   ./launch_game_server.sh -c my.conf         (your own .conf, nothing generated)
 #   ./launch_game_server.sh -y 'max'           (different CPU cycles)
 #
 # The script tells you the IP to give the other player.
+#
+# The OTHER machine has to be started the same way: -b here means -b there.
 # ============================================================
 set -u
 
@@ -18,13 +21,19 @@ PORT=5213
 CONF=""
 CYCLES="fixed 30000"
 
+MODE_NAME="net"
+GAME_ARGS="/net"
+
 usage() {
     # The exit code is passed in: 0 when the user asked for help, 1 when the
     # help is shown because the script was called wrongly.
     local code="${1:-0}"
     cat <<END
-Usage: $(basename "$0") [-p port] [-c file.conf] [-y cycles]
+Usage: $(basename "$0") [-b] [-p port] [-c file.conf] [-y cycles]
 
+  -b          SUPERNET: the big 640x400 map with a scrolling camera.
+              Without it you get NET: the plain 320x200 map.
+              The client MUST be started with the same choice.
   -p port     UDP port for the tunnel. Defaults to 5213.
               Must be the SAME one the client uses, and above 1024.
   -c file     Use this .conf as it is instead of generating one.
@@ -35,8 +44,9 @@ END
     exit "$code"
 }
 
-while getopts "p:c:y:h" option; do
+while getopts "bp:c:y:h" option; do
     case "$option" in
+        b) MODE_NAME="supernet"; GAME_ARGS="/net /bigmap" ;;
         p) PORT="$OPTARG" ;;
         c) CONF="$OPTARG" ;;
         y) CYCLES="$OPTARG" ;;
@@ -54,11 +64,11 @@ if [ -n "$CONF" ]; then
 fi
 
 check_environment
+prepare_run_dir "runserv"
 
-LOG_DIR="$GAME_ROOT/net-test/log-server"
 CONF="$GAME_ROOT/net-test/generated-server.conf"
 
-generate_conf "$CONF" "ipxnet startserver $PORT" "$LOG_DIR"
+generate_conf "$CONF" "ipxnet startserver $PORT" "$RUN_NAME"
 
 # The port has to be free: if another copy is holding it the server does not
 # start, and all the client sees is an unexplained "Timeout".
@@ -78,10 +88,16 @@ IPS="$(ip -4 -o addr show scope global 2>/dev/null | awk '{split($4,a,"/"); prin
 green ""
 green "  SERVER ready. On the OTHER machine run:"
 green ""
+CLIENT_FLAG=""
+if [ "$MODE_NAME" = "supernet" ]; then
+    CLIENT_FLAG=" -b"
+fi
 for ip in $IPS; do
-    green "      ./launch_game_client.sh $ip -p $PORT"
+    green "      ./launch_game_client.sh $ip -p $PORT$CLIENT_FLAG"
 done
 green ""
+
+warn_same_mode
 
 # The firewall is the most common failure: the client only sees a "Timeout".
 if command -v ufw >/dev/null 2>&1; then

@@ -123,14 +123,17 @@ int log_frame_counter;
 int network_mode;
 
 // 1 when the big 640x400 map is being used instead of the single screen one.
-// Set from the command line: game.exe /bigmap. The two flags are
-// independent: /bigmap on its own is the way to try the camera out without
-// needing a second machine.
+// Set from the command line: game.exe /net /bigmap.
 //
-// In a network game BOTH machines have to be started with the same flag. If
-// they are not, the maps differ, the walls differ, and the two simulations
-// come apart. That is what map_width in the checksum is there to catch: it
-// turns an incomprehensible game into a desync report in the log.
+// It only ever comes on together with /net. The big map needs a camera, a
+// camera can only follow one tank, and on one keyboard that would leave the
+// second player driving blind, so /bigmap on its own is refused further
+// down and the game falls back to the normal map.
+//
+// BOTH machines have to be started with the same flag. If they are not, the
+// maps differ, the walls differ, and the two simulations come apart. That is
+// what map_width in the checksum is there to catch: it turns an
+// incomprehensible game into a desync report in the log.
 int big_map_mode;
 
 // Which tank THIS machine drives over the network. Meaningless in local
@@ -195,7 +198,11 @@ void interrupt far new_kbd_handler() {
 
 int main(int argc, char *argv[]){
 
-	char log_message_text[64];			// text of the log line being built
+	// Text of the log line being built. 96 and not 64: the memory lines carry
+	// two 10 digit numbers each, and sprintf() would run off the end of a 64
+	// byte buffer sitting on the stack, which on DOS is not a crash, it is
+	// whatever happens next being wrong.
+	char log_message_text[96];
 	unsigned int cannon_tip_pixel_value;	// map color under the cannon tip, for the log
 
 	// Raised when a bullet has hit a tank this frame. Checked after BOTH
@@ -223,7 +230,15 @@ int main(int argc, char *argv[]){
 
 	tanks_log("Starting game ...");
 
-	sprintf(log_message_text, "Free memory at start: %lu bytes", (unsigned long)coreleft());
+	// Two numbers, not one, and the second is the one that matters here.
+	//
+	// malloc() and farmalloc() are different pools in Turbo C. The screen
+	// buffers and the collision mask come out of malloc; the map picture, the
+	// DMA buffer and every WAV file come out of farmalloc. Freeing something
+	// on one side does NOT give the other side any more room, which is
+	// exactly how the sound effects went missing once the big map arrived.
+	sprintf(log_message_text, "Memory at start: near %lu  far %lu",
+	        (unsigned long)coreleft(), (unsigned long)farcoreleft());
 	tanks_log(log_message_text);
 
 	// game.exe /net plays against another machine. game.exe on its own is
@@ -253,6 +268,26 @@ int main(int argc, char *argv[]){
 		}
 
 		argument_index = argument_index + 1;
+
+	}
+
+	// The big map is a NETWORK feature and only a network feature.
+	//
+	// It needs a camera, and a camera can only follow one tank. Over the wire
+	// that is exactly right: each machine follows its own, the two of them see
+	// different parts of the map, and going looking for the other one is the
+	// game. On one keyboard there is one screen and two tanks, so either half
+	// the players are driving blind or nobody can leave the first room. There
+	// is no third option, so /bigmap on its own is simply ignored.
+	if (network_mode == 0){
+
+		if (big_map_mode == 1){
+			printf("\n/bigmap needs /net: it is the big map that has to be\n");
+			printf("played over the network. Starting on the normal map.\n\n");
+			tanks_log("Big map asked for without /net, ignored");
+		}
+
+		big_map_mode = 0;
 
 	}
 
@@ -317,8 +352,8 @@ int main(int argc, char *argv[]){
 	// What we ended up with. Worth having in the log: the big map is the only
 	// thing here that can fail to fit, and if farmalloc() ever comes back NULL
 	// this line is what says so before anything strange happens.
-	sprintf(log_message_text, "Map %dx%d  free memory now: %lu bytes",
-	        map_width, map_height, (unsigned long)coreleft());
+	sprintf(log_message_text, "Map %dx%d  memory now: near %lu  far %lu",
+	        map_width, map_height, (unsigned long)coreleft(), (unsigned long)farcoreleft());
 	tanks_log(log_message_text);
 
 	// Sound is optional: if there is no card sound_start() returns 0, says so

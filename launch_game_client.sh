@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 # ============================================================
-# Starts the game over the network, connecting to the SERVER on the other
-# machine.
+# MODE: NET  or  SUPERNET, connecting to the SERVER on the other machine.
 #
 # Start this one AFTER the server: if the tunnel is not up, DOSBox just says
 # "Timeout connecting to server" and the game sits there searching.
 #
-#   ./launch_game_client.sh 192.168.1.45
+#   ./launch_game_client.sh 192.168.1.45           net       (320x200 map)
+#   ./launch_game_client.sh 192.168.1.45 -b        supernet  (640x400 + camera)
 #   ./launch_game_client.sh 192.168.1.45 -p 6000
 #   ./launch_game_client.sh -c my.conf
+#
+# -b has to match the server. One machine on the big map and the other on
+# the small one is two different games, and the checksum will say so.
 # ============================================================
 set -u
 
@@ -17,14 +20,20 @@ CONF=""
 CYCLES="fixed 30000"
 SERVER=""
 
+MODE_NAME="net"
+GAME_ARGS="/net"
+
 usage() {
     local code="${1:-0}"
     cat <<END
-Usage: $(basename "$0") <server-ip> [-p port] [-y cycles]
+Usage: $(basename "$0") <server-ip> [-b] [-p port] [-y cycles]
        $(basename "$0") -c file.conf
 
   <ip>        IP of the machine that ran launch_game_server.sh.
               That script tells you the IP when it starts.
+  -b          SUPERNET: the big 640x400 map with a scrolling camera.
+              Without it you get NET: the plain 320x200 map.
+              MUST match how the server was started.
   -p port     UDP port for the tunnel. Defaults to 5213.
               Must be the SAME one the server uses.
   -y cycles   Value for DOSBox's cycles=. Defaults to "fixed 30000".
@@ -41,8 +50,9 @@ if [ $# -gt 0 ] && [ "${1:0:1}" != "-" ]; then
     shift
 fi
 
-while getopts "p:c:y:h" option; do
+while getopts "bp:c:y:h" option; do
     case "$option" in
+        b) MODE_NAME="supernet"; GAME_ARGS="/net /bigmap" ;;
         p) PORT="$OPTARG" ;;
         c) CONF="$OPTARG" ;;
         y) CYCLES="$OPTARG" ;;
@@ -84,16 +94,19 @@ if command -v ping >/dev/null 2>&1; then
     fi
 fi
 
-LOG_DIR="$GAME_ROOT/net-test/log-client"
+prepare_run_dir "runcli"
+
 CONF="$GAME_ROOT/net-test/generated-client.conf"
 
-generate_conf "$CONF" "ipxnet connect $SERVER $PORT" "$LOG_DIR"
+generate_conf "$CONF" "ipxnet connect $SERVER $PORT" "$RUN_NAME"
 
 summary
 
 green ""
 green "  CLIENT connecting to $SERVER:$PORT"
 green ""
+
+warn_same_mode
 grey "  If you get 'Timeout connecting to server':"
 grey "    - the server is not running yet, or"
 grey "    - its firewall is blocking the port:  sudo ufw allow $PORT/udp"

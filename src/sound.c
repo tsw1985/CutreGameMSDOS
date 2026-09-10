@@ -464,28 +464,55 @@ static void sound_detect_card(SBConfig *cfg)
 
 /* ---------- Memory for the DMA ---------- */
 
-// Reserves a block the DMA can play from, aligned to a 64 KB boundary.
+// Reserves a block the DMA can play from without crossing a 64 KB boundary.
 //
 // The 8 bit DMA channels cannot cross a 64 KB physical boundary: they only
 // count the bottom 16 bits of the address, so on reaching the end of a 64 KB
 // page they wrap round to its start instead of carrying on. A buffer lying
 // across one of those boundaries would play its second half as noise.
 //
-// This is sbwav8.c's asignar_buffer_alineado() as it stands: ask for 64 KB
-// more than needed and start at the first boundary inside the block, which
-// makes crossing one impossible.
+// The requirement is NOT to start on a boundary. It is only not to cross
+// one, and that difference is worth 61440 bytes.
+//
+// sbwav8.c's asignar_buffer_alineado(), which this used to copy, asks for
+// size + 64 KB and starts at the first boundary inside the block. That makes
+// crossing impossible, but it reserves 69632 bytes in order to use 4096, and
+// the 65536 it throws away come out of the far heap: the same pool
+// load_sound() takes the WAV files from, and the same one the big map takes
+// its 256000 bytes from. On a 640 KB machine that is the difference between
+// the sound effects loading and not loading.
+//
+// Twice the size is enough:
+//
+//   - if the block already fits inside one 64 KB page, take it as it comes;
+//   - if it does not, step forward to the next boundary. That step is always
+//     SHORTER than size, because the only way to need it is for the offset
+//     into the page to be greater than boundary - size. So after stepping
+//     there is always a whole size still left inside the block.
 //
 // The pointer that comes back is NOT the one farmalloc() gave, and farfree()
 // only takes that one, so it is handed back separately in original_block.
-static unsigned char far *sound_alloc_dma_buffer(unsigned long size, unsigned long align, unsigned char far **original_block)
+//
+// It comes back NORMALIZED, with an offset of 0 to 15. That is not cosmetic:
+// sound_update() does sound_buffer + SOUND_HALF_SIZE, and plain far pointer
+// arithmetic only touches the offset, so a pointer sitting high in its
+// segment would wrap round to the bottom of it instead of advancing.
+static unsigned char far *sound_alloc_dma_buffer(unsigned long size, unsigned long boundary, unsigned char far **original_block)
 {
 	unsigned char far *block;
 	unsigned long physical;
-	unsigned long remainder;
+	unsigned long offset_in_page;
 
 	*original_block = NULL;
 
-	block = (unsigned char far *)farmalloc(size + align);
+	// A buffer as big as the page it must not leave can never be placed. It
+	// cannot happen with the sizes this game uses, but getting NULL back is a
+	// great deal easier to understand than getting a buffer that is wrong.
+	if (size > boundary){
+		return NULL;
+	}
+
+	block = (unsigned char far *)farmalloc(size * 2L);
 	if (block == NULL){
 		return NULL;
 	}
@@ -493,13 +520,14 @@ static unsigned char far *sound_alloc_dma_buffer(unsigned long size, unsigned lo
 	*original_block = block;
 
 	physical = ((unsigned long)FP_SEG(block) << 4) + FP_OFF(block);
-	remainder = physical % align;
 
-	if (remainder != 0){
-		physical = physical + (align - remainder);
+	offset_in_page = physical % boundary;
+
+	if (offset_in_page + size > boundary){
+		physical = physical + (boundary - offset_in_page);
 	}
 
-	return (unsigned char far *)MK_FP((unsigned int)(physical >> 4), 0);
+	return (unsigned char far *)MK_FP((unsigned int)(physical >> 4), (unsigned int)(physical & 0x0FL));
 }
 
 

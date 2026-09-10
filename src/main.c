@@ -1535,8 +1535,8 @@ void init_graphics(){
 	//		Fill "buffer_background_image_data" with image data from
 	//		file "file_background_image_game" ( cutre.bmp)
 	//
-	//		Fill "buffer_sprites_data" with the sprites from "file_sprites_game" ( sprites.bmp)
-	//		Extract a sprite from "buffer_sprites_data" and save it sprites player list
+	//		Open sprites.bmp and cut each sprite straight out of the file
+	//		into the player's own little buffer
 	//		Add this sprite under buffer_background_image_data
 	//		Show the final result in screen
 	//============================================
@@ -1544,8 +1544,7 @@ void init_graphics(){
 	// ============================
 	// Extract sprites from sprites.bmp
 	// ============================
-	bmp_fill_sprites_in_buffer("..\\res\\sprites.bmp");
-    bmp_revert_bmp(buffer_sprites_data);
+	bmp_open_sprite_sheet("..\\res\\sprites.bmp");
 
     // ============================
 	// First frame of background, so there is something sensible on screen
@@ -1558,27 +1557,27 @@ void init_graphics(){
 	// ============================
     // Fill player 1 with animation TANK_UP and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data,  2  ,5 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_up);
-	bmp_extract_sprite(buffer_sprites_data, 23, 5 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_up_2);
+	bmp_extract_sprite(2  ,5 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_up);
+	bmp_extract_sprite(23, 5 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_up_2);
 
 
 	// ============================
     // Fill player 1 with animation TANK_DOWN and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data, 43  , 10 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_down);
-	bmp_extract_sprite(buffer_sprites_data, 63  , 10  , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_down_2);
+	bmp_extract_sprite(43  , 10 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_down);
+	bmp_extract_sprite(63  , 10  , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_down_2);
 
 	// ============================
     // Fill player 1 with animation TANK_LEFT and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data, 83  , 8 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_left);
-	bmp_extract_sprite(buffer_sprites_data, 102 , 8 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_left_2);
+	bmp_extract_sprite(83  , 8 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_left);
+	bmp_extract_sprite(102 , 8 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_left_2);
 
 	// ============================
     // Fill player 1 with animation TANK_RIGHT and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data, 124 , 8 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right);
-	bmp_extract_sprite(buffer_sprites_data, 145 , 8 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right_2);
+	bmp_extract_sprite(124 , 8 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right);
+	bmp_extract_sprite(145 , 8 , TANK_WIDTH, TANK_HEIGHT, player1.sprite_tank_right_2);
 
 	// ============================
     // Fill bullet animation
@@ -1586,15 +1585,15 @@ void init_graphics(){
 
 
     // Bullet tank 1
-	bmp_extract_sprite(buffer_sprites_data, 252 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player1.sprite_tank_bullet);
-	bmp_extract_sprite(buffer_sprites_data, 259 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player1.sprite_tank_bullet2);
+	bmp_extract_sprite(252 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player1.sprite_tank_bullet);
+	bmp_extract_sprite(259 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player1.sprite_tank_bullet2);
 	
 	// Explosion. 13x13, the only sprites in the sheet that are not tank
 	// sized: extracting them with TANK_WIDTH would drag in the gap between
 	// cells plus the first columns of the next one, gluing a piece of one
 	// frame to the right of the other.
-	bmp_extract_sprite(buffer_sprites_data, 171 , 11 , EXPLOSION_WIDTH, EXPLOSION_HEIGHT, player1.sprite_tank_explosion);
-	bmp_extract_sprite(buffer_sprites_data, 190 , 11 , EXPLOSION_WIDTH, EXPLOSION_HEIGHT, player1.sprite_tank_explosion2);
+	bmp_extract_sprite(171 , 11 , EXPLOSION_WIDTH, EXPLOSION_HEIGHT, player1.sprite_tank_explosion);
+	bmp_extract_sprite(190 , 11 , EXPLOSION_WIDTH, EXPLOSION_HEIGHT, player1.sprite_tank_explosion2);
 
 	
 	// ==============================================================
@@ -1612,27 +1611,27 @@ void init_graphics(){
 	// ============================
     // Fill player 2 with animation TANK_UP and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data,  2  , 26 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_up);
-	bmp_extract_sprite(buffer_sprites_data, 23  , 26 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_up_2);
+	bmp_extract_sprite(2  , 26 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_up);
+	bmp_extract_sprite(23  , 26 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_up_2);
 
 
 	// ============================
     // Fill player 2 with animation TANK_DOWN and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data, 43  , 31 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_down);
-	bmp_extract_sprite(buffer_sprites_data, 63  , 31 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_down_2);
+	bmp_extract_sprite(43  , 31 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_down);
+	bmp_extract_sprite(63  , 31 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_down_2);
 
 	// ============================
     // Fill player 2 with animation TANK_LEFT and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data, 83  , 29 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_left);
-	bmp_extract_sprite(buffer_sprites_data, 102 , 29 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_left_2);
+	bmp_extract_sprite(83  , 29 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_left);
+	bmp_extract_sprite(102 , 29 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_left_2);
 
 	// ============================
     // Fill player 2 with animation TANK_RIGHT and
     // ============================
-	bmp_extract_sprite(buffer_sprites_data, 124 , 29 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_right);
-	bmp_extract_sprite(buffer_sprites_data, 145 , 29 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_right_2);
+	bmp_extract_sprite(124 , 29 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_right);
+	bmp_extract_sprite(145 , 29 , TANK_WIDTH, TANK_HEIGHT, player2.sprite_tank_right_2);
 
 	// ============================
     // Fill bullet animation
@@ -1641,22 +1640,23 @@ void init_graphics(){
 
     // Bullet tank 2 - there is only one pair of bullets in the sprite
     // sheet, so both players shoot the same sprite
-	bmp_extract_sprite(buffer_sprites_data, 252 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player2.sprite_tank_bullet);
-	bmp_extract_sprite(buffer_sprites_data, 259 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player2.sprite_tank_bullet2);
+	bmp_extract_sprite(252 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player2.sprite_tank_bullet);
+	bmp_extract_sprite(259 , 14, TANK_BULLET_WIDTH, TANK_BULLET_HEIGHT, player2.sprite_tank_bullet2);
 	
 	
 	// Explosion - same as player 1, on the second row of the sheet
-	bmp_extract_sprite(buffer_sprites_data, 171 , 32 , EXPLOSION_WIDTH, EXPLOSION_HEIGHT, player2.sprite_tank_explosion);
-	bmp_extract_sprite(buffer_sprites_data, 192 , 32 , EXPLOSION_WIDTH, EXPLOSION_HEIGHT, player2.sprite_tank_explosion2);
+	bmp_extract_sprite(171 , 32 , EXPLOSION_WIDTH, EXPLOSION_HEIGHT, player2.sprite_tank_explosion);
+	bmp_extract_sprite(192 , 32 , EXPLOSION_WIDTH, EXPLOSION_HEIGHT, player2.sprite_tank_explosion2);
 
 
-	// Every sprite has been cut out by now, so the 320x200 sheet they came
-	// from is 64000 bytes of nothing for the rest of the game. Handing it back
-	// here is most of what pays for the big map.
+	// Every sprite has been cut out by now, so the file is closed.
 	//
-	// NOTHING may read buffer_sprites_data after this line. Adding a sprite
-	// means adding it above, not later.
-	bmp_free_sprite_sheet();
+	// The sheet is never loaded into memory at all any more. Those 64000 bytes
+	// used to be alive at the same time as the 256000 byte map, and giving them
+	// back afterwards left a hole the map could not use and the last WAV file
+	// could not fit into. Reading the rows straight off disk costs a couple of
+	// hundred seeks at startup and nothing ever again.
+	bmp_close_sprite_sheet();
 
 }
 

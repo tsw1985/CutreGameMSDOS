@@ -112,7 +112,14 @@ extern unsigned char *buffer_background_image_data;		// the frame being built, 3
 extern unsigned char *buffer_collision_mask;
 
 extern unsigned char *buffer_palleta_data;				// the 256 colors, on their way to the DAC
-extern unsigned char *buffer_sprites_data;				// the whole sprites.bmp sheet, sprites are cut out of here
+
+// sprites.bmp, kept OPEN and never loaded. The sheet used to sit in a 64000
+// byte buffer, and those 64000 bytes were alive at the same time as the
+// 256000 byte map. Handing them back afterwards left a hole in the middle of
+// the heap, and a hole is not the same as free memory: a 256000 byte block
+// does not fit in a 64000 byte gap, and neither did the last WAV file. Now
+// the sprites are read out of the file directly.
+extern FILE *file_sprites_game_open;
 extern FILE *file_background_image_game;
 extern FILE *file_sprites_game;
 
@@ -141,10 +148,6 @@ void bmp_fill_buffer_with_image_data_from_file(char *buffer_data_dest, FILE *fil
 void bmp_paint_image_data_to_vga(char *buffer_image_data);	// dumps a whole screen buffer to the screen
 void bmp_extract_pallete_from_file(char *_file);
 
-// Hands back the 64000 bytes of the sprite sheet. Every sprite has been cut
-// out of it by then, and it is never read again, so holding on to it is
-// 64000 bytes of nothing. That is most of what the bigger map costs.
-void bmp_free_sprite_sheet();
 
 
 // ---- The camera ----
@@ -182,16 +185,22 @@ int bmp_is_wall(int x, int y);
 
 
 //LOAD SPRITES
-void bmp_fill_sprites_in_buffer(char *file);
 
-// Cuts a sprite_width x sprite_height rectangle out of the sheet, starting
-// at (src_x, src_y), and packs it into sprite_dest with sprite_width as its
-// row stride. Not every sprite is tank sized: the explosion is 13x13.
+// Opens sprites.bmp and leaves it open. Nothing is read until
+// bmp_extract_sprite() asks for a rectangle.
+void bmp_open_sprite_sheet(char *file);
+
+// Closes it, once every sprite has been cut out.
+void bmp_close_sprite_sheet();
+
+// Cuts a sprite_width x sprite_height rectangle out of sprites.bmp, starting
+// at (src_x, src_y) counted from the TOP LEFT, and packs it into sprite_dest
+// with sprite_width as its row stride. Not every sprite is tank sized: the
+// explosion is 13x13.
 //
-// The sheet is 320 wide and always will be, so this one is not affected by
-// the size of the map.
-void bmp_extract_sprite(unsigned char *sprite_sheet,
-                                 unsigned int src_x,
+// Read from the open file, a row at a time. The sheet is 320x200 and always
+// will be, so this one is not affected by the size of the map.
+void bmp_extract_sprite(unsigned int src_x,
                                  unsigned int src_y,
                                  unsigned int sprite_width,
                                  unsigned int sprite_height,

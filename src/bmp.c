@@ -24,7 +24,9 @@ unsigned char huge *buffer_original_background_bmp = NULL; // the whole map pict
 unsigned char *buffer_background_image_data = NULL;        // one screen, the frame being built
 unsigned char *buffer_collision_mask = NULL;               // the whole map, 1 bit per pixel
 unsigned char *buffer_palleta_data = NULL;
-unsigned char *buffer_sprites_data = NULL;
+
+// The sprite sheet is NOT held in memory. See bmp_open_sprite_sheet().
+FILE *file_sprites_game_open = NULL;
 
 // One row of the map, while it is being read off disk. A row of a 640 wide
 // map is too big to keep putting on the stack, and it is needed twice (once
@@ -402,13 +404,6 @@ void bmp_init_buffers(int width, int height){
 		printf("Error creating buffer_palleta_data\n");	
     }
     
-    // The sprite sheet. Always 320x200, and handed back by
-    // bmp_free_sprite_sheet() as soon as the sprites have been cut out.
-    buffer_sprites_data = (unsigned char*)malloc(SCREEN_SIZE);
-	if(buffer_sprites_data == NULL){
-		printf("Error creating buffer_sprites_data\n");	
-    }
-    
     // The collision mask, one bit per pixel of the whole world
     buffer_collision_mask = (unsigned char*)malloc((unsigned int)mask_size);
 	if(buffer_collision_mask == NULL){
@@ -419,22 +414,6 @@ void bmp_init_buffers(int width, int height){
     
 }
 
-//===========================================================
-// Hands back the sprite sheet.
-//
-// By the time this is called every sprite has been cut out of it into its
-// own little buffer, and nothing reads it again for the rest of the game.
-// It was sitting there costing 64000 bytes of nothing, which happens to be
-// most of what the 640x400 map costs.
-//===========================================================
-void bmp_free_sprite_sheet(){
-
-	if (buffer_sprites_data != NULL){
-		free(buffer_sprites_data);
-		buffer_sprites_data = NULL;
-	}
-
-}
 
 //===========================================================
 // Loads the map picture into buffer_original_background_bmp.
@@ -570,47 +549,84 @@ void bmp_extract_pallete_from_file(char *_file){
 }
 
 
-void bmp_fill_sprites_in_buffer(char *_file_sprites_game){
+//===========================================================
+// Opens sprites.bmp and LEAVES IT OPEN. Nothing is read yet.
+//
+// The sheet used to be loaded whole into a 64000 byte buffer, and every
+// sprite was cut out of that. It does not live in memory any more, and the
+// reason is arithmetic: those 64000 bytes were alive at the same time as the
+// 256000 byte map, and when they were finally handed back they left a 64000
+// byte hole in the middle of the heap. Total free memory was never the
+// problem. CONTIGUOUS free memory was: a 42090 byte WAV would not fit in
+// what was left, and asking for the map after the hole existed failed too,
+// because you cannot put a 256000 byte block in a 64000 byte gap.
+//
+// So the sprites are read straight out of the file instead, one row at a
+// time. It happens 28 times at startup and never again, and it costs 64000
+// bytes of nothing.
+//===========================================================
+void bmp_open_sprite_sheet(char *_file_sprites_game){
 
-	file_sprites_game	= fopen(_file_sprites_game,"rb");
-	if(file_sprites_game == NULL ){
-		printf("ERROR!!! I can not open file_sprites_game file\n");
-		// Do not call bmp_fill_buffer_with_image_data_from_file() below with
-		// a NULL FILE pointer: that would read invalid memory and hang or
-		// crash the game.
-		return;
+	file_sprites_game_open = fopen(_file_sprites_game,"rb");
+
+	if(file_sprites_game_open == NULL ){
+		printf("ERROR!!! I can not open %s\n", _file_sprites_game);
 	}
-
-	// Load the sprites data . Full sprites image
-	bmp_fill_buffer_with_image_data_from_file(buffer_sprites_data , file_sprites_game);
 
 }
 
-void bmp_extract_sprite(unsigned char *sprite_sheet,  
-	                             unsigned int src_x, 
-	                          	 unsigned int src_y,
-	                          	 unsigned int sprite_width,  
-	                          	 unsigned int sprite_height,
-	                          	 unsigned char *sprite_dest)
+//===========================================================
+// Closes it, once every sprite has been cut out.
+//===========================================================
+void bmp_close_sprite_sheet(){
+
+	if (file_sprites_game_open != NULL){
+		fclose(file_sprites_game_open);
+		file_sprites_game_open = NULL;
+	}
+
+}
+
+//===========================================================
+// Cuts a sprite_width x sprite_height rectangle out of sprites.bmp, starting
+// at (src_x, src_y) counted from the TOP LEFT of the picture, and packs it
+// into sprite_dest with sprite_width as its row stride.
+//
+// Read straight from the file, a row at a time, because the sheet is not in
+// memory. See bmp_open_sprite_sheet() for why.
+//
+// BMP stores its rows bottom-up, so row Y of the picture is row
+// (HEIGHT-1-Y) of the file. That is the same flip bmp_revert_bmp() used to
+// do to the whole buffer, done here as one subtraction instead.
+//
+// The sheet is 320x200 and always will be. That has nothing to do with the
+// size of the map.
+//===========================================================
+void bmp_extract_sprite(unsigned int src_x,
+	                        unsigned int src_y,
+	                        unsigned int sprite_width,
+	                        unsigned int sprite_height,
+	                        unsigned char *sprite_dest)
 {
-	
-	
-    unsigned int y, x;
-    unsigned int src_offset, dest_offset;
-    
-    for(y = 0; y < sprite_height; y++) {
-        for(x = 0; x < sprite_width; x++) {
-    
-            // The sheet is 320 wide. That has nothing to do with the size of
-            // the map and it never changes.
-            src_offset = ((src_y + y) * 320) + (src_x + x);
-            
-                dest_offset = (y * sprite_width) + x;
-            
-                sprite_dest[dest_offset] = sprite_sheet[src_offset];
-        }
-    }
-    
+
+	unsigned int y;
+	long file_offset;
+
+	if (file_sprites_game_open == NULL){
+		return;
+	}
+
+	for (y = 0; y < sprite_height; y++){
+
+		file_offset = 1078L
+		            + ((long)(HEIGHT - 1 - (src_y + y)) * (long)WIDTH)
+		            + (long)src_x;
+
+		fseek(file_sprites_game_open, file_offset, SEEK_SET);
+		fread(sprite_dest + (y * sprite_width), 1, sprite_width, file_sprites_game_open);
+
+	}
+
 }
 
 
@@ -717,11 +733,6 @@ void bmp_close_files(){
 
 void bmp_delete_buffers(){
 	
-	// The sprite sheet is normally gone long before this, handed back by
-	// bmp_free_sprite_sheet() right after the init. Freeing it twice would
-	// corrupt the heap, hence the NULL check in there.
-	bmp_free_sprite_sheet();
-
 	if (buffer_original_background_bmp != NULL){
 		farfree(buffer_original_background_bmp);
 		buffer_original_background_bmp = NULL;

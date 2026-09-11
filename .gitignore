@@ -20,3 +20,11 @@ runlocal/
 
 # Restos de los confs escritos a mano, ya sustituidos por los generados
 net-test/log-*/
+
+# Binarios y objetos que genera cada capitulo del curso al compilarlo
+tutorial/*/*.exe
+tutorial/*/*.EXE
+tutorial/*/*.obj
+tutorial/*/*.OBJ
+tutorial/*/*.map
+tutorial/*/*.MAP

@@ -389,6 +389,7 @@ Spanish and English.
 | | Español | English |
 |---|---|---|
 | Sonido / Sound | [`doc/ES/SOUND.md`](doc/ES/SOUND.md) | [`doc/EN/SOUND.md`](doc/EN/SOUND.md) |
+| **CURSO paso a paso / Step-by-step COURSE** | [`tutorial/README.md`](tutorial/README.md) | [`tutorial/README.md`](tutorial/README.md) |
 | **Manual de cámara / Camera manual** | [`doc/ES/MANUAL-CAMARA.md`](doc/ES/MANUAL-CAMARA.md) | [`doc/EN/CAMERA-MANUAL.md`](doc/EN/CAMERA-MANUAL.md) |
 | **Manual de red / Network manual** | [`doc/ES/MANUAL-RED.md`](doc/ES/MANUAL-RED.md) | [`doc/EN/NETWORK-MANUAL.md`](doc/EN/NETWORK-MANUAL.md) |
 | Red, referencia / Network, reference | [`doc/ES/NETWORK.md`](doc/ES/NETWORK.md) | [`doc/EN/NETWORK.md`](doc/EN/NETWORK.md) |

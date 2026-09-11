@@ -19,6 +19,7 @@ PORT=5213
 CONF=""
 CYCLES="fixed 30000"
 SERVER=""
+THEME=""
 
 MODE_NAME="net"
 GAME_ARGS="/net"
@@ -34,6 +35,9 @@ Usage: $(basename "$0") <server-ip> [-b] [-p port] [-y cycles]
   -b          SUPERNET: the big 640x400 map with a scrolling camera.
               Without it you get NET: the plain 320x200 map.
               MUST match how the server was started.
+  -t theme    How the big map looks: sky, war or neon. Needs -b.
+              This one does NOT have to match the server: the walls are
+              the same for every theme, only the paint changes.
   -p port     UDP port for the tunnel. Defaults to 5213.
               Must be the SAME one the server uses.
   -y cycles   Value for DOSBox's cycles=. Defaults to "fixed 30000".
@@ -50,9 +54,10 @@ if [ $# -gt 0 ] && [ "${1:0:1}" != "-" ]; then
     shift
 fi
 
-while getopts "bp:c:y:h" option; do
+while getopts "bt:p:c:y:h" option; do
     case "$option" in
         b) MODE_NAME="supernet"; GAME_ARGS="/net /bigmap" ;;
+        t) THEME="$OPTARG" ;;
         p) PORT="$OPTARG" ;;
         c) CONF="$OPTARG" ;;
         y) CYCLES="$OPTARG" ;;
@@ -75,6 +80,7 @@ if [ -z "$SERVER" ]; then
     usage 1
 fi
 
+apply_theme
 check_environment
 
 # If it does not even ping, the problem is the network and not the game. Worth

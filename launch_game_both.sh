@@ -23,6 +23,8 @@ set -u
 
 PORT=5213
 CYCLES="fixed 30000"
+THEME=""
+THEME_CLIENT=""
 
 MODE_NAME="net"
 GAME_ARGS="/net"
@@ -34,6 +36,9 @@ Usage: $(basename "$0") [-b] [-p port] [-y cycles]
 
   -b          SUPERNET: the big 640x400 map with a scrolling camera.
               Without it you get NET: the plain 320x200 map.
+  -t theme    How the big map looks: sky, war or neon. Needs -b.
+  -T theme    Theme for the CLIENT window only, so you can see two looks
+              of the same match side by side. Needs -b.
   -p port     UDP port for the loopback tunnel. Defaults to 5213.
   -y cycles   Value for DOSBox's cycles=. Defaults to "fixed 30000".
   -h          This help.
@@ -45,9 +50,11 @@ END
     exit "$code"
 }
 
-while getopts "bp:y:h" option; do
+while getopts "bt:T:p:y:h" option; do
     case "$option" in
         b) MODE_NAME="supernet"; GAME_ARGS="/net /bigmap" ;;
+        t) THEME="$OPTARG" ;;
+        T) THEME_CLIENT="$OPTARG" ;;
         p) PORT="$OPTARG" ;;
         y) CYCLES="$OPTARG" ;;
         h) usage 0 ;;
@@ -56,6 +63,16 @@ while getopts "bp:y:h" option; do
 done
 
 source "$(dirname "${BASH_SOURCE[0]}")/launch_game_common.sh"
+
+# -T on its own means "same theme as the server, but only say it once"
+if [ -n "$THEME_CLIENT" ] && [ -z "$THEME" ]; then
+    THEME="$THEME_CLIENT"
+fi
+
+# apply_theme validates and appends -sky/-war/-neon to GAME_ARGS. Keep the
+# result as the base for the server, and build the client's separately below.
+apply_theme
+BASE_ARGS="$GAME_ARGS"
 
 check_environment
 
@@ -67,6 +84,7 @@ if command -v ss >/dev/null 2>&1; then
 fi
 
 # ---- the server side ----
+GAME_ARGS="$BASE_ARGS"
 prepare_run_dir "runserv"
 SERVER_RUN="$RUN_NAME"
 SERVER_LOG="$LOG_FILE"
@@ -74,6 +92,30 @@ SERVER_CONF="$GAME_ROOT/net-test/generated-both-server.conf"
 generate_conf "$SERVER_CONF" "ipxnet startserver $PORT" "$SERVER_RUN"
 
 # ---- the client side ----
+#
+# It can wear a DIFFERENT theme from the server, with -T. That is not a
+# gimmick: it is the clearest demonstration that a theme is pure decoration.
+# The two windows show the same match, frame for frame, in two different
+# paint jobs, and neither desyncs, because the walls come from bigcol.bmp on
+# both sides.
+GAME_ARGS="$BASE_ARGS"
+if [ -n "$THEME_CLIENT" ] && [ "$THEME_CLIENT" != "$THEME" ]; then
+
+    case "$THEME_CLIENT" in
+        sky|war|neon) ;;
+        *) error "Unknown client theme '$THEME_CLIENT'.
+       It has to be sky, war or neon." ;;
+    esac
+
+    if [ "$MODE_NAME" != "supernet" ]; then
+        error "-T only dresses the big map, so it needs -b as well."
+    fi
+
+    # swap the server's theme flag for the client's
+    GAME_ARGS="${BASE_ARGS% -*} -$THEME_CLIENT"
+
+fi
+
 prepare_run_dir "runcli"
 CLIENT_RUN="$RUN_NAME"
 CLIENT_LOG="$LOG_FILE"
@@ -82,7 +124,8 @@ generate_conf "$CLIENT_CONF" "ipxnet connect 127.0.0.1 $PORT" "$CLIENT_RUN"
 
 grey "--------------------------------------------------------"
 grey "  mode       : $MODE_NAME   (both sides on this machine)"
-grey "  command    : game.exe $GAME_ARGS"
+grey "  server     : game.exe $BASE_ARGS"
+grey "  client     : game.exe $GAME_ARGS"
 grey "  project    : $GAME_ROOT"
 grey "  executable : $(basename "$EXE")  ($(date -r "$EXE" '+%Y-%m-%d %H:%M'))"
 grey "  port       : $PORT/udp on loopback"

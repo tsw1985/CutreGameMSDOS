@@ -20,6 +20,7 @@ set -u
 PORT=5213
 CONF=""
 CYCLES="fixed 30000"
+THEME=""
 
 MODE_NAME="net"
 GAME_ARGS="/net"
@@ -34,6 +35,9 @@ Usage: $(basename "$0") [-b] [-p port] [-c file.conf] [-y cycles]
   -b          SUPERNET: the big 640x400 map with a scrolling camera.
               Without it you get NET: the plain 320x200 map.
               The client MUST be started with the same choice.
+  -t theme    How the big map looks: sky, war or neon. Needs -b.
+              Leave it out for the original. The client does NOT have to
+              use the same one: the walls are shared by every theme.
   -p port     UDP port for the tunnel. Defaults to 5213.
               Must be the SAME one the client uses, and above 1024.
   -c file     Use this .conf as it is instead of generating one.
@@ -44,9 +48,10 @@ END
     exit "$code"
 }
 
-while getopts "bp:c:y:h" option; do
+while getopts "bt:p:c:y:h" option; do
     case "$option" in
         b) MODE_NAME="supernet"; GAME_ARGS="/net /bigmap" ;;
+        t) THEME="$OPTARG" ;;
         p) PORT="$OPTARG" ;;
         c) CONF="$OPTARG" ;;
         y) CYCLES="$OPTARG" ;;
@@ -63,6 +68,7 @@ if [ -n "$CONF" ]; then
     exec dosbox -conf "$CONF"
 fi
 
+apply_theme
 check_environment
 prepare_run_dir "runserv"
 
@@ -91,6 +97,9 @@ green ""
 CLIENT_FLAG=""
 if [ "$MODE_NAME" = "supernet" ]; then
     CLIENT_FLAG=" -b"
+    if [ -n "$THEME" ]; then
+        CLIENT_FLAG="$CLIENT_FLAG -t $THEME"
+    fi
 fi
 for ip in $IPS; do
     green "      ./launch_game_client.sh $ip -p $PORT$CLIENT_FLAG"

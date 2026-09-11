@@ -88,6 +88,36 @@ One script per mode, and none of them needs a path edited by hand:
 windows side by side, joined over the loopback, so you get both tanks without
 a second machine and without typing an IP anywhere.
 
+#### Big map themes
+
+**supernet** can be dressed four ways:
+
+```bash
+./launch_game_both.sh -b            # the original
+./launch_game_both.sh -b -t sky     # map_sky.bmp  + spr_sky.bmp
+./launch_game_both.sh -b -t war     # map_war.bmp  + spr_war.bmp
+./launch_game_both.sh -b -t neon    # map_neon.bmp + spr_neon.bmp
+```
+
+Or in the game directly: `game.exe /net /bigmap -sky`.
+
+A theme changes **the map picture and the sprite sheet, and nothing else**. The
+walls always come from `bigcol.bmp`, whatever the theme.
+
+Which means **the two machines do not have to use the same theme**: one on
+`-neon` and one on `-war` play exactly the same match and stay in sync, they
+just see two different paint jobs of it. The map size does have to match, and
+the checksum takes care of that.
+
+You can see it for yourself on one machine:
+
+```bash
+./launch_game_both.sh -b -t war -T neon
+```
+
+`-T` sets a different theme **for the client window only**. Both tanks move
+identically, frame for frame, looking completely different.
+
 **In net and supernet, both machines have to be started the same way.** One on
 `/bigmap` and the other not is two different maps, with the walls in different
 places, and the two simulations come apart. The game catches it (the size of
@@ -273,6 +303,36 @@ Un script por modo, y ninguno necesita que toques una ruta a mano:
 `launch_game_both.sh` es el que conviene para probar: levanta dos ventanas de
 DOSBox una al lado de la otra, unidas por el loopback, así tienes los dos
 tanques sin segunda máquina y sin escribir ninguna IP.
+
+#### Los temas del mapa grande
+
+**supernet** se puede vestir de cuatro formas:
+
+```bash
+./launch_game_both.sh -b            # el original
+./launch_game_both.sh -b -t sky     # map_sky.bmp  + spr_sky.bmp
+./launch_game_both.sh -b -t war     # map_war.bmp  + spr_war.bmp
+./launch_game_both.sh -b -t neon    # map_neon.bmp + spr_neon.bmp
+```
+
+O en el juego directamente: `game.exe /net /bigmap -sky`.
+
+Un tema cambia **el dibujo del mapa y la hoja de sprites, y nada más**. Los
+muros salen siempre de `bigcol.bmp`, sea cual sea el tema.
+
+Lo que significa que **las dos máquinas no tienen que ir con el mismo tema**:
+una con `-neon` y otra con `-war` juegan exactamente la misma partida y siguen
+sincronizadas, solo que ven dos pinturas distintas de ella. El tamaño del mapa
+sí tiene que coincidir, y de eso se encarga el checksum.
+
+Puedes verlo tú mismo en una sola máquina:
+
+```bash
+./launch_game_both.sh -b -t war -T neon
+```
+
+`-T` pone un tema distinto **solo en la ventana del cliente**. Los dos tanques
+se mueven igual, frame a frame, con dos aspectos distintos.
 
 **En net y supernet las dos máquinas tienen que arrancarse igual.** Una con
 `/bigmap` y la otra sin él son dos mapas distintos, con los muros en sitios

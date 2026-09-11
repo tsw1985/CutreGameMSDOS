@@ -136,6 +136,28 @@ int network_mode;
 // incomprehensible game into a desync report in the log.
 int big_map_mode;
 
+// Which set of graphics the big map uses. Set from the command line with
+// -sky, -war or -neon; 0 is the original big.bmp.
+//
+// It changes the DRAWING and nothing else. The walls always come from
+// bigcol.bmp, whatever the theme, so two machines playing with different
+// themes stay perfectly in sync: they see different pictures of exactly the
+// same world.
+//
+// Which is why the theme must NEVER go into the state checksum. Same rule as
+// camera_x: if the drawing code decides it, it is decoration.
+int map_theme;
+
+#define THEME_ORIGINAL 	0
+#define THEME_SKY 		1
+#define THEME_WAR 		2
+#define THEME_NEON 		3
+
+// The two files the theme picks. init_graphics() fills them in before loading
+// anything, so the rest of it does not have to know which theme is on.
+char *theme_map_file;
+char *theme_sprite_file;
+
 // Which tank THIS machine drives over the network. Meaningless in local
 // mode, where this keyboard drives both of them.
 int local_player_is_1;
@@ -245,6 +267,7 @@ int main(int argc, char *argv[]){
 	// the two players on one keyboard game that was here before.
 	network_mode        = 0;
 	big_map_mode        = 0;
+	map_theme           = THEME_ORIGINAL;
 	local_player_is_1   = 1;
 	connection_was_lost = 0;
 
@@ -265,6 +288,20 @@ int main(int argc, char *argv[]){
 
 		if (stricmp(argv[argument_index], "-bigmap") == 0){
 			big_map_mode = 1;
+		}
+
+		// The look of the big map. They are alternatives, so the last one on
+		// the line wins rather than trying to combine them.
+		if (stricmp(argv[argument_index], "-sky") == 0){
+			map_theme = THEME_SKY;
+		}
+
+		if (stricmp(argv[argument_index], "-war") == 0){
+			map_theme = THEME_WAR;
+		}
+
+		if (stricmp(argv[argument_index], "-neon") == 0){
+			map_theme = THEME_NEON;
 		}
 
 		argument_index = argument_index + 1;
@@ -288,6 +325,21 @@ int main(int argc, char *argv[]){
 		}
 
 		big_map_mode = 0;
+
+	}
+
+	// The themes only dress the big map. On the 320x200 map there is only one
+	// set of graphics, so asking for a theme there is a mistake worth saying
+	// out loud instead of ignoring in silence.
+	if (big_map_mode == 0){
+
+		if (map_theme != THEME_ORIGINAL){
+			printf("\n-sky, -war and -neon only dress the big map, so they need\n");
+			printf("/net /bigmap. Starting on the normal map.\n\n");
+			tanks_log("Theme asked for without /bigmap, ignored");
+		}
+
+		map_theme = THEME_ORIGINAL;
 
 	}
 
@@ -352,8 +404,9 @@ int main(int argc, char *argv[]){
 	// What we ended up with. Worth having in the log: the big map is the only
 	// thing here that can fail to fit, and if farmalloc() ever comes back NULL
 	// this line is what says so before anything strange happens.
-	sprintf(log_message_text, "Map %dx%d  memory now: near %lu  far %lu",
-	        map_width, map_height, (unsigned long)coreleft(), (unsigned long)farcoreleft());
+	sprintf(log_message_text, "Map %dx%d theme %d  memory now: near %lu  far %lu",
+	        map_width, map_height, map_theme,
+	        (unsigned long)coreleft(), (unsigned long)farcoreleft());
 	tanks_log(log_message_text);
 
 	// Sound is optional: if there is no card sound_start() returns 0, says so
@@ -1508,19 +1561,59 @@ void init_graphics(){
 	// falls out of the general one.
 	if (big_map_mode == 1){
 
+		//---------------------------------------------------
+		// The theme picks the two files that are DRAWN, and only those.
+		//
+		// The collision map is ALWAYS bigcol.bmp. The themes are the same
+		// world repainted: same walls, same doorways, same everything that
+		// decides. So a machine on -neon and one on -war play exactly the
+		// same match and stay in sync, they just look different. It is the
+		// same idea as the camera.
+		//
+		// Each map carries the palette its own sprites were drawn with, which
+		// is why bmp_extract_pallete_from_file() reads the map: load the
+		// palette of one theme and the sprites of another and the tanks come
+		// out the wrong colour.
+		//---------------------------------------------------
+		if (map_theme == THEME_SKY){
+
+			theme_map_file    = "..\\res\\map_sky.bmp";
+			theme_sprite_file = "..\\res\\spr_sky.bmp";
+
+		}else if (map_theme == THEME_WAR){
+
+			theme_map_file    = "..\\res\\map_war.bmp";
+			theme_sprite_file = "..\\res\\spr_war.bmp";
+
+		}else if (map_theme == THEME_NEON){
+
+			theme_map_file    = "..\\res\\map_neon.bmp";
+			theme_sprite_file = "..\\res\\spr_neon.bmp";
+
+		}else{
+
+			theme_map_file    = "..\\res\\big.bmp";
+			theme_sprite_file = "..\\res\\sprites.bmp";
+
+		}
+
 		bmp_init_buffers(640, 400);
 
-		bmp_fill_background_in_main_buffer("..\\res\\big.bmp");
+		bmp_fill_background_in_main_buffer(theme_map_file);
 		bmp_fill_background_collision_in_buffer("..\\res\\bigcol.bmp");
-		bmp_extract_pallete_from_file("..\\res\\big.bmp");
+		bmp_extract_pallete_from_file(theme_map_file);
 
 	}else{
 
+		// The small map has one set of graphics and no theme.
+		theme_map_file    = "..\\res\\cutre.bmp";
+		theme_sprite_file = "..\\res\\sprites.bmp";
+
 		bmp_init_buffers(WIDTH, HEIGHT);
 
-		bmp_fill_background_in_main_buffer("..\\res\\cutre.bmp");
+		bmp_fill_background_in_main_buffer(theme_map_file);
 		bmp_fill_background_collision_in_buffer("..\\res\\cutrecol.bmp");
-		bmp_extract_pallete_from_file("..\\res\\cutre.bmp");
+		bmp_extract_pallete_from_file(theme_map_file);
 
 	}
 	// Set the pallete data into the VGA DAC
@@ -1544,7 +1637,10 @@ void init_graphics(){
 	// ============================
 	// Extract sprites from sprites.bmp
 	// ============================
-	bmp_open_sprite_sheet("..\\res\\sprites.bmp");
+	// The theme's sheet, picked above. Every theme ships its own with the same
+	// grid and the same silhouettes: only the colours change, so all the cut
+	// coordinates below work unchanged for all four.
+	bmp_open_sprite_sheet(theme_sprite_file);
 
     // ============================
 	// First frame of background, so there is something sensible on screen

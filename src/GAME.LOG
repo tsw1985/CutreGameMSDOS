@@ -1,54 +1,14 @@
 Starting game ...
+Memory at start: near 519984  far 519984
+Map 320x200 theme 0  memory now: near 376944  far 376944
 Sound: ready
 Song: playing
 Direction: UP
-Future cannon tip (116,163) = 3
-Direction: UP
-Future cannon tip (116,163) = 3
-Direction: UP
-Future cannon tip (116,115) = 3
-Direction: UP
-Future cannon tip (116,79) = 3
-Direction: UP
-Future cannon tip (116,79) = 3
-Direction: UP
-Future cannon tip (116,79) = 3
-Direction: UP
-Future cannon tip (106,67) = 3
+Future cannon tip (116,163) wall=0 camera (0,0)
 Direction: RIGHT
-Future cannon tip (127,74) = 3
+Future cannon tip (151,146) wall=0 camera (0,0)
 Direction: UP
-Future cannon tip (116,71) = 3
-Tank hit - wins 1 / 0
-Direction: DOWN
-Future cannon tip (116,182) = 252
+Future cannon tip (108,121) wall=0 camera (0,0)
+Tank hit - wins 0 / 1
 Direction: UP
-Future cannon tip (206,141) = 3
-Direction: UP
-Future cannon tip (206,15) = 252
-Direction: LEFT
-Future cannon tip (150,32) = 3
-Direction: DOWN
-Future cannon tip (214,102) = 3
-Direction: LEFT
-Future cannon tip (172,166) = 3
-Direction: LEFT
-Future cannon tip (90,166) = 3
-Direction: UP
-Future cannon tip (110,99) = 3
-Tank hit - wins 2 / 0
-Direction: DOWN
-Future cannon tip (126,182) = 252
-Direction: UP
-Future cannon tip (112,147) = 3
-Tank hit - wins 3 / 0
-Direction: UP
-Future cannon tip (112,71) = 3
-Direction: UP
-Future cannon tip (116,155) = 3
-Tank hit - wins 4 / 0
-Direction: RIGHT
-Future cannon tip (153,170) = 3
-Tank hit - wins 5 / 0
-Direction: UP
-Future cannon tip (120,67) = 3
+Future cannon tip (116,163) wall=0 camera (0,0)

@@ -17,6 +17,18 @@
 #
 # Which one you get comes from GAME_ARGS, which each script sets before
 # calling generate_conf.
+#
+#
+# THE THEMES
+# ----------
+# supernet can be dressed in four looks, with -sky, -war or -neon (or nothing
+# for the original). They change the map picture and the sprite sheet and
+# NOTHING else: the walls always come out of bigcol.bmp.
+#
+# Which means the two machines do NOT have to agree on the theme. One on -neon
+# and one on -war play exactly the same match and stay in sync; they just see
+# different pictures of it. The map SIZE does have to match, and that one the
+# game checks.
 # ============================================================
 
 GAME_ROOT="$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)"
@@ -54,14 +66,29 @@ check_environment() {
 "Cannot find a res/ folder inside $GAME_ROOT
        The game looks for its resources in ..\\res\\ and will not start without it."
 
-    # /bigmap needs its two files. They are not in the normal game, so a
-    # missing one shows up as a black screen with no explanation.
+    # /bigmap needs its files. They are not in the normal game, so a missing
+    # one shows up as a black screen with no explanation.
     if [ "${GAME_ARGS:-}" != "${GAME_ARGS#*bigmap}" ]; then
-        for needed in big.bmp bigcol.bmp; do
+
+        # bigcol.bmp is the collision map and it is the SAME for every theme.
+        [ -f "$GAME_ROOT/res/bigcol.bmp" ] || error \
+"/bigmap needs res/bigcol.bmp and it is not there.
+       That is the collision map, shared by every theme."
+
+        # And the two the theme dresses the map with.
+        case "${THEME:-}" in
+            sky)  needed_map=map_sky.bmp;  needed_spr=spr_sky.bmp  ;;
+            war)  needed_map=map_war.bmp;  needed_spr=spr_war.bmp  ;;
+            neon) needed_map=map_neon.bmp; needed_spr=spr_neon.bmp ;;
+            *)    needed_map=big.bmp;      needed_spr=sprites.bmp  ;;
+        esac
+
+        for needed in "$needed_map" "$needed_spr"; do
             [ -f "$GAME_ROOT/res/$needed" ] || error \
-"/bigmap needs res/$needed and it is not there.
+"Theme '${THEME:-original}' needs res/$needed and it is not there.
        Without it the map loads as black and nothing is where it looks."
         done
+
     fi
 
     if [ -n "${PORT:-}" ] && [ "$PORT" -lt 1024 ]; then
@@ -184,6 +211,7 @@ CONF_EOF
 summary() {
     grey "--------------------------------------------------------"
     grey "  mode       : $MODE_NAME"
+    grey "  theme      : ${THEME:-original}"
     grey "  command    : game.exe $GAME_ARGS"
     grey "  project    : $GAME_ROOT"
     grey "  executable : $(basename "$EXE")  ($(date -r "$EXE" '+%Y-%m-%d %H:%M'))"
@@ -210,4 +238,32 @@ warn_same_mode() {
     grey "  $MODE_NAME there: the maps differ between modes and the game will"
     grey "  report a desync if they do not match."
     grey ""
+    if [ "$MODE_NAME" = "supernet" ]; then
+    grey "  The THEME does not have to match, though. The walls come from"
+    grey "  bigcol.bmp whatever the look, so one machine on -neon and one on"
+    grey "  -war play the same match and stay in sync. Try it."
+    grey ""
+    fi
+}
+
+# ------------------------------------------------------------
+# Turns -t sky into the game's -sky, after checking it is one of the three.
+# ------------------------------------------------------------
+apply_theme() {
+
+    [ -z "${THEME:-}" ] && return 0
+
+    case "$THEME" in
+        sky|war|neon) ;;
+        *) error "Unknown theme '$THEME'.
+       It has to be sky, war or neon, or leave it out for the original." ;;
+    esac
+
+    if [ "$MODE_NAME" != "supernet" ]; then
+        error "Themes only dress the big map, so -t needs -b as well.
+       Without it there is only one set of graphics."
+    fi
+
+    GAME_ARGS="$GAME_ARGS -$THEME"
+
 }

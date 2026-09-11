@@ -1,0 +1,31 @@
+CUTREGAME MSDOS - 15 NIVELES / 30 MAPAS BMP
+
+5 geometries x 3 estilos: SKYNET, NEON, MILITAR.
+Todos los BMP: 640x400, 8 bits, 256 entradas, sin compresion.
+Muros: 16 px. Pasos: al menos 32 px. Tanques: 18x18; paso de 2 px.
+
+NIVEL01 - Campo abierto: Arena amplia. Coberturas separadas y multiples rutas visibles.
+NIVEL02 - Cruce de fuego: Cuatro sectores con puertas amplias. Coberturas para flanquear y escapar.
+NIVEL03 - Emboscada: Nueve salas, accesos alternados y esquinas de cobertura. Varias rutas circulares.
+NIVEL04 - Cerco: Doce sectores. Accesos desplazados, cuellos de botella y rutas de retirada largas.
+NIVEL05 - La ratonera: Veinte celdas conectadas en circuito, con dos atajos. Puertas estrechas y entradas desalineadas; todas las salas tienen al menos dos salidas.
+
+INSTALACION
+Copia big.bmp y bigcol.bmp de un mismo nivel a res/. Conserva copia de los originales.
+Usa sprites.bmp del estilo correspondiente (las hojas ya entregadas).
+En las dos maquinas: mismos archivos y game.exe /net /bigmap.
+El juego actual no cambia de nivel automaticamente: elige una pareja antes de arrancar.
+
+PALETAS
+Los cinco mapas decorados de cada estilo conservan exactamente la paleta de sus sprites.
+Los mapas de colision usan la paleta original: amarillo indice 252; azul indice 3.
+La paleta de colision es independiente porque el juego solo lee sus indices.
+El indice 252 no se utiliza en ningun mapa decorado.
+
+VALIDACION
+Comprobados ambos puntos de inicio: (166,299) y (483,106).
+Recorrido con huella completa 18x18 y movimientos de 2 px para las paridades de ambos tanques.
+Todas las posiciones validas conectadas. Cada sala tiene al menos dos puertas.
+Todo el suelo admite cobertura por una huella 32x32: sin rendijas ni bolsillos estrechos.
+Correspondencia pixel a pixel entre geometria dibujada y mapa de colisiones.
+Dificultad basada en distribucion y rutas; no se ha probado jugando en DOSBox.

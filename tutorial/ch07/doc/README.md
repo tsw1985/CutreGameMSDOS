@@ -1,5 +1,7 @@
 # Capítulo 7 — Colisiones contra el mapa
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** un tanque que no atraviesa las paredes. Y poder ver,
 pulsando TAB, **el mapa que ve el juego** en vez del que ves tú.
 

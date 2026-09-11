@@ -1,5 +1,7 @@
 # Capítulo 10 — Impacto, explosión y ronda
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** el juego local terminado. Impactos, explosión, marcador
 y rondas.
 

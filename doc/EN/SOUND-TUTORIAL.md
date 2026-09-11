@@ -8,6 +8,13 @@ This document explains how to use it in a new program. If what you want is to
 understand how it works inside (the DMA, the interrupt, the mixing), that is
 in [SOUND.md](SOUND.md).
 
+> **Would you rather see it running first?**
+> The [course](../../tutorial/README-EN.md) has four runnable chapters:
+> [**ch11**](../../tutorial/ch11/doc/README-EN.md) finding the card ·
+> [**ch12**](../../tutorial/ch12/doc/README-EN.md) DMA ·
+> [**ch13**](../../tutorial/ch13/doc/README-EN.md) mixing ·
+> [**ch14**](../../tutorial/ch14/doc/README-EN.md) music.
+
 ---
 
 ## 1. What do I copy into my project

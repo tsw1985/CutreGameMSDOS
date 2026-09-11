@@ -1,5 +1,7 @@
 # Capítulo 1 — El modo 13h y la memoria de vídeo
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** una pantalla en 320x200 con los 256 colores de la
 paleta pintados a mano.
 

@@ -1,5 +1,7 @@
 # Capítulo 18 — Lockstep: el juego en red
 
+*[English version](README-EN.md)*
+
 **El capítulo más importante del bloque.** Aquí está la idea que hace que un
 juego funcione en red, y no es la que uno espera.
 

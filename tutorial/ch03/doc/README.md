@@ -1,5 +1,7 @@
 # Capítulo 3 — Doble buffer y retrazo vertical
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** ver el mismo movimiento tres veces, cada vez mejor, y
 entender por qué.
 

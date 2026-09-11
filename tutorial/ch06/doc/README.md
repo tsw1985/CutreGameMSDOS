@@ -1,5 +1,7 @@
 # Capítulo 6 — Animación: que las orugas se muevan
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** el tanque del capítulo 5, pero con las orugas girando
 mientras avanza y paradas cuando no.
 

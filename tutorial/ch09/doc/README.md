@@ -1,5 +1,7 @@
 # Capítulo 9 — Balas
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** disparar. Una bala por tanque, que vuela recta y choca.
 
 ```

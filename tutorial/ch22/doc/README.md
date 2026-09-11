@@ -1,5 +1,7 @@
 # Capítulo 22 — La cámara: que la ventana se mueva sola
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** la ventana del capítulo 21, pero siguiendo al tanque sin
 que tú la toques. Y comparar los **tres modelos** con una tecla.
 

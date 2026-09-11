@@ -1,5 +1,7 @@
 # Capítulo 14 — Música: reproducir desde el disco
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** 2,7 MB de música sonando en una máquina de 640 KB.
 
 ```

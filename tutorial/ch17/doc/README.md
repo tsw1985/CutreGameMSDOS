@@ -1,5 +1,7 @@
 # Capítulo 17 — Enviar y recibir: un chat
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** escribir en una máquina y leerlo en la otra.
 
 ```

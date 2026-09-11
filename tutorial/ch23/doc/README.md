@@ -1,5 +1,7 @@
 # Capítulo 23 — La máscara de bits y la memoria de DOS
 
+*[English version](README-EN.md)*
+
 **Último capítulo.** Va de la pieza que hace que el mapa grande **quepa**, y de
 la lección más cara de todo el proyecto.
 

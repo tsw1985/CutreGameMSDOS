@@ -1,5 +1,7 @@
 # Capítulo 21 — La ventana: sacar un trozo de un mapa grande
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** mover la ventana a mano por el mundo de 640x400, con un
 tanque quieto, y entender exactamente qué es una ventana antes de que nada la
 mueva por ti.

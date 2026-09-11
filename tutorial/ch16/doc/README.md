@@ -1,5 +1,7 @@
 # Capítulo 16 — Que dos máquinas se encuentren
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** dos máquinas emparejadas **sin escribir ninguna
 dirección**.
 

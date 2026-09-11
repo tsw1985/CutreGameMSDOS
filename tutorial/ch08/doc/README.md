@@ -1,5 +1,7 @@
 # Capítulo 8 — Dos jugadores, y la idea que sostiene el curso
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** dos tanques moviéndose a la vez en la misma pantalla.
 
 **Y sobre todo:** la abstracción que hará que el capítulo 18 meta la red **sin

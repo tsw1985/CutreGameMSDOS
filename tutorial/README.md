@@ -1,5 +1,7 @@
 # Curso: de una pantalla en negro a dos tanques peleando en red
 
+*[English version](README-EN.md)*
+
 Un capítulo por idea. Cada uno es un programa que compila, se ejecuta y hace
 una sola cosa, y cada uno añade **una** pieza al anterior.
 

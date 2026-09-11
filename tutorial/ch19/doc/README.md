@@ -1,5 +1,7 @@
 # Capítulo 19 — El checksum: cazar la desincronización
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** provocar una desincronización a propósito con la tecla
 `D` y verla detectada.
 

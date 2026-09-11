@@ -3,6 +3,15 @@
 From a fixed 320x200 screen to a 640x400 world two tanks hunt each other
 across, each one seeing its own piece of it.
 
+> **Would you rather see it running first?**
+> The [course](../../tutorial/README-EN.md) covers this same ground in four
+> chapters that compile and run:
+> [**ch20**](../../tutorial/ch20/doc/README-EN.md) the problem ·
+> [**ch21**](../../tutorial/ch21/doc/README-EN.md) the window ·
+> [**ch22**](../../tutorial/ch22/doc/README-EN.md) the camera ·
+> [**ch23**](../../tutorial/ch23/doc/README-EN.md) memory.
+> This manual is the deep reference; the course is the way up.
+
 ---
 
 ## Who this is for

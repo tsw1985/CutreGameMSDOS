@@ -9,6 +9,13 @@ transfer, two programs talking to each other, or another game. If what you
 want is to understand how it works inside (IPX, the ECBs, lockstep), that is
 in [NETWORK-MANUAL.md](NETWORK-MANUAL.md).
 
+> **Would you rather see it running first?**
+> The [course](../../tutorial/README-EN.md) has three runnable chapters on this
+> API:
+> [**ch15**](../../tutorial/ch15/doc/README-EN.md) finding IPX ·
+> [**ch16**](../../tutorial/ch16/doc/README-EN.md) pairing up ·
+> [**ch17**](../../tutorial/ch17/doc/README-EN.md) a complete chat.
+
 ---
 
 ## 1. What do I copy into my project

@@ -10,12 +10,30 @@ the same files under the same names.*
 |---|---|---|
 | **TUTORIAL de sonido / Sound TUTORIAL** | [`ES/TUTORIAL-SONIDO.md`](ES/TUTORIAL-SONIDO.md) | [`EN/SOUND-TUTORIAL.md`](EN/SOUND-TUTORIAL.md) |
 | **TUTORIAL de red / Network TUTORIAL** | [`ES/TUTORIAL-RED.md`](ES/TUTORIAL-RED.md) | [`EN/NETWORK-TUTORIAL.md`](EN/NETWORK-TUTORIAL.md) |
+| **CURSO paso a paso / Step-by-step COURSE** | [`../tutorial/README.md`](../tutorial/README.md) | [`../tutorial/README-EN.md`](../tutorial/README-EN.md) |
 | **MANUAL de camara / Camera MANUAL** | [`ES/MANUAL-CAMARA.md`](ES/MANUAL-CAMARA.md) | [`EN/CAMERA-MANUAL.md`](EN/CAMERA-MANUAL.md) |
 | **MANUAL de red / Network MANUAL** | [`ES/MANUAL-RED.md`](ES/MANUAL-RED.md) | [`EN/NETWORK-MANUAL.md`](EN/NETWORK-MANUAL.md) |
 | **Sonido / Sound** | [`ES/SOUND.md`](ES/SOUND.md) | [`EN/SOUND.md`](EN/SOUND.md) |
 | **Red / Network** | [`ES/NETWORK.md`](ES/NETWORK.md) | [`EN/NETWORK.md`](EN/NETWORK.md) |
 | **Probar la red / Testing the network** | [`ES/NETWORK-TESTING.md`](ES/NETWORK-TESTING.md) | [`EN/NETWORK-TESTING.md`](EN/NETWORK-TESTING.md) |
 | **El reproductor WAV original / The original WAV player** | [`ES/SBWAV8-FLOW.md`](ES/SBWAV8-FLOW.md) | [`EN/SBWAV8-FLOW.md`](EN/SBWAV8-FLOW.md) |
+
+---
+
+## Y antes que todo esto: el CURSO
+
+Si empiezas de cero, no empieces por aquí. Empieza por
+[**`tutorial/`**](../tutorial/README.md).
+
+Son **23 capítulos**, cada uno un programa que compila y se ejecuta, desde poner
+la pantalla en modo gráfico hasta dos tanques peleando en red por un mapa de
+cuatro pantallas. Cada capítulo añade **una** idea y trae su propia explicación.
+
+*If you are starting from scratch, start with [**`tutorial/`**](../tutorial/README.md)
+instead: 23 chapters, each one a program that compiles and runs.*
+
+Los manuales de aquí abajo son la **referencia profunda**. El curso es el camino
+de subida, con el código delante.
 
 ---
 

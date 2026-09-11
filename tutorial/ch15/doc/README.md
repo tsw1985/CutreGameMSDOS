@@ -1,5 +1,7 @@
 # Capítulo 15 — Encontrar el driver IPX
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** saber si hay red y abrir un socket. En modo texto.
 
 **Qué código real se usa:** `src/net.c`.

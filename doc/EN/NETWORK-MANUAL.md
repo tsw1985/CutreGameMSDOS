@@ -4,6 +4,15 @@
 
 From nothing to two tanks fighting across two computers.
 
+> **Would you rather see it running first?**
+> The [course](../../tutorial/README-EN.md) gets here in five chapters that
+> compile and run:
+> [**ch15**](../../tutorial/ch15/doc/README-EN.md) finding IPX ·
+> [**ch16**](../../tutorial/ch16/doc/README-EN.md) pairing up ·
+> [**ch17**](../../tutorial/ch17/doc/README-EN.md) a chat ·
+> [**ch18**](../../tutorial/ch18/doc/README-EN.md) lockstep ·
+> [**ch19**](../../tutorial/ch19/doc/README-EN.md) the checksum.
+
 ---
 
 ## Who this is for

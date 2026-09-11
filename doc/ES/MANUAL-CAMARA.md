@@ -3,6 +3,15 @@
 De una pantalla fija de 320x200 a un mundo de 640x400 por el que dos tanques se
 buscan, cada uno viendo su propio trozo.
 
+> **¿Prefieres verlo funcionando antes de leer?**
+> El [curso](../../tutorial/README.md) cubre esto mismo en cuatro capítulos que
+> compilan y se ejecutan:
+> [**ch20**](../../tutorial/ch20/doc/README.md) el problema ·
+> [**ch21**](../../tutorial/ch21/doc/README.md) la ventana ·
+> [**ch22**](../../tutorial/ch22/doc/README.md) la cámara ·
+> [**ch23**](../../tutorial/ch23/doc/README.md) la memoria.
+> Este manual es la referencia profunda; el curso es el camino de subida.
+
 ---
 
 ## Para quién es esto

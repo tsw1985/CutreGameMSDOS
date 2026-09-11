@@ -1,5 +1,7 @@
 # Capítulo 20 — El mundo deja de ser la pantalla
 
+*[English version](README-EN.md)*
+
 **Este capítulo está hecho para que algo salga mal.** A propósito.
 
 ```

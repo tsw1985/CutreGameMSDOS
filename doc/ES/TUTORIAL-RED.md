@@ -9,6 +9,13 @@ fichero, dos programas hablando entre ellos, u otro juego. Si lo que quieres
 es entender cómo funciona por dentro (IPX, los ECB, el lockstep), eso está en
 [MANUAL-RED.md](MANUAL-RED.md).
 
+> **¿Prefieres verlo funcionando antes de leer?**
+> El [curso](../../tutorial/README.md) tiene tres capítulos ejecutables sobre
+> esta API:
+> [**ch15**](../../tutorial/ch15/doc/README.md) encontrar IPX ·
+> [**ch16**](../../tutorial/ch16/doc/README.md) emparejarse ·
+> [**ch17**](../../tutorial/ch17/doc/README.md) un chat completo.
+
 ---
 
 ## 1. Qué copio a mi proyecto

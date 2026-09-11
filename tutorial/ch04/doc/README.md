@@ -1,5 +1,7 @@
 # Capítulo 4 — Sprites: recortar y pintar con transparencia
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** tanques y balas encima del mapa, y un tanque que sale
 por los bordes sin romper nada.
 

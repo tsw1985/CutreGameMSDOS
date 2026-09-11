@@ -1,5 +1,7 @@
 # Capítulo 2 — Cargar un BMP y mostrarlo
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** el mapa del juego en pantalla, cargado desde disco. Y
 verlo primero **con los colores mal**, a propósito, para entender por qué.
 

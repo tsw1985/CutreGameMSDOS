@@ -8,6 +8,13 @@ Este documento explica cómo usarlo en un programa nuevo. Si lo que quieres es
 entender cómo funciona por dentro (el DMA, la interrupción, la mezcla), eso
 está en [SOUND.md](SOUND.md).
 
+> **¿Prefieres verlo funcionando antes de leer?**
+> El [curso](../../tutorial/README.md) tiene cuatro capítulos ejecutables:
+> [**ch11**](../../tutorial/ch11/doc/README.md) encontrar la tarjeta ·
+> [**ch12**](../../tutorial/ch12/doc/README.md) el DMA ·
+> [**ch13**](../../tutorial/ch13/doc/README.md) mezclar ·
+> [**ch14**](../../tutorial/ch14/doc/README.md) la música.
+
 ---
 
 ## 1. Qué copio a mi proyecto

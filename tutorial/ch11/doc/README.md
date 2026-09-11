@@ -1,5 +1,7 @@
 # Capítulo 11 — Encontrar la Sound Blaster
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** saber si hay tarjeta de sonido y dónde está. En modo
 texto, para poder leerlo.
 

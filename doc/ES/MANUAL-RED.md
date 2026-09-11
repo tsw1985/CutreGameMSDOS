@@ -4,6 +4,15 @@
 
 De cero a dos tanques peleando entre dos ordenadores.
 
+> **¿Prefieres verlo funcionando antes de leer?**
+> El [curso](../../tutorial/README.md) llega hasta aquí en cinco capítulos que
+> compilan y se ejecutan:
+> [**ch15**](../../tutorial/ch15/doc/README.md) encontrar IPX ·
+> [**ch16**](../../tutorial/ch16/doc/README.md) emparejarse ·
+> [**ch17**](../../tutorial/ch17/doc/README.md) un chat ·
+> [**ch18**](../../tutorial/ch18/doc/README.md) lockstep ·
+> [**ch19**](../../tutorial/ch19/doc/README.md) el checksum.
+
 ---
 
 ## Para quién es esto

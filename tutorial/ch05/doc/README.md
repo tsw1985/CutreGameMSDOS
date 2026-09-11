@@ -1,5 +1,7 @@
 # Capítulo 5 — El teclado, de verdad
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** un tanque que se mueve con las flechas, con el mismo
 sistema de teclado que usa el juego.
 

@@ -1,5 +1,7 @@
 # Capítulo 13 — Mezclar: varios sonidos a la vez
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** dos motores y un disparo sonando simultáneamente. Y oír
 la distorsión cuando te pasas.
 

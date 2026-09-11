@@ -1,5 +1,7 @@
 # Capítulo 12 — Reproducir un WAV
 
+*[English version](README-EN.md)*
+
 **Qué vas a conseguir:** sonido. Y entender qué es el DMA, que es la pieza que
 hace posible el audio en una máquina de esta época.
 

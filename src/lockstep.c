@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <bios.h>		// biostime(), for the level handshake timeout
 #include "header\util.h"
 #include "header\net.h"
 #include "header\lockstep.h"
@@ -255,6 +256,164 @@ void net_shutdown(void){
 // charge, so net_find_peer() is the right one of the three: whoever hears
 // the other first does the answering.
 //===========================================================
+//===========================================================
+// Agreeing on the level, before a single frame is simulated.
+//
+// The THEME does not need agreeing: sky, war and neon are the same world
+// repainted, so the collision map is byte for byte identical between them.
+// Two machines can happily wear different themes.
+//
+// The LEVEL is the opposite. Each level is a different set of walls, so if
+// the two machines load different ones they are playing different games: the
+// tanks walk through each other's walls and the checksum screams on the
+// first check. It has to be settled BEFORE the game starts.
+//
+// How it is settled: PLAYER 1 DECIDES. Not a negotiation, not a vote. Player
+// 1 was already picked without exchanging a word (the lower id), so it is
+// free to be the one that chooses, and player 2 simply adopts it.
+//
+// Player 1 offers, player 2 acknowledges. Both retry, because IPX loses
+// packets and a lost offer would leave player 2 waiting for ever.
+//
+// The message is 4 bytes and lockstep_message is 20, so the two can never be
+// mistaken for each other: net_poll() drops anything that is not exactly its
+// own size, and this function drops anything that is not exactly its own.
+//===========================================================
+
+#define LEVEL_OFFER 	1
+#define LEVEL_ACK 		2
+
+struct level_message {
+	unsigned char magic[2];		// "LV", so a stray packet cannot pass for one
+	unsigned char type;			// LEVEL_OFFER or LEVEL_ACK
+	unsigned char level;		// 0 = the original big.bmp, 1..5 = the levels
+};
+
+// A quarter of a second between retries, like the HELLO of net.c
+#define LEVEL_RETRY_TICKS 	5
+#define LEVEL_TIMEOUT_TICKS 	(18 * 10)
+
+
+//===========================================================
+// Returns the level BOTH machines are going to load, or -1 if they could not
+// agree (which means: do not start, you would desync immediately).
+//
+// my_level is only a request. Player 1 gets its way; player 2's is ignored,
+// and it is told so on screen rather than left wondering.
+//===========================================================
+int net_agree_level(int my_level){
+
+	struct level_message message;
+	struct level_message incoming;
+	long start_tick;
+	long now_tick;
+	long next_send_tick;
+	int  length;
+	int  agreed;
+
+	agreed = -1;
+
+	start_tick     = biostime(0, 0L);
+	next_send_tick = start_tick;
+
+	message.magic[0] = 'L';
+	message.magic[1] = 'V';
+
+	while (1){
+
+		now_tick = biostime(0, 0L);
+
+		if (now_tick - start_tick > LEVEL_TIMEOUT_TICKS){
+			tanks_log("NET: timed out agreeing the level");
+			return -1;
+		}
+
+		if (net_connection_lost() == 1){
+			tanks_log("NET: connection lost while agreeing the level");
+			return -1;
+		}
+
+		//-----------------------------------------------
+		// Player 1 keeps offering until it hears an ACK.
+		// Player 2 keeps quiet until it hears an offer.
+		//-----------------------------------------------
+		if (is_player1 == 1){
+
+			if (now_tick >= next_send_tick){
+
+				next_send_tick = now_tick + LEVEL_RETRY_TICKS;
+
+				message.type  = LEVEL_OFFER;
+				message.level = (unsigned char)my_level;
+
+				net_send(&message, sizeof(struct level_message));
+
+			}
+
+		}
+
+		net_update();
+
+		length = net_receive(&incoming, sizeof(struct level_message));
+
+		while (length > 0){
+
+			// Anything that is not exactly one of ours is ignored. It costs
+			// three comparisons and it means a stray packet on the socket
+			// can never be read as a level.
+			if (length == (int)sizeof(struct level_message) &&
+			    incoming.magic[0] == 'L' && incoming.magic[1] == 'V'){
+
+				if (is_player1 == 0 && incoming.type == LEVEL_OFFER){
+
+					// Player 2: take what it is given and say so. The ACK is
+					// sent EVERY time an offer arrives, not just the first,
+					// because player 1 will keep offering until one of them
+					// gets through.
+					agreed = (int)incoming.level;
+
+					message.type  = LEVEL_ACK;
+					message.level = incoming.level;
+
+					net_send(&message, sizeof(struct level_message));
+
+				}
+
+				if (is_player1 == 1 && incoming.type == LEVEL_ACK){
+
+					// Player 1: they have it. Done.
+					if ((int)incoming.level == my_level){
+						agreed = my_level;
+						return agreed;
+					}
+
+				}
+
+			}
+
+			length = net_receive(&incoming, sizeof(struct level_message));
+
+		}
+
+		//-----------------------------------------------
+		// Player 2 does not return the moment it has the number: it stays a
+		// little longer answering, so player 1's last offers keep getting
+		// their ACK. Leaving at once would often make player 1 wait out the
+		// full timeout for an ACK that was never sent again.
+		//-----------------------------------------------
+		if (is_player1 == 0 && agreed >= 0){
+
+			if (now_tick - start_tick > LEVEL_RETRY_TICKS * 4){
+				return agreed;
+			}
+
+		}
+
+	}
+
+}
+
+
 int net_find_opponent(void){
 
 	int index;

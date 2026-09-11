@@ -153,10 +153,29 @@ int map_theme;
 #define THEME_WAR 		2
 #define THEME_NEON 		3
 
-// The two files the theme picks. init_graphics() fills them in before loading
-// anything, so the rest of it does not have to know which theme is on.
+// Which of the five levels the big map uses, from -level1 to -level5.
+// 0 is the original big.bmp that came with the game.
+//
+// Unlike the theme, this one is NOT decoration: every level is a different set
+// of walls. So the two machines have to agree on it before a single frame is
+// simulated, and net_agree_level() is what does that. Player 1 decides.
+int map_level;
+
+#define MAX_LEVEL 5
+
+// The three files the theme and the level pick between them. init_graphics()
+// fills them in before loading anything, so the rest of it does not have to
+// know which theme or level is on.
+//
+// The level ones are built with sprintf into these buffers, so they need
+// somewhere to live: a pointer to a local would be dangling by the time it
+// was used.
 char *theme_map_file;
 char *theme_sprite_file;
+char *theme_collision_file;
+
+char level_map_path[64];
+char level_collision_path[64];
 
 // Which tank THIS machine drives over the network. Meaningless in local
 // mode, where this keyboard drives both of them.
@@ -268,6 +287,7 @@ int main(int argc, char *argv[]){
 	network_mode        = 0;
 	big_map_mode        = 0;
 	map_theme           = THEME_ORIGINAL;
+	map_level           = 0;
 	local_player_is_1   = 1;
 	connection_was_lost = 0;
 
@@ -302,6 +322,28 @@ int main(int argc, char *argv[]){
 
 		if (stricmp(argv[argument_index], "-neon") == 0){
 			map_theme = THEME_NEON;
+		}
+
+		// Which of the five levels. They live in res\\15Level\\<THEME>\\NIVELnn\\
+		// and each one brings its own big.bmp AND its own bigcol.bmp.
+		if (stricmp(argv[argument_index], "-level1") == 0){
+			map_level = 1;
+		}
+
+		if (stricmp(argv[argument_index], "-level2") == 0){
+			map_level = 2;
+		}
+
+		if (stricmp(argv[argument_index], "-level3") == 0){
+			map_level = 3;
+		}
+
+		if (stricmp(argv[argument_index], "-level4") == 0){
+			map_level = 4;
+		}
+
+		if (stricmp(argv[argument_index], "-level5") == 0){
+			map_level = 5;
 		}
 
 		argument_index = argument_index + 1;
@@ -341,6 +383,27 @@ int main(int argc, char *argv[]){
 
 		map_theme = THEME_ORIGINAL;
 
+		if (map_level != 0){
+			printf("\n-level1 .. -level5 only exist on the big map, so they need\n");
+			printf("/net /bigmap. Starting on the normal map.\n\n");
+			tanks_log("Level asked for without /bigmap, ignored");
+		}
+
+		map_level = 0;
+
+	}
+
+	// The five levels only come in the three themed looks: there is no
+	// res\\15Level\\ORIGINAL. Picking a level without a theme is not an error
+	// worth refusing, so it gets the first one and is told which.
+	if (map_level != 0 && map_theme == THEME_ORIGINAL){
+
+		map_theme = THEME_SKY;
+
+		printf("\nThe levels only come dressed, so -level%d is using -sky.\n", map_level);
+		printf("Add -war or -neon if you want another look.\n\n");
+		tanks_log("Level without a theme, defaulted to sky");
+
 	}
 
 	// The two machines find each other BEFORE the screen is switched to
@@ -368,6 +431,44 @@ int main(int argc, char *argv[]){
 		}
 
 		local_player_is_1 = net_is_player1();
+
+		//---------------------------------------------------
+		// Settle the LEVEL before anything is loaded.
+		//
+		// The theme does not travel and does not need to: sky, war and neon
+		// share their collision map byte for byte, so the two machines can
+		// wear different ones and stay in sync. The level is the opposite:
+		// every level is a different set of walls.
+		//
+		// Player 1 decides and player 2 adopts. On player 2, whatever was
+		// asked for on the command line is thrown away here, which is why it
+		// gets told on screen instead of quietly playing something else.
+		//---------------------------------------------------
+		if (big_map_mode == 1){
+
+			int agreed_level;
+
+			printf("Agreeing the level ...\n");
+
+			agreed_level = net_agree_level(map_level);
+
+			if (agreed_level < 0){
+				printf("\nCould not agree a level with the other machine.\n");
+				printf("Not starting: you would be playing different maps.\n\n");
+				net_shutdown();
+				return 1;
+			}
+
+			if (agreed_level != map_level){
+				printf("Player 1 chose level %d, so that is what we play.\n", agreed_level);
+			}
+
+			map_level = agreed_level;
+
+			sprintf(log_message_text, "NET: playing level %d", map_level);
+			tanks_log(log_message_text);
+
+		}
 
 		// Two seconds to read the message, and NOT a keypress. Both machines
 		// start at frame 0 and the first one there simply waits for the other,
@@ -404,8 +505,8 @@ int main(int argc, char *argv[]){
 	// What we ended up with. Worth having in the log: the big map is the only
 	// thing here that can fail to fit, and if farmalloc() ever comes back NULL
 	// this line is what says so before anything strange happens.
-	sprintf(log_message_text, "Map %dx%d theme %d  memory now: near %lu  far %lu",
-	        map_width, map_height, map_theme,
+	sprintf(log_message_text, "Map %dx%d theme %d level %d  mem: near %lu far %lu",
+	        map_width, map_height, map_theme, map_level,
 	        (unsigned long)coreleft(), (unsigned long)farcoreleft());
 	tanks_log(log_message_text);
 
@@ -847,6 +948,20 @@ unsigned int compute_state_checksum(){
 	// report a desync on frame one of every network game.
 	checksum = checksum + ((unsigned int)map_width * 73);
 	checksum = checksum + ((unsigned int)map_height * 79);
+
+	// And the level, for the same reason, because map_width alone would NOT
+	// catch it: every level is 640x400, so two machines on different levels
+	// have the same map size and completely different walls. Without this the
+	// symptom would be tanks walking through each other's walls with no
+	// explanation.
+	//
+	// net_agree_level() should make it impossible. This is the belt to that
+	// pair of braces, and it costs one addition every 30 frames.
+	//
+	// map_theme is deliberately NOT here: the three themes share their
+	// collision map byte for byte, so different themes are not a desync and
+	// checking them would forbid something that works.
+	checksum = checksum + ((unsigned int)map_level * 83);
 
 	return checksum;
 
@@ -1575,44 +1690,82 @@ void init_graphics(){
 		// palette of one theme and the sprites of another and the tanks come
 		// out the wrong colour.
 		//---------------------------------------------------
+		char *theme_folder;
+
+		// The sprite sheet depends ONLY on the theme: every level of a theme
+		// uses the same tanks. And the folder name, for the levels.
 		if (map_theme == THEME_SKY){
 
-			theme_map_file    = "..\\res\\map_sky.bmp";
 			theme_sprite_file = "..\\res\\spr_sky.bmp";
+			theme_map_file    = "..\\res\\map_sky.bmp";
+			theme_folder      = "SKYNET";
 
 		}else if (map_theme == THEME_WAR){
 
-			theme_map_file    = "..\\res\\map_war.bmp";
 			theme_sprite_file = "..\\res\\spr_war.bmp";
+			theme_map_file    = "..\\res\\map_war.bmp";
+			theme_folder      = "MILITAR";
 
 		}else if (map_theme == THEME_NEON){
 
-			theme_map_file    = "..\\res\\map_neon.bmp";
 			theme_sprite_file = "..\\res\\spr_neon.bmp";
+			theme_map_file    = "..\\res\\map_neon.bmp";
+			theme_folder      = "NEON";
 
 		}else{
 
-			theme_map_file    = "..\\res\\big.bmp";
 			theme_sprite_file = "..\\res\\sprites.bmp";
+			theme_map_file    = "..\\res\\big.bmp";
+			theme_folder      = "SKYNET";
+
+		}
+
+		//---------------------------------------------------
+		// And now the level decides which pair of files.
+		//
+		// Level 0 is the original map that shipped with the game, in res\\
+		// with the shared bigcol.bmp. Levels 1 to 5 each bring their OWN
+		// collision map, which is the whole reason they have to be agreed
+		// over the network.
+		//
+		// Every folder name fits DOS 8.3: 15Level, SKYNET, MILITAR, NEON and
+		// NIVEL01 are all 8 characters or fewer. If you add a theme, keep to
+		// that or DOS mangles the name and the open fails.
+		//---------------------------------------------------
+		if (map_level == 0){
+
+			theme_collision_file = "..\\res\\bigcol.bmp";
+
+		}else{
+
+			sprintf(level_map_path, "..\\res\\15Level\\%s\\NIVEL%02d\\big.bmp",
+			        theme_folder, map_level);
+
+			sprintf(level_collision_path, "..\\res\\15Level\\%s\\NIVEL%02d\\bigcol.bmp",
+			        theme_folder, map_level);
+
+			theme_map_file       = level_map_path;
+			theme_collision_file = level_collision_path;
 
 		}
 
 		bmp_init_buffers(640, 400);
 
 		bmp_fill_background_in_main_buffer(theme_map_file);
-		bmp_fill_background_collision_in_buffer("..\\res\\bigcol.bmp");
+		bmp_fill_background_collision_in_buffer(theme_collision_file);
 		bmp_extract_pallete_from_file(theme_map_file);
 
 	}else{
 
-		// The small map has one set of graphics and no theme.
-		theme_map_file    = "..\\res\\cutre.bmp";
-		theme_sprite_file = "..\\res\\sprites.bmp";
+		// The small map has one set of graphics, no theme and no levels.
+		theme_map_file       = "..\\res\\cutre.bmp";
+		theme_sprite_file    = "..\\res\\sprites.bmp";
+		theme_collision_file = "..\\res\\cutrecol.bmp";
 
 		bmp_init_buffers(WIDTH, HEIGHT);
 
 		bmp_fill_background_in_main_buffer(theme_map_file);
-		bmp_fill_background_collision_in_buffer("..\\res\\cutrecol.bmp");
+		bmp_fill_background_collision_in_buffer(theme_collision_file);
 		bmp_extract_pallete_from_file(theme_map_file);
 
 	}

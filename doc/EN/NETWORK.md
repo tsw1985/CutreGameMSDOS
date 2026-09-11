@@ -421,8 +421,8 @@ INT 2F, the far call, the ECBs. Which means **there is no driver to load**: no
 For two machines, the practical thing is not to write any `.conf` at all:
 
 ```
-./launch_game_server.sh                        <- start this one FIRST
-./launch_game_client.sh <server-ip>            <- and then this one
+./play.sh server                        <- start this one FIRST
+./play.sh client <server-ip>            <- and then this one
 ```
 
 These scripts **work out where the game is on their own**, from where they

@@ -103,7 +103,7 @@ It closes the socket. A socket left open cannot be used by the next program.
 **The easy way, from Linux:**
 
 ```bash
-./launch_game_both.sh
+./play.sh both
 ```
 
 Brings up two DOSBox windows already connected to each other. In both:

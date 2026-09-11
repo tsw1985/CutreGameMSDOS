@@ -5,7 +5,7 @@
 **What you will get:** two machines paired **without typing any address**.
 
 ```
-./launch_game_both.sh
+./play.sh both
 ```
 and in both windows: `cd tutorial\ch16` and `chap16`.
 

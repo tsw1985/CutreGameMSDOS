@@ -421,8 +421,8 @@ cargar**: ni `LSL.COM`, ni ODI, ni `IPXODI.COM`, ni `NET.CFG`, ni frame types.
 Para dos máquinas, lo práctico es no escribir ningún `.conf`:
 
 ```
-./launch_game_server.sh                        <- arranca esta PRIMERO
-./launch_game_client.sh <ip-del-servidor>      <- y luego esta
+./play.sh server                        <- arranca esta PRIMERO
+./play.sh client <ip-del-servidor>      <- y luego esta
 ```
 
 Estos scripts **averiguan solos dónde está el juego** a partir de dónde están

@@ -1797,7 +1797,7 @@ You are PLAYER 1, the tank at the bottom.
 
 **3. "Server" has nothing to do with this.**
 
-Whoever runs `launch_game_server.sh` may perfectly well end up as player 2. The
+Whoever runs `play.sh server` may perfectly well end up as player 2. The
 server/client thing is only for bringing up DOSBox's tunnel; once connected,
 both machines are identical.
 

@@ -34,13 +34,13 @@ the game is on their own**, from where they themselves are, and generate the
 On the machine acting as the server (start this one **first**):
 
 ```
-./launch_game_server.sh
+./play.sh server
 ```
 
 It prints the IP the other player needs. On the other machine:
 
 ```
-./launch_game_client.sh <that-ip>
+./play.sh client <that-ip>
 ```
 
 Each machine needs its own copy of `bin\` and `res\`, and the project can live

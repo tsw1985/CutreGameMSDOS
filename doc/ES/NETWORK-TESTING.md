@@ -32,13 +32,13 @@ hay ninguna ruta que ajustar en ningun sitio.
 En la maquina que hace de servidor (arranca esta **primero**):
 
 ```
-./launch_game_server.sh
+./play.sh server
 ```
 
 Te dice por pantalla la IP que hay que darle al otro jugador. En la otra:
 
 ```
-./launch_game_client.sh <esa-ip>
+./play.sh client <esa-ip>
 ```
 
 Cada maquina necesita su copia de `bin\` y de `res\`, y el proyecto puede

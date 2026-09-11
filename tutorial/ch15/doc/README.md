@@ -103,7 +103,7 @@ programa.
 **Lo más fácil, desde Linux:**
 
 ```bash
-./launch_game_both.sh
+./play.sh both
 ```
 
 Levanta dos ventanas de DOSBox ya conectadas entre sí. En las dos:

@@ -164,6 +164,6 @@ subida.
 - Borland Turbo C++ 3.0
 - DOSBox, o una máquina DOS de verdad
 - Para los capítulos 11 a 14, una Sound Blaster (o la que emula DOSBox)
-- Para los capítulos 15 a 19, dos instancias: usa `launch_game_both.sh`
+- Para los capítulos 15 a 19, dos instancias: usa `play.sh both`
 
 Ningún capítulo necesita NASM.

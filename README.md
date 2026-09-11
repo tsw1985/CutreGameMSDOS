@@ -69,22 +69,26 @@ card, and falls back to A220 I5 D1.
 | **net** | `game.exe /net` | Two machines, the same 320x200 map, one tank each |
 | **supernet** | `game.exe /net /bigmap` | Two machines on the 640x400 map, each with its own scrolling camera |
 
-One script per mode, and none of them needs a path edited by hand:
+**One script, `play.sh`**, and the mode is the first word. No path ever needs
+editing by hand:
 
 ```bash
-./launch_game_local.sh              # local
+./play.sh local              # local
 
-./launch_game_both.sh               # net,      both windows on THIS machine
-./launch_game_both.sh -b            # supernet, both windows on THIS machine
+./play.sh both               # net,      both windows on THIS machine
+./play.sh both -b            # supernet, both windows on THIS machine
 
-./launch_game_server.sh             # net,      two real machines
-./launch_game_client.sh <ip>
+./play.sh server             # net,      two real machines
+./play.sh client <ip>
 
-./launch_game_server.sh -b          # supernet, two real machines
-./launch_game_client.sh <ip> -b
+./play.sh server -b          # supernet, two real machines
+./play.sh client <ip> -b
 ```
 
-`launch_game_both.sh` is the one to use for testing: it starts two DOSBox
+Every command, case by case, is in [`COMANDOS.md`](COMANDOS.md). And
+`./play.sh` on its own prints the help.
+
+`play.sh both` is the one to use for testing: it starts two DOSBox
 windows side by side, joined over the loopback, so you get both tanks without
 a second machine and without typing an IP anywhere.
 
@@ -93,10 +97,10 @@ a second machine and without typing an IP anywhere.
 **supernet** can be dressed four ways:
 
 ```bash
-./launch_game_both.sh -b            # the original
-./launch_game_both.sh -b -t sky     # map_sky.bmp  + spr_sky.bmp
-./launch_game_both.sh -b -t war     # map_war.bmp  + spr_war.bmp
-./launch_game_both.sh -b -t neon    # map_neon.bmp + spr_neon.bmp
+./play.sh both -b            # the original
+./play.sh both -b -t sky     # map_sky.bmp  + spr_sky.bmp
+./play.sh both -b -t war     # map_war.bmp  + spr_war.bmp
+./play.sh both -b -t neon    # map_neon.bmp + spr_neon.bmp
 ```
 
 Or in the game directly: `game.exe /net /bigmap -sky`.
@@ -112,11 +116,50 @@ the checksum takes care of that.
 You can see it for yourself on one machine:
 
 ```bash
-./launch_game_both.sh -b -t war -T neon
+./play.sh both -b -t war -T neon
 ```
 
 `-T` sets a different theme **for the client window only**. Both tanks move
 identically, frame for frame, looking completely different.
+
+#### The 15 levels
+
+Each theme ships **five different geometries**, under `res/15Level/`:
+
+```bash
+./play.sh both -b -t neon -l 3     # NEON, level 3
+./play.sh server -b -t war -l 5    # MILITAR, level 5
+./play.sh both -b                  # the original map
+```
+
+Or in the game: `game.exe /net /bigmap -neon -level3`.
+
+| | |
+|---|---|
+| `-l 1` Open field | A wide arena with scattered cover |
+| `-l 2` Crossfire | Four sectors with wide doorways |
+| `-l 3` Ambush | Nine rooms and circular routes |
+| `-l 4` Encirclement | Twelve sectors, bottlenecks |
+| `-l 5` The mousetrap | Twenty cells wired into a circuit |
+
+The levels only come dressed, so `-l 3` with no theme uses `-sky` and says so.
+
+**And here is the difference from the theme:** a level **does** change the walls.
+If the two machines loaded different ones, the tanks would walk through each
+other's walls.
+
+**Pass the same `-l` on both machines.** If they differ the game negotiates it
+rather than desyncing, but **player 1 wins** — and player 1 is whoever drew the
+lower random id at startup, **not whoever started the server**. Passing it on one
+side only is a coin flip.
+
+If they cannot agree at all, the game **refuses to start** rather than beginning
+a broken match.
+
+| | Must it match? | Who settles it |
+|---|---|---|
+| **Theme** | No | Nobody: each machine sees its own |
+| **Level** | **Yes** | Pass the same on both. Otherwise, a coin flip |
 
 **In net and supernet, both machines have to be started the same way.** One on
 `/bigmap` and the other not is two different maps, with the walls in different
@@ -144,7 +187,7 @@ a different folder on each one.
 Start this one **first**:
 
 ```
-./launch_game_server.sh
+./play.sh server
 ```
 
 It prints the exact line to run on the other machine, with the IP already
@@ -153,7 +196,7 @@ filled in:
 ```
   SERVER ready. On the OTHER machine run:
 
-      ./launch_game_client.sh 192.168.1.45 -p 5213
+      ./play.sh client 192.168.1.45 -p 5213
 ```
 
 If it warns you about the firewall, open the port:
@@ -167,7 +210,7 @@ sudo ufw allow 5213/udp
 Copy the line the server printed:
 
 ```
-./launch_game_client.sh 192.168.1.45
+./play.sh client 192.168.1.45
 ```
 
 Both games show a text screen, find each other, say which tank you got, and
@@ -285,22 +328,26 @@ localizar la tarjeta, y si no está asume A220 I5 D1.
 | **net** | `game.exe /net` | Dos máquinas, el mismo mapa de 320x200, un tanque cada una |
 | **supernet** | `game.exe /net /bigmap` | Dos máquinas en el mapa de 640x400, cada una con su cámara |
 
-Un script por modo, y ninguno necesita que toques una ruta a mano:
+**Un solo script, `play.sh`**, y el modo es la primera palabra. Ninguna ruta
+hay que tocarla a mano:
 
 ```bash
-./launch_game_local.sh              # local
+./play.sh local              # local
 
-./launch_game_both.sh               # net,      las dos ventanas en ESTA máquina
-./launch_game_both.sh -b            # supernet, las dos ventanas en ESTA máquina
+./play.sh both               # net,      las dos ventanas en ESTA máquina
+./play.sh both -b            # supernet, las dos ventanas en ESTA máquina
 
-./launch_game_server.sh             # net,      dos máquinas de verdad
-./launch_game_client.sh <ip>
+./play.sh server             # net,      dos máquinas de verdad
+./play.sh client <ip>
 
-./launch_game_server.sh -b          # supernet, dos máquinas de verdad
-./launch_game_client.sh <ip> -b
+./play.sh server -b          # supernet, dos máquinas de verdad
+./play.sh client <ip> -b
 ```
 
-`launch_game_both.sh` es el que conviene para probar: levanta dos ventanas de
+Todos los comandos, caso a caso, en [`COMANDOS.md`](COMANDOS.md). Y
+`./play.sh` a secas te imprime la ayuda.
+
+`play.sh both` es el que conviene para probar: levanta dos ventanas de
 DOSBox una al lado de la otra, unidas por el loopback, así tienes los dos
 tanques sin segunda máquina y sin escribir ninguna IP.
 
@@ -309,10 +356,10 @@ tanques sin segunda máquina y sin escribir ninguna IP.
 **supernet** se puede vestir de cuatro formas:
 
 ```bash
-./launch_game_both.sh -b            # el original
-./launch_game_both.sh -b -t sky     # map_sky.bmp  + spr_sky.bmp
-./launch_game_both.sh -b -t war     # map_war.bmp  + spr_war.bmp
-./launch_game_both.sh -b -t neon    # map_neon.bmp + spr_neon.bmp
+./play.sh both -b            # el original
+./play.sh both -b -t sky     # map_sky.bmp  + spr_sky.bmp
+./play.sh both -b -t war     # map_war.bmp  + spr_war.bmp
+./play.sh both -b -t neon    # map_neon.bmp + spr_neon.bmp
 ```
 
 O en el juego directamente: `game.exe /net /bigmap -sky`.
@@ -328,11 +375,53 @@ sí tiene que coincidir, y de eso se encarga el checksum.
 Puedes verlo tú mismo en una sola máquina:
 
 ```bash
-./launch_game_both.sh -b -t war -T neon
+./play.sh both -b -t war -T neon
 ```
 
 `-T` pone un tema distinto **solo en la ventana del cliente**. Los dos tanques
 se mueven igual, frame a frame, con dos aspectos distintos.
+
+#### Los 15 niveles
+
+Cada tema trae **cinco geometrías** distintas, en `res/15Level/`:
+
+```bash
+./play.sh both -b -t neon -l 3     # NEON, nivel 3
+./play.sh server -b -t war -l 5    # MILITAR, nivel 5
+./play.sh both -b                  # el mapa original
+```
+
+O en el juego: `game.exe /net /bigmap -neon -level3`.
+
+| | |
+|---|---|
+| `-l 1` Campo abierto | Arena amplia, coberturas separadas |
+| `-l 2` Cruce de fuego | Cuatro sectores con puertas amplias |
+| `-l 3` Emboscada | Nueve salas y rutas circulares |
+| `-l 4` Cerco | Doce sectores, cuellos de botella |
+| `-l 5` La ratonera | Veinte celdas en circuito |
+
+Los niveles solo existen vestidos, así que `-l 3` sin tema usa `-sky` y te lo
+dice.
+
+**Y aquí está la diferencia con el tema:** un nivel **sí** cambia los muros. Si
+las dos máquinas cargaran niveles distintos, los tanques atravesarían las
+paredes del otro.
+
+**Pon el mismo `-l` en las dos máquinas.** Si difieren el juego lo negocia en
+lugar de desincronizarse, pero **gana el jugador 1** — y el jugador 1 es quien
+sacó el número aleatorio más bajo al arrancar, **no quien lanzó el servidor**.
+Pasarlo en un solo lado es echarlo a suertes.
+
+Si no consiguen acordarlo, el juego **no arranca** en lugar de empezar una
+partida rota.
+
+Todos los comandos, caso a caso, en [`COMANDOS.md`](COMANDOS.md).
+
+| | ¿Tiene que coincidir? | Quién lo resuelve |
+|---|---|---|
+| **Tema** | No | Nadie: cada máquina ve lo suyo |
+| **Nivel** | **Sí** | Ponlo igual en las dos. Si no, sorteo |
 
 **En net y supernet las dos máquinas tienen que arrancarse igual.** Una con
 `/bigmap` y la otra sin él son dos mapas distintos, con los muros en sitios
@@ -361,7 +450,7 @@ carpetas distintas en cada una.
 Arranca esta **primero**:
 
 ```
-./launch_game_server.sh
+./play.sh server
 ```
 
 Te imprime la línea exacta que hay que ejecutar en la otra máquina, con la IP
@@ -370,7 +459,7 @@ ya puesta:
 ```
   SERVER ready. On the OTHER machine run:
 
-      ./launch_game_client.sh 192.168.1.45 -p 5213
+      ./play.sh client 192.168.1.45 -p 5213
 ```
 
 Si te avisa del cortafuegos, abre el puerto:
@@ -384,7 +473,7 @@ sudo ufw allow 5213/udp
 Copia la línea que te dio el servidor:
 
 ```
-./launch_game_client.sh 192.168.1.45
+./play.sh client 192.168.1.45
 ```
 
 Los dos juegos muestran una pantalla de texto, se encuentran, te dicen qué

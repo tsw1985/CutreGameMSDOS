@@ -6,7 +6,7 @@
 juego funcione en red, y no es la que uno espera.
 
 ```
-./launch_game_both.sh
+./play.sh both
 ```
 y en las dos: `cd tutorial\ch18` y `chap18`. Los dos se conducen con las
 flechas.

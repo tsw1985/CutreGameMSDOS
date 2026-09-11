@@ -5,7 +5,7 @@
 **Qué vas a conseguir:** escribir en una máquina y leerlo en la otra.
 
 ```
-./launch_game_both.sh
+./play.sh both
 ```
 y en las dos: `cd tutorial\ch17` y `chap17`.
 

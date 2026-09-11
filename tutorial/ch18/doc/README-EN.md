@@ -6,7 +6,7 @@
 work over a network, and it is not the one you expect.
 
 ```
-./launch_game_both.sh
+./play.sh both
 ```
 and in both: `cd tutorial\ch18` and `chap18`. Both are driven with the arrows.
 

@@ -90,6 +90,21 @@ void net_shutdown(void);
 // on their own. Returns 1 when paired, 0 if it timed out or a key was hit.
 int net_find_opponent(void);
 
+// Settles which LEVEL both machines are going to load, and has to be called
+// after net_find_opponent() and before the map is loaded.
+//
+// The theme does NOT need settling: sky, war and neon are the same world
+// repainted and share their collision map byte for byte, so the two machines
+// can wear different ones. The level does: each one is a different set of
+// walls, and loading different ones is playing different games.
+//
+// PLAYER 1 DECIDES. my_level is only a request; on player 2 it is ignored and
+// whatever player 1 offers comes back instead.
+//
+// Returns the agreed level (0 = the original big.bmp, 1..5 = the levels), or
+// -1 if they could not agree, which means DO NOT START.
+int net_agree_level(int my_level);
+
 // Which tank is ours: 1 = player 1 (the one at the bottom), 0 = player 2.
 //
 // Decided with no negotiation at all: each copy picks a random id at

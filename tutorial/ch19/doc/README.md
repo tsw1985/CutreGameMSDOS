@@ -6,7 +6,7 @@
 `D` y verla detectada.
 
 ```
-./launch_game_both.sh
+./play.sh both
 ```
 y en las dos: `cd tutorial\ch19` y `chap19`.
 

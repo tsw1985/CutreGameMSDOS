@@ -6,7 +6,7 @@
 it get detected.
 
 ```
-./launch_game_both.sh
+./play.sh both
 ```
 and in both: `cd tutorial\ch19` and `chap19`.
 

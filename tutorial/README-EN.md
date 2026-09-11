@@ -164,6 +164,6 @@ The manuals under `doc/` are the deep reference. This course is the way up.
 - Borland Turbo C++ 3.0
 - DOSBox, or a real DOS machine
 - For chapters 11 to 14, a Sound Blaster (or the one DOSBox emulates)
-- For chapters 15 to 19, two instances: use `launch_game_both.sh`
+- For chapters 15 to 19, two instances: use `play.sh both`
 
 No chapter needs NASM.

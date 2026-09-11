@@ -197,4 +197,4 @@ qué.
 ---
 
 **Anterior:** [Capítulo 6](../../ch06/doc/README.md) ·
-**Siguiente:** Capítulo 8 — Dos jugadores *(pendiente)*
+**Siguiente:** [Capítulo 8 — Dos jugadores](../../ch08/doc/README.md)

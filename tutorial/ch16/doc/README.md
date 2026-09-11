@@ -6,7 +6,7 @@
 dirección**.
 
 ```
-./launch_game_both.sh
+./play.sh both
 ```
 y en las dos ventanas: `cd tutorial\ch16` y `chap16`.
 

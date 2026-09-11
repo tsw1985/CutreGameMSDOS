@@ -1791,7 +1791,7 @@ You are PLAYER 1, the tank at the bottom.
 
 **3. "Servidor" no tiene nada que ver con esto.**
 
-El que ejecuta `launch_game_server.sh` puede acabar siendo el jugador 2
+El que ejecuta `play.sh server` puede acabar siendo el jugador 2
 perfectamente. Lo de servidor/cliente es solo para montar el túnel de DOSBox;
 una vez conectados, las dos máquinas son idénticas.
 

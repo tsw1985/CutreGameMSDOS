@@ -1,14 +1,9 @@
 Starting game ...
-Memory at start: near 519984  far 519984
-Map 320x200 theme 0  memory now: near 376944  far 376944
+Memory at start: near 518160  far 518160
+Map 320x200 theme 0 level 0  mem: near 375120 far 375120
 Sound: ready
 Song: playing
 Direction: UP
 Future cannon tip (116,163) wall=0 camera (0,0)
-Direction: RIGHT
-Future cannon tip (151,146) wall=0 camera (0,0)
 Direction: UP
-Future cannon tip (108,121) wall=0 camera (0,0)
-Tank hit - wins 0 / 1
-Direction: UP
-Future cannon tip (116,163) wall=0 camera (0,0)
+Future cannon tip (150,149) wall=0 camera (0,0)

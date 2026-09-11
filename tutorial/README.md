@@ -31,10 +31,22 @@ chap01
 O **todos de una vez**, desde `tutorial\`:
 
 ```
-make              compila los 22
+makeall           compila los 22
 makeall 07        compila solo el 07
-make clean        borra todos los .exe y .obj
+cleanall          borra todos los .exe y .obj
 ```
+
+También funciona `make` y `make clean`, que llaman a esos mismos `.bat`.
+
+> **Por qué un `.bat` y no todo dentro del Makefile.** Hay que entrar en cada
+> carpeta, y un `cd` lanzado desde MAKE se ejecuta en un `COMMAND.COM` hijo que
+> muere al acabar la línea: MAKE se queda donde estaba. En un fichero de
+> proceso por lotes el `cd` sí persiste.
+>
+> Y por eso el Makefile pone `command /c makeall.bat` y no `makeall.bat` a
+> secas: un `.bat` no es un ejecutable, es un guion que hay que pasarle al
+> intérprete. Si lo llamas directamente, MAKE contesta *"comando o nombre de
+> archivo incorrecto"*.
 
 Cada `chapNN.exe` se queda **en la carpeta de su capítulo**, no en un `bin`
 común, para que puedas entrar, ejecutarlo y estudiarlo por separado.

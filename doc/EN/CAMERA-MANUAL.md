@@ -645,6 +645,31 @@ Note that it takes **integers, not a `struct player`**. That is on purpose:
 whatever you like in another project. Same approach as was taken with `sound.c`
 and `net.c`.
 
+### Why `target_width` is subtracted
+
+```c
+	right_edge = WIDTH - CAMERA_DEAD_ZONE_X - target_width;
+```
+
+Because **`position_x` is the TOP LEFT corner** of the sprite, not its centre.
+The tank's right edge is 18 pixels past its position.
+
+Without subtracting it, the right margin would be measured against the left
+corner and the tank would push 18 pixels further into the push zone than it
+should: the dead zone would end up **off centre** to the right, and you would
+feel it going that way.
+
+### Why `else if` and not two separate `if`s
+
+With the dead zone sized properly (5.2) the two cases are mutually exclusive:
+you cannot be both left of the left edge and right of the right one.
+
+But **if someone sets a margin past the limit**, both would be true at once.
+With two loose `if`s both corrections would apply, one after the other, every
+frame, and the camera would run away. With `else if` the damage stays a tremble.
+
+It is a cheap defence against a badly chosen `#define`.
+
 ## 5.4 Why "exactly as much as it left by"
 
 This is the elegant part of the model, and it is easy to miss.
@@ -799,7 +824,23 @@ void draw_to_buffer(){
 The camera is decided **before** anything is painted, so the background and
 everything on top of it agree about the same frame. If you moved the camera
 between painting the background and painting the tanks, the tanks would come
-out offset from the ground.
+out offset from the ground, floating over it.
+
+### The subtraction goes on EVERY object, and forgetting it has a clear symptom
+
+The game makes **five** `draw_sprite_to_buffer()` calls: the two tanks, the two
+bullets and the explosion. **All five** carry the subtraction.
+
+If you forget it on just one:
+
+> That object stays **glued to the screen** while everything else slides past.
+
+A bullet that follows you everywhere instead of staying where you fired it. An
+explosion that travels with you across the map. It is a very visual bug, and
+once you have seen it once you diagnose it in two seconds.
+
+The mirror-image mistake — **subtracting it twice** — makes the object move at
+double speed and in the opposite direction to what you expect.
 
 ---
 

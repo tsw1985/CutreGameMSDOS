@@ -1,8 +1,8 @@
 # ===========================================================
-# CAPITULO 05
+# CAPITULO 23
 #
 # Se compila con:   make
-# Se ejecuta con:   chap05
+# Se ejecuta con:   chap23
 # Se limpia con:    make clean
 #
 # El -I..\..  le dice a Turbo C que busque los #include empezando en la raiz
@@ -18,12 +18,12 @@ CC = tcc
 MODEL = -mh
 CFLAGS = -O2 $(MODEL) -I..\..
 
-TARGET = chap05.exe
+TARGET = chap23.exe
 
 all: $(TARGET)
 
-$(TARGET): chap05.c ..\..\src\bmp.c ..\..\src\players.c
-	$(CC) $(CFLAGS) -echap05.exe chap05.c ..\..\src\bmp.c ..\..\src\players.c
+$(TARGET): chap23.c ..\..\src\bmp.c ..\..\src\players.c
+	$(CC) $(CFLAGS) -echap23.exe chap23.c ..\..\src\bmp.c ..\..\src\players.c
 
 clean:
 	@if exist *.obj del *.obj

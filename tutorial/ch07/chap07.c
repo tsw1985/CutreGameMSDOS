@@ -190,6 +190,11 @@ int main(){
 	load_sprites();
 	player_reset(&tank, PLAYER1_START_X, PLAYER1_START_Y, PLAYER1_START_DIRECTION);
 
+	// Los dos numeros de la animacion, igual que en el capitulo 6:
+	// player_init() no los pone y sin ellos las orugas se quedan congeladas.
+	tank.total_frames = 2;
+	tank.speed_total  = 2;
+
 	show_collision = 0;
 	tab_was_down = 0;
 

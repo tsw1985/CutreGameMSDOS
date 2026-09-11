@@ -1,220 +1,213 @@
 //===========================================================
-// CAPITULO 22 - La mascara de bits y la memoria de DOS
+// CAPITULO 22 - La camara
 //
-// Ultimo capitulo. Va de la pieza que hace que el mapa grande QUEPA, y de
-// la leccion mas cara del proyecto entero.
+// El capitulo 20 te dejo conduciendo a ciegas. Esto lo arregla, y son SEIS
+// lineas de cambio.
 //
 // Lo que se aprende aqui:
 //
-//   1. Por que el mapa de colisiones es de UN BIT por pixel.
-//   2. El techo de 64 KB de malloc, y farmalloc.
-//   3. Que es un puntero HUGE y por que hace falta.
-//   4. FRAGMENTACION: por que puede haber 130 KB libres y no caber 42 KB.
+//   1. Que una camara son DOS NUMEROS y una resta.
+//   2. Que es la ZONA MUERTA y por que no se sigue al tanque siempre.
+//   3. Por que la correccion es "exactamente lo que se ha salido".
+//   4. Que es el clamp.
+//   5. Pulsa C y compara los tres modelos de camara.
 //
-// En modo texto, para poder leer los numeros.
+// Todo con bmp_camera_follow() y bmp_camera_snap() de src/bmp.c, las
+// funciones reales del juego.
 //===========================================================
 
 #include <stdio.h>
 #include <conio.h>
-#include <alloc.h>
+#include <dos.h>
 
 #include "header\bmp.h"
 #include "header\players.h"
+#include "..\tutlib.h"
+
+#define KEY_C 0x2E
+
+struct player tank;
 
 
 int main(){
 
-	unsigned long before;
-	unsigned long after_world;
-	unsigned long world_pixels;
-	int x;
-	int y;
-	long walls;
+	int moved;
+	int mode;
+	int c_was_down;
+	int screen_x;
+	int screen_y;
 
 	printf("\n");
-	printf("CAPITULO 22 - La mascara de bits y la memoria\n");
+	printf("CAPITULO 22 - La camara\n");
 	printf("\n");
-
-	//-------------------------------------------------------
-	// EL PRESUPUESTO
-	//
-	// DOS en modo real tiene 640 KB, y de ahi sale TODO: el sistema, los
-	// drivers, los TSR de red, tu codigo, tu pila y todo lo que reserves.
-	//
-	// coreleft() y farcoreleft() dicen cuanto queda. En el modelo huge de
-	// Turbo C devuelven lo mismo: son el mismo deposito.
-	//-------------------------------------------------------
-	before = (unsigned long)farcoreleft();
-
-	printf("  Memoria libre al arrancar: %lu bytes\n", before);
+	printf("  Flechas para moverte por el mundo de 640x400.\n");
 	printf("\n");
-
-	//-------------------------------------------------------
-	// EL TECHO DE 64 KB
-	//
-	// malloc() recibe un size_t, que en Turbo C es de 16 BITS. El numero
-	// mas grande que cabe ahi es 65535.
-	//
-	//     malloc(64000)    bien
-	//     malloc(256000)   imposible: no se puede ni pedir
-	//
-	// Por eso el mapa se pide con farmalloc(), que recibe un unsigned long.
-	//-------------------------------------------------------
-	printf("  El mapa de 640x400 son %ld bytes de dibujo.\n", 640L * 400L);
-	printf("  El maximo que acepta malloc() es 65535.\n");
-	printf("  Por eso el mapa se pide con farmalloc().\n");
+	printf("  C  cambia entre los tres modelos de camara:\n");
+	printf("       0 = SIN camara      (el capitulo 20, para comparar)\n");
+	printf("       1 = ZONA MUERTA     (la del juego)\n");
+	printf("       2 = SIEMPRE CENTRADA (para que veas por que no se usa)\n");
 	printf("\n");
-
-	//-------------------------------------------------------
-	// Y EL PUNTERO TIENE QUE SER HUGE
-	//
-	// En el 8086 una direccion son dos numeros de 16 bits:
-	//
-	//     fisica = segmento * 16 + desplazamiento
-	//
-	// La aritmetica de un puntero FAR solo toca el desplazamiento. Y el
-	// desplazamiento son 16 bits, asi que al pasar de 65535 DA LA VUELTA a
-	// cero en vez de llevarse una al segmento.
-	//
-	// En un buffer de 64000 da igual, nunca llegas. En uno de 256000 das la
-	// vuelta cuatro veces y lees basura.
-	//
-	// Un puntero HUGE se normaliza en cada operacion: el compilador ajusta
-	// segmento y desplazamiento para que el desplazamiento quede siempre
-	// entre 0 y 15. Por eso buffer_original_background_bmp esta declarado
-	//
-	//     unsigned char huge *
-	//
-	// en header/bmp.h.
-	//-------------------------------------------------------
-	printf("  Cargando el mundo de 640x400 ...\n");
+	printf("  ESC para salir.\n");
+	printf("\n");
+	getch();
 
 	bmp_init_buffers(640, 400);
 	bmp_fill_background_in_main_buffer("..\\..\\res\\big.bmp");
 	bmp_fill_background_collision_in_buffer("..\\..\\res\\bigcol.bmp");
+	bmp_extract_pallete_from_file("..\\..\\res\\big.bmp");
 
-	after_world = (unsigned long)farcoreleft();
+	player_init(&tank);
 
-	printf("  Memoria libre ahora      : %lu bytes\n", after_world);
-	printf("  Consumido                : %lu bytes\n", before - after_world);
-	printf("\n");
+	bmp_open_sprite_sheet("..\\..\\res\\sprites.bmp");
+	tut_load_tank_sprites(&tank, 0);
+	bmp_close_sprite_sheet();
+
+	player_reset(&tank, BIG_PLAYER1_START_X, BIG_PLAYER1_START_Y, BIG_PLAYER1_START_DIRECTION);
 
 	//-------------------------------------------------------
-	// UN BIT POR PIXEL
+	// Apuntar la camara al empezar.
 	//
-	// El mapa de colisiones tiene que cubrir el mundo ENTERO, no solo lo
-	// que se ve: en red las dos maquinas simulan los dos tanques, asi que
-	// tu maquina tiene que saber si el tanque del otro, en una sala que no
-	// ves, ha chocado.
-	//
-	// A un byte por pixel serian 256000 bytes. No caben.
-	//
-	// Pero mira lo que se le pregunta a ese mapa:
-	//
-	//     if (bmp_is_wall(x, y) == 1)
-	//
-	// Solo hay DOS respuestas posibles. De los 256 valores que caben en un
-	// byte te importa uno. Estas gastando 8 bits para un si/no.
-	//
-	// Un si/no cabe en 1 bit, y en un byte caben 8 pixeles:
-	//
-	//     640 * 400 / 8 = 32000 bytes
-	//
-	// Ocho veces menos, para exactamente la misma informacion. Y ojo: son
-	// LA MITAD de lo que costaba el mapa de colisiones de UNA SOLA pantalla
-	// antes (64000). El mundo entero ocupa menos que una pantalla.
+	// bmp_camera_snap() la centra de golpe, sin suavizado. Al empezar una
+	// ronda no hay nada desde lo que seguir suavemente: el tanque acaba de
+	// aparecer.
 	//-------------------------------------------------------
-	world_pixels = 640UL * 400UL;
+	bmp_camera_snap((int)tank.position_x, (int)tank.position_y, TANK_WIDTH, TANK_HEIGHT);
 
-	printf("  El mapa de colisiones:\n");
-	printf("    a 1 byte por pixel : %lu bytes  (no caben)\n", world_pixels);
-	printf("    a 1 BIT  por pixel : %lu bytes  (esto es lo que se usa)\n", world_pixels / 8);
-	printf("\n");
+	mode = 1;
+	c_was_down = 0;
 
-	// Contar los muros preguntando pixel a pixel. Lento y da igual: es una
-	// demostracion, no parte del juego.
-	printf("  Contando muros en el mundo entero ...\n");
+	install_kbd();
+	set_video_mode(0x0013);
+	bmp_write_pallete_data_into_dac(buffer_palleta_data);
 
-	walls = 0;
+	do {
 
-	for (y = 0; y < map_height; y++){
-		for (x = 0; x < map_width; x++){
-			if (bmp_is_wall(x, y) == 1){
-				walls = walls + 1;
+		if (keys[KEY_C]){
+			if (c_was_down == 0){
+				mode = mode + 1;
+				if (mode > 2){ mode = 0; }
+				if (mode == 0){
+					camera_x = 0;
+					camera_y = 0;
+				}
 			}
+			c_was_down = 1;
+		}else{
+			c_was_down = 0;
 		}
-	}
 
-	printf("    %ld pixeles de muro de %ld\n", walls, (long)map_width * (long)map_height);
+		moved = 0;
+
+		if (keys[KEY_UP]){
+			moved = tut_try_move(&tank, MOVE_UP);
+		}else if (keys[KEY_DOWN]){
+			moved = tut_try_move(&tank, MOVE_DOWN);
+		}else if (keys[KEY_LEFT]){
+			moved = tut_try_move(&tank, MOVE_LEFT);
+		}else if (keys[KEY_RIGHT]){
+			moved = tut_try_move(&tank, MOVE_RIGHT);
+		}
+
+		if (moved == 1){
+			tut_update_animation(&tank);
+		}
+
+		//===============================================
+		// DECIDIR DONDE ESTA LA VENTANA.
+		//
+		// ANTES de pintar nada, para que el fondo y lo que va encima esten
+		// de acuerdo sobre el mismo frame.
+		//===============================================
+		if (mode == 1){
+
+			//-------------------------------------------
+			// ZONA MUERTA. La del juego.
+			//
+			// La camara NO SE MUEVE mientras el tanque este dentro de un
+			// rectangulo en el centro de la pantalla:
+			//
+			//   en X, de 100 a 320-100-18 = 202
+			//   en Y, de  70 a 200- 70-18 = 112
+			//
+			// Cuando se sale, empuja EXACTAMENTE lo que se ha salido. El
+			// tanque anda 2 pixeles, la camara anda 2 pixeles. Ni salto ni
+			// retraso, y cuando paras, para con el.
+			//
+			// Midiendo un paseo de 200 frames, la camara esta QUIETA el 88%
+			// del tiempo. Eso es lo que se busca: que el mundo solo se
+			// mueva cuando de verdad vas a algun sitio.
+			//-------------------------------------------
+			bmp_camera_follow((int)tank.position_x, (int)tank.position_y, TANK_WIDTH, TANK_HEIGHT);
+
+		}else if (mode == 2){
+
+			//-------------------------------------------
+			// SIEMPRE CENTRADA, para comparar.
+			//
+			// Es lo primero que se le ocurre a uno y es peor: el tanque se
+			// queda clavado en el centro y lo que se mueve es TODO LO
+			// DEMAS, en todos y cada uno de los frames.
+			//
+			// Pruebalo un rato. Marea, y te quita la sensacion de estar
+			// moviendo tu tanque.
+			//-------------------------------------------
+			bmp_camera_snap((int)tank.position_x, (int)tank.position_y, TANK_WIDTH, TANK_HEIGHT);
+
+		}
+
+		// El modo 0 no toca la camara: se queda en 0,0 como el capitulo 20.
+
+		bmp_draw_world_window(buffer_background_image_data);
+
+		//-----------------------------------------------
+		// LA RESTA. Esto es la camara entera.
+		//
+		//     pantalla = mundo - camara
+		//
+		// El tanque sigue estando donde esta en el mundo. Lo unico que
+		// cambia es donde se PINTA.
+		//
+		// Y aqui es donde se cobra el recorte del capitulo 4: esta resta
+		// puede dar NEGATIVA, y draw_sprite_to_buffer() tiene que
+		// aguantarlo.
+		//-----------------------------------------------
+		screen_x = (int)tank.position_x - camera_x;
+		screen_y = (int)tank.position_y - camera_y;
+
+		draw_sprite_to_buffer(tut_pick_sprite(&tank), TANK_WIDTH, TANK_HEIGHT,
+		                      screen_x, screen_y,
+		                      buffer_background_image_data);
+
+		wait_retrace();
+		bmp_paint_image_data_to_vga(buffer_background_image_data);
+
+	} while (!keys[KEY_ESC]);
+
+	uninstall_kbd();
+	set_video_mode(0x0003);
+
+	printf("\n");
+	printf("  Tanque en el MUNDO   : (%u, %u)\n", tank.position_x, tank.position_y);
+	printf("  Camara               : (%d, %d)\n", camera_x, camera_y);
+	printf("  Tanque en la PANTALLA: (%d, %d)\n",
+	       (int)tank.position_x - camera_x, (int)tank.position_y - camera_y);
+	printf("\n");
+	printf("  Tres numeros y una resta. Eso es todo.\n");
+	printf("\n");
+	printf("  Y fijate en la camara: no puede pasar de (%d, %d), que es\n",
+	       map_width - WIDTH, map_height - HEIGHT);
+	printf("  map_width-320 y map_height-200. Eso es el CLAMP, y es lo que\n");
+	printf("  impide que la ventana lea fuera del mapa.\n");
+	printf("\n");
+	printf("  Nota: con un mapa de 320x200 esos limites salen 0 y 0, asi que\n");
+	printf("  la camara queda clavada en el origen y TODO ESTE CODIGO se\n");
+	printf("  comporta como el juego de siempre. El modo normal no es un\n");
+	printf("  caso especial: es el general con la camara topada.\n");
 	printf("\n");
 
-	//-------------------------------------------------------
-	// LA LECCION CARA: FRAGMENTACION
-	//
-	// Durante el desarrollo, el juego cargaba todo menos el ultimo efecto
-	// de sonido. El log decia:
-	//
-	//     Sound: could not load died.wav
-	//
-	// Y la cuenta decia que DEBERIA caber: quedaban 129982 bytes libres y
-	// el fichero pide 42090.
-	//
-	// No faltaba memoria. La memoria libre estaba en el sitio equivocado.
-	//
-	// El orden de arranque era:
-	//
-	//   1. farmalloc(256000)   el mapa
-	//   2. malloc(64000)       la hoja de sprites
-	//   3. recortar los sprites
-	//   4. free(64000)         soltar la hoja   <- DEJA UN AGUJERO
-	//   5. farmalloc(42090)    el WAV           <- no lo encuentra
-	//
-	//   +----------------------------------------------------+
-	//   |  MAPA 256000 | agujero 64000 | pantalla | libre    |
-	//   +----------------------------------------------------+
-	//                   ^^^^^^^^^^^^^^
-	//                   libre, pero enterrado en medio
-	//
-	// De los 129982 libres, 64000 estaban en ese agujero y el resto arriba
-	// del todo. Y NO ESTAN PEGADOS.
-	//
-	//   MEMORIA LIBRE TOTAL NO ES MEMORIA LIBRE CONTIGUA.
-	//
-	// El arreglo no fue mover cosas de sitio: fue QUITAR EL AGUJERO. La
-	// hoja de sprites ya no se carga en memoria (capitulo 4): cada sprite
-	// se lee directamente del fichero. Al no reservarse, no hay nada que
-	// liberar, y sin liberar no hay agujero.
-	//
-	// Regla para DOS:
-	//   1. Mide, no supongas.
-	//   2. La reserva mas grande, la primera, sobre un monton limpio.
-	//   3. Si puedes, no liberes nada durante la ejecucion.
-	//-------------------------------------------------------
-	printf("  ------------------------------------------------\n");
-	printf("  MEMORIA LIBRE TOTAL no es MEMORIA LIBRE CONTIGUA.\n");
-	printf("\n");
-	printf("  En este proyecto se perdio una tarde por eso: quedaban\n");
-	printf("  129982 bytes libres y un fichero de 42090 no cabia, porque\n");
-	printf("  la mayor parte de ese hueco estaba enterrado DEBAJO del\n");
-	printf("  bloque del mapa.\n");
-	printf("\n");
-	printf("  El arreglo fue no reservar la hoja de sprites: si no reservas,\n");
-	printf("  no liberas, y si no liberas no hay agujero. Por eso el\n");
-	printf("  capitulo 4 lee los sprites directamente del fichero.\n");
-	printf("  ------------------------------------------------\n");
-	printf("\n");
-	printf("  Aqui acaba el curso. Ya has visto entero el camino desde una\n");
-	printf("  pantalla en negro hasta dos tanques peleando en red por un\n");
-	printf("  mundo de cuatro pantallas.\n");
-	printf("\n");
-	printf("  Pulsa una tecla.\n");
-
-	getch();
-
+	player_free(&tank);
 	bmp_close_files();
 	bmp_delete_buffers();
-
-	printf("\n");
 
 	return 0;
 

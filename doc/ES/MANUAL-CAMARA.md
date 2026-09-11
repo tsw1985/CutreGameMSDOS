@@ -651,6 +651,31 @@ sigue sin saber qué es un tanque, y mañana la cámara puede seguir a lo que te
 dé la gana en otro proyecto. Es la misma filosofía que se aplicó a `sound.c` y
 a `net.c`.
 
+### Por qué se resta `target_width`
+
+```c
+	right_edge = WIDTH - CAMERA_DEAD_ZONE_X - target_width;
+```
+
+Porque **`position_x` es la esquina superior IZQUIERDA** del sprite, no su
+centro. El borde derecho del tanque está 18 píxeles más allá de su posición.
+
+Sin restarlo, el margen derecho se mediría contra la esquina izquierda y el
+tanque se metería 18 píxeles de más en la zona de empuje: la zona muerta
+quedaría **descentrada** hacia la derecha, y se notaría al ir en esa dirección.
+
+### Por qué `else if` y no dos `if` sueltos
+
+Con la zona muerta bien dimensionada (5.2) los dos casos son excluyentes: no se
+puede estar a la vez a la izquierda del borde izquierdo y a la derecha del
+derecho.
+
+Pero **si alguien pone un margen por encima del límite**, los dos serían ciertos
+a la vez. Con dos `if` sueltos se aplicarían las dos correcciones seguidas, cada
+frame, y la cámara se dispararía. Con `else if`, el daño se queda en un temblor.
+
+Es una defensa barata contra un valor mal elegido en un `#define`.
+
 ## 5.4 Por qué "exactamente lo que se ha salido"
 
 Esta es la parte bonita del modelo, y es fácil pasarla por alto.
@@ -806,7 +831,24 @@ void draw_to_buffer(){
 La cámara se decide **antes** de pintar nada, para que el fondo y todo lo que
 va encima estén de acuerdo sobre el mismo frame. Si movieras la cámara entre
 pintar el fondo y pintar los tanques, los tanques saldrían desplazados
-respecto al suelo.
+respecto al suelo, flotando sobre él.
+
+### La resta va en TODOS los objetos, y olvidarla tiene un síntoma muy claro
+
+En el juego hay **cinco** llamadas a `draw_sprite_to_buffer()`: los dos tanques,
+las dos balas y la explosión. **Las cinco** llevan la resta.
+
+Si se te olvida en una sola:
+
+> Ese objeto se queda **pegado a la pantalla** mientras todo lo demás se
+> desliza.
+
+Una bala que te sigue a todas partes en vez de quedarse donde la disparaste. Una
+explosión que viaja contigo por el mapa. Es un fallo muy visual, y en cuanto lo
+has visto una vez lo diagnosticas en dos segundos.
+
+El error simétrico —**restarla dos veces**— hace que el objeto se mueva al doble
+de velocidad y en sentido contrario al esperado.
 
 ---
 

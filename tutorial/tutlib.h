@@ -141,6 +141,18 @@ static void wait_retrace(void){
 //-------------------------------------------------------
 static void tut_load_tank_sprites(struct player *p, int sheet_row){
 
+	//-------------------------------------------------------
+	// Los dos numeros de la animacion. player_init() NO los pone: en el
+	// juego los pone main.c a mano, asi que aqui hay que ponerlos tambien.
+	//
+	// Si se quedan a 0, el contador de tut_update_animation() hace:
+	//     current_frame = 1   y acto seguido   1 >= 0  ->  vuelta a 0
+	// o sea que el fotograma 1 NO SE VE NUNCA y las orugas parecen
+	// congeladas. Capitulo 6.
+	//-------------------------------------------------------
+	p->total_frames = 2;      // dos dibujos de oruga por direccion
+	p->speed_total  = 2;      // cambiar de dibujo cada 2 frames
+
 	bmp_extract_sprite((unsigned int)(  2), (unsigned int)(  5 + sheet_row), TANK_WIDTH, TANK_HEIGHT, p->sprite_tank_up);
 	bmp_extract_sprite((unsigned int)( 23), (unsigned int)(  5 + sheet_row), TANK_WIDTH, TANK_HEIGHT, p->sprite_tank_up_2);
 

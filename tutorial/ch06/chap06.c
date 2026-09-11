@@ -91,9 +91,10 @@ static unsigned char *pick_sprite(){
 // a 70 cambios por segundo: no verias una animacion, verias un borron.
 //
 // Asi que se cuenta. speed_counter sube en cada frame, y solo cuando llega
-// a speed_total se cambia el dibujo y se vuelve a cero. Con speed_total = 5
-// el dibujo cambia 14 veces por segundo, que es lo que el ojo lee como
-// movimiento.
+// a speed_total se cambia el dibujo y se vuelve a cero. Con speed_total = 2,
+// que es lo que usa el juego, el dibujo cambia 35 veces por segundo. Suena
+// mucho, pero los dos fotogramas de la oruga se parecen: lo que ves es el
+// movimiento, no el cambio.
 //
 // Y lo segundo, igual de importante: esto SOLO se llama si el tanque se ha
 // movido. Un tanque parado tiene las orugas quietas.
@@ -145,6 +146,25 @@ int main(){
 	load_sprites();
 
 	player_reset(&tank, 150, 90, MOVE_UP);
+
+	//-------------------------------------------------------
+	// LOS DOS NUMEROS DE LA ANIMACION. Sin esto no se ve nada, y conviene
+	// entender por que.
+	//
+	// player_init() NO los pone. En el juego los pone main.c a mano, y aqui
+	// hay que hacer lo mismo. Si se quedan a 0:
+	//
+	//     speed_counter = 1;  y  1 >= 0 es cierto  -> se cambia de dibujo
+	//     current_frame = 1;  y  1 >= 0 es cierto  -> vuelta a 0
+	//
+	// o sea que el fotograma 1 se pone y se quita en la misma vuelta, y las
+	// orugas se quedan CONGELADAS en el fotograma 0 para siempre.
+	//
+	//   total_frames  cuantos dibujos tiene la animacion
+	//   speed_total   cada cuantos frames se cambia de dibujo
+	//-------------------------------------------------------
+	tank.total_frames = 2;
+	tank.speed_total  = 2;
 
 	install_kbd();
 	set_video_mode(0x0013);

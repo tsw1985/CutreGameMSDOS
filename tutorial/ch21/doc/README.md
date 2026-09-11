@@ -1,206 +1,271 @@
-# Capítulo 21 — La cámara
+# Capítulo 21 — La ventana: sacar un trozo de un mapa grande
 
-**Qué vas a conseguir:** moverte por el mundo de 640x400 viéndolo. Y comparar
-los **tres modelos de cámara** con una tecla.
+**Qué vas a conseguir:** mover la ventana a mano por el mundo de 640x400, con un
+tanque quieto, y entender exactamente qué es una ventana antes de que nada la
+mueva por ti.
+
+**Qué código real se usa:** `src/bmp.c` (`bmp_draw_world_window`),
+`src/players.c`.
 
 ```
 make
 chap21
 ```
 
-Flechas para moverte. **`C` cambia de modelo:** 0 sin cámara, 1 zona muerta,
-2 siempre centrada.
+Flechas: mueven **la ventana**. MAYÚS para ir rápido. ESC para salir.
 
 ---
 
-## 1. Una cámara son dos números
+## 1. Aquí no hay cámara
+
+Esto es importante para leer bien el capítulo.
+
+**Las flechas no mueven ningún tanque.** Mueven `camera_x` y `camera_y`
+directamente. El tanque está clavado en el mundo en **(300, 190)** y no se mueve
+en ningún momento del programa:
 
 ```c
-extern int camera_x;
-extern int camera_y;
+	tank.position_x = TANK_WORLD_X;    /* y nadie vuelve a tocarlo */
+	tank.position_y = TANK_WORLD_Y;
 ```
 
-Dicen **dónde está la esquina superior izquierda de la ventana**, en coordenadas
-de mundo. No hay zoom, ni rotación, ni objeto, ni clase.
+**Y aun así lo vas a ver deslizarse por la pantalla.**
 
-Y convertir de mundo a pantalla es **una resta**:
+Esa contradicción aparente es toda la lección. Una cosa es **dónde está** algo y
+otra **dónde se pinta**.
+
+## 2. Recordatorio del capítulo 1: el stride
+
+En el capítulo 1 dijimos que un píxel está en:
 
 ```
-   pantalla = mundo - camara
+   posicion = y * 320 + x
 ```
+
+y que ese **320 tiene nombre: el stride o paso de fila**, *cuántos bytes hay que
+avanzar para bajar una fila*. Y avisé de que aquí dejaría de coincidir con el
+ancho de la pantalla.
+
+Ha llegado el momento.
+
+Una imagen no está guardada como un rectángulo. Está guardada como **una tira
+de bytes**, fila tras fila:
+
+```
+  memoria:  [ fila 0 (640 bytes) ][ fila 1 (640 bytes) ][ fila 2 ] ...
+```
+
+Para el mapa de 640×400, el stride es **640**. Para la pantalla sigue siendo
+**320**. Son dos imágenes distintas con dos pasos de fila distintos, y ahí está
+la dificultad.
+
+## 3. Por qué un `memcpy` ya no vale
+
+Hasta el capítulo 20, el fondo se copiaba así:
 
 ```c
-	screen_x = (int)tank.position_x - camera_x;
-	screen_y = (int)tank.position_y - camera_y;
+	memcpy(destino, mapa, 64000);
 ```
 
-**Eso es la cámara entera.** El resto son matices sobre dónde poner esos dos
-números.
+Funcionaba porque los 64.000 bytes del mapa eran, **en el mismo orden**, los
+64.000 bytes de la pantalla. Fila 0 del mapa → fila 0 de pantalla. Todo seguido.
 
-## 2. Los tres modelos, con la tecla `C`
-
-### Modo 0 — Sin cámara
-
-El capítulo 20. Está aquí para comparar.
-
-### Modo 2 — Siempre centrada
-
-El tanque clavado en el centro y el mundo moviéndose debajo.
-
-Es lo primero que se le ocurre a uno **y es peor**. Pruébalo un rato: el mundo
-se mueve en **todos y cada uno de los frames**, y te quita la sensación de estar
-moviendo tu tanque. En un juego donde haces muchos ajustes pequeños de posición,
-marea.
-
-### Modo 1 — Zona muerta (el del juego)
-
-La cámara **no se mueve** mientras el tanque esté dentro de un rectángulo en el
-centro:
+Ahora mira lo que quieres copiar: una ventana de **320 de ancho** dentro de un
+mapa de **640 de ancho**.
 
 ```
-   +----------------------------------+
-   |                                  |
-   |     +----------------------+     |  <- 70 px de margen
-   |     |     ZONA MUERTA      |     |
-   |     |  la camara no se     |     |
-   |     |     mueve aqui       |     |
-   |     +----------------------+     |
-   |                                  |
-   +----------------------------------+
-      ^ 100 px                 100 px ^
+  EL MUNDO, 640 de ancho:
+
+  fila 100:  ....................[XXXXXXXXXXXXXXXX]....................
+  fila 101:  ....................[XXXXXXXXXXXXXXXX]....................
+  fila 102:  ....................[XXXXXXXXXXXXXXXX]....................
+                                  ^                ^
+                                  camera_x         camera_x + 320
+
+
+  Y EN MEMORIA, esas tres filas estan asi de separadas:
+
+  [...320... XXXX ...320...][...320... XXXX ...320...][...320... XXXX ...]
+             ^ lo quiero               ^ lo quiero               ^ lo quiero
+             |<------------ 640 bytes ------------>|
 ```
 
-| | Rango |
-|---|---|
-| En X | 100 a 320-100-18 = **202** |
-| En Y | 70 a 200-70-18 = **112** |
+**Los trozos que quieres no están pegados.** Entre el final de uno y el
+principio del siguiente hay **320 bytes que no quieres**.
 
-Midiendo un paseo de 200 frames, **la cámara está quieta el 88% del tiempo**.
-Eso es lo que se busca: que el mundo solo se mueva cuando de verdad vas a algún
-sitio.
+Un solo `memcpy` no sabe saltárselos. Copia bytes seguidos y punto.
 
-## 3. "Exactamente lo que se ha salido"
+## 4. La solución: una fila cada vez
 
-Esta es la parte elegante, y es fácil pasarla por alto.
+Si no puedes copiarlo de una vez, lo copias en **200 veces**: una por cada fila
+de la pantalla.
+
+Esto es `bmp_draw_world_window()` de `src/bmp.c`, entera:
 
 ```c
-	}else if (screen_x > right_edge){
-		camera_x = camera_x + (screen_x - right_edge);
+void bmp_draw_world_window(unsigned char *destination){
+
+	int row;
+	unsigned char huge *source;
+	unsigned int destination_offset;
+
+	destination_offset = 0;
+
+	for (row = 0; row < HEIGHT; row++){
+
+		source = buffer_original_background_bmp
+		       + ((unsigned long)(camera_y + row) * (unsigned long)map_width)
+		       + (unsigned long)camera_x;
+
+		memcpy(destination + destination_offset, source, WIDTH);
+
+		destination_offset = destination_offset + WIDTH;
+
 	}
+
+}
 ```
 
-La corrección es **cuántos píxeles se ha salido**. Ni más ni menos.
-
-| Frame | Tanque | Cámara | En pantalla | |
-|---|---|---|---|---|
-| 1 | 250 | 0 | 250 | se sale 48 → cámara +48 |
-| | | 48 | 202 | justo en el borde |
-| 2 | 252 | 48 | 204 | se sale 2 → cámara +2 |
-| | | 50 | 202 | |
-| 3 | 254 | 50 | 204 | se sale 2 → cámara +2 |
-
-**El tanque anda 2, la cámara anda 2.** Ni salto ni retraso: el tanque se queda
-pegado al borde de la zona muerta y el mundo se desliza detrás a la misma
-velocidad exacta.
-
-Y cuando sueltas la tecla, **la cámara para en seco** con él.
-
-Compara con un suavizado del tipo `camera_x += (objetivo - camera_x) / 8`: eso
-siempre va con retraso y siempre sigue moviéndose un rato después de que pares.
-En un juego donde apuntas con el morro, molesta.
-
-## 4. El clamp: no salirse del mapa
-
-```c
-	limit_x = map_width  - WIDTH;     /* 640 - 320 = 320 */
-	limit_y = map_height - HEIGHT;    /* 400 - 200 = 200 */
-```
-
-`camera_x` solo puede valer de 0 a 320. Sin eso, la ventana leería memoria de
-antes del principio del mapa.
-
-Cuando la cámara está topada, el tanque **sí** se sale de la zona muerta y se
-acerca al borde. Es lo correcto: no hay más mapa que enseñar.
-
-## 5. Y aquí está lo bonito: el modo normal es el mismo código
-
-Con un mapa de 320x200:
-
-- `limit_x = 320 - 320 = 0`
-- `limit_y = 200 - 200 = 0`
-
-El clamp deja la cámara **clavada en (0,0) para siempre**. Da igual lo que
-calcule `bmp_camera_follow()`.
-
-Y entonces `mundo - camara` es `mundo - 0`, y el recorte no recorta nada.
-
-> **Un mundo de una pantalla no es un caso especial: es el caso general con la
-> cámara topada en cero.**
-
-Por eso el juego **no tiene ningún `if (big_map_mode)`** en el dibujado. No hay
-dos juegos que mantener.
-
-## 6. El `snap`
-
-```c
-	bmp_camera_snap(...)
-```
-
-Centra el objetivo de golpe, sin suavizado. Para el arranque de una ronda: el
-tanque acaba de aparecer en su esquina y no hay nada desde lo que seguir
-suavemente.
-
-Aplica el mismo clamp, así que en una esquina se queda en el borde en vez de
-enseñarte el vacío.
-
-## 7. El orden dentro del frame
-
-```c
-	update_camera();                                   /* 1. dónde está la ventana */
-	bmp_draw_world_window(buffer);                     /* 2. el fondo */
-	draw_sprite_to_buffer(..., mundo - camara, ...);   /* 3. todo lo demás */
-```
-
-La cámara se decide **antes** de pintar nada. Si la movieras entre pintar el
-fondo y pintar los tanques, los tanques saldrían desplazados respecto al suelo.
-
-## 8. En red, cada máquina sigue a su tanque
-
-```c
-	if (local_player_is_1 == 0){ target = &player2; }
-```
-
-Los dos `camera_x` valen cosas distintas, **a propósito**, y eso **no rompe el
-determinismo** porque la cámara no decide nada del juego (capítulo 19).
-
-Es como dos personas mirando el mismo tablero de ajedrez desde lados opuestos:
-ven cosas distintas, la partida es la misma.
-
-Y por eso `/bigmap` **solo existe en modo red**: una cámara solo puede seguir a
-un tanque, y en un teclado compartido uno de los dos jugadores conduciría a
-ciegas.
-
-## 9. Experimentos
-
-1. **Pulsa `C` y pasea con los tres modelos.** El 2 marea; compruébalo.
-2. **Sube `CAMERA_DEAD_ZONE_X` a 160** en `header/bmp.h`. Se pasa del límite
-   (151) y la cámara tiembla: los dos empujes se pelean.
-3. **Ponlo a 0.** Se convierte en el modo 2.
-4. **Quita el clamp.** Vete a la esquina de arriba a la izquierda y mira la
-   basura que aparece: estás leyendo de antes del mapa.
-
-## 10. Lo que hay que llevarse
+Línea por línea:
 
 | | |
 |---|---|
-| **Una cámara son dos números y una resta** | Nada más |
-| **Zona muerta**: quieta el 88% del tiempo | Ni salto ni mareo |
-| Empuja **exactamente lo que se ha salido** | Tanque 2, cámara 2 |
-| El clamp la encierra en el mapa | |
-| **Un mundo de una pantalla es el caso general con clamp 0** | Un solo código |
-| En red cada máquina tiene la suya, y está bien | Nunca en el checksum |
+| `row` | Va de 0 a 199: las 200 filas de **la pantalla** |
+| `camera_y + row` | La convierte en su fila **del mundo**. Si la cámara está en y=100, la fila 0 de pantalla es la fila 100 del mundo |
+| `* map_width` | Salta esa cantidad de **filas enteras del mundo**, 640 bytes cada una |
+| `+ camera_x` | Avanza dentro de la fila hasta donde empieza la ventana |
+| `memcpy(..., WIDTH)` | Copia 320 bytes: **una fila de pantalla completa** |
+| `destination_offset += WIDTH` | Avanza 320 en el destino, donde las filas **sí** van seguidas |
+
+## 5. No es más trabajo
+
+Esto sorprende: **se copian exactamente los mismos bytes que antes.**
+
+```
+   200 filas x 320 bytes = 64.000 bytes
+```
+
+Los mismos 64.000 del `memcpy` de siempre. No es más trabajo: es **el mismo
+trabajo repartido en 200 llamadas** en lugar de una.
+
+Lo único que se paga de más es la sobrecarga de llamar a `memcpy` 200 veces en
+lugar de una, y en un 486 eso no se nota.
+
+## 6. Un ejemplo con números
+
+Cámara en **(320, 100)**. Quieres la fila **0 de la pantalla**.
+
+```
+   fila del mundo   = camera_y + row = 100 + 0   = 100
+   salto de filas   = 100 * 640                 = 64.000
+   avance en la fila= camera_x                  = 320
+   ------------------------------------------------------
+   posicion en el mapa                          = 64.320
+```
+
+Copias 320 bytes desde el byte 64.320 del mapa, al byte 0 de la pantalla.
+
+Ahora la fila **1**:
+
+```
+   fila del mundo   = 100 + 1 = 101
+   salto            = 101 * 640 = 64.640
+   + 320
+   -----------------------------------
+   posicion         = 64.960
+```
+
+Fíjate: **64.320 → 64.960 son 640 bytes de salto**, aunque solo copiaste 320.
+Ese hueco de 320 bytes es la parte del mundo que queda a la derecha de tu
+ventana.
+
+## 7. El detalle raro: `source` se reconstruye entera cada vuelta
+
+Mira otra vez el bucle. La dirección se calcula **desde el principio** cada vez,
+en lugar de hacer `source = source + map_width` al final, que sería lo natural.
+
+Parece un desperdicio. **Es deliberado**, y tiene que ver con cómo funcionan los
+punteros en DOS.
+
+El resumen: un puntero `far` solo puede recorrer 64 KB antes de dar la vuelta, y
+el mapa ocupa 256.000 bytes. Reconstruir la dirección desde la base obliga al
+compilador a **normalizar** el puntero, y un puntero normalizado nunca se sale
+de su segmento cuando le sumas 320.
+
+Si lo fueras acumulando, en algún momento el `memcpy` cruzaría una frontera de
+segmento y copiaría de otro sitio.
+
+**El capítulo 23 lo explica entero**, con qué es un puntero `huge` y por qué el
+mapa está declarado así. De momento quédate con que ese `source =` completo no
+es torpeza.
+
+## 8. El clamp, a mano
+
+En este capítulo lo escribes tú:
+
+```c
+	if (camera_x < 0){ camera_x = 0; }
+	if (camera_y < 0){ camera_y = 0; }
+	if (camera_x > map_width  - WIDTH ){ camera_x = map_width  - WIDTH;  }
+	if (camera_y > map_height - HEIGHT){ camera_y = map_height - HEIGHT; }
+```
+
+| | Rango de la ventana |
+|---|---|
+| `camera_x` | 0 … 640-320 = **320** |
+| `camera_y` | 0 … 400-200 = **200** |
+
+`map_width - WIDTH` es lo más a la derecha que puede estar la ventana sin que su
+borde derecho se salga del mapa.
+
+**Sin esto**, `bmp_draw_world_window()` leería de antes del principio del mapa o
+de después del final. Y en DOS eso no da error: te dibuja basura, o cuelga.
+
+Quítalo y vete a una esquina: lo vas a ver.
+
+## 9. Lo que demuestra el programa
+
+Al salir imprime tres líneas:
+
+```
+  El tanque, en el MUNDO    : (300, 190)   <- no ha cambiado nunca
+  La ventana                : (128, 104)
+  El tanque, en la PANTALLA : (172, 86)
+```
+
+El tanque **no se ha movido**. Lo único que cambió es la ventana. Y sin embargo
+lo has visto recorrer la pantalla entera.
+
+Si la de pantalla sale fuera de 0..319 / 0..199, el tanque estaba fuera de la
+ventana y no lo veías — **y seguía exactamente en el mismo sitio del mundo**.
+
+## 10. Experimentos
+
+1. **Vete a una esquina y anota los tres números.** Comprueba la resta a mano.
+2. **Quita el clamp** y sal por arriba a la izquierda. Basura en pantalla: estás
+   leyendo de antes del mapa.
+3. **Cambia el `* map_width` por `* WIDTH`** en `bmp_draw_world_window()` (en
+   `src/bmp.c`, y luego deshazlo). El stride equivocado: la imagen sale
+   inclinada y repetida. **Ese es el aspecto del bug del stride**, y conviene
+   habérselo visto una vez.
+4. **Cambia el `memcpy(..., WIDTH)` por `memcpy(..., 160)`.** Media pantalla se
+   queda con lo del frame anterior.
+5. **Pon `camera_x = 320` fijo** y no lo muevas. Estás viendo la mitad derecha
+   del mundo, permanentemente. Eso es una "habitación" fija, el modelo que se
+   descartó.
+
+## 11. Lo que hay que llevarse
+
+| | |
+|---|---|
+| **El stride es el ancho de LA IMAGEN**, no el de la pantalla | Aquí dejan de coincidir |
+| Las filas de la ventana **no están pegadas** en memoria | Por eso no vale un `memcpy` |
+| **200 `memcpy` de 320 bytes** | Los mismos 64.000 bytes, repartidos |
+| `source` se reconstruye entera a propósito | Punteros `huge`, capítulo 23 |
+| El clamp encierra la ventana en el mapa | Sin él, lees fuera |
+| **Mover la ventana no mueve el mundo** | El tanque no se movió nunca |
 
 ---
 
 **Anterior:** [Capítulo 20](../../ch20/doc/README.md) ·
-**Siguiente:** [Capítulo 22 — La máscara de bits y la memoria](../../ch22/doc/README.md)
+**Siguiente:** [Capítulo 22 — La cámara](../../ch22/doc/README.md)

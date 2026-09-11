@@ -1,218 +1,397 @@
-# Capítulo 22 — La máscara de bits y la memoria de DOS
+# Capítulo 22 — La cámara: que la ventana se mueva sola
 
-**Último capítulo.** Va de la pieza que hace que el mapa grande **quepa**, y de
-la lección más cara de todo el proyecto.
+**Qué vas a conseguir:** la ventana del capítulo 21, pero siguiendo al tanque sin
+que tú la toques. Y comparar los **tres modelos** con una tecla.
 
 ```
 make
 chap22
 ```
 
-En modo texto, para poder leer los números.
+Flechas: mueven **el tanque** (ya no la ventana).
+**`C` cambia de modelo:** 0 sin cámara, 1 zona muerta, 2 siempre centrada.
 
 ---
 
-## 1. El presupuesto
+## 1. Lo que ya tienes
 
-DOS en modo real tiene **640 KB**, y de ahí sale todo: el sistema, los drivers,
-los TSR de red, tu código, tu pila y todo lo que reserves.
+Del capítulo 21 ya sabes:
 
-En la máquina de pruebas de este proyecto quedaban **571.344 bytes** libres al
-arrancar. Ese es el presupuesto entero.
+- Una ventana son **dos números**: `camera_x`, `camera_y`
+- `pantalla = mundo − cámara`
+- `bmp_draw_world_window()` copia el trozo, con sus 200 `memcpy` y su *stride*
+- El **clamp** la encierra en el mapa
 
-`coreleft()` y `farcoreleft()` te lo dicen. En el modelo huge de Turbo C
-devuelven lo mismo: **son el mismo depósito**.
+Allí movías esos dos números **a mano**. Este capítulo es solo una cosa:
 
-## 2. El techo de 64 KB
+> **quién mueve esos dos números, y con qué criterio**
 
-`malloc()` recibe un `size_t`, que en Turbo C es de **16 bits**. El número más
-grande que cabe ahí es **65.535**.
+Nada más. La ventana ya funcionaba.
 
-```c
-	malloc(64000);    /* bien */
-	malloc(256000);   /* imposible: no se puede ni pedir */
-```
+## 2. Los tres modelos, con la tecla `C`
 
-Para bloques mayores está `farmalloc()`, que recibe un `unsigned long`. Por eso
-el mapa se pide con `farmalloc` y todo lo demás con `malloc`.
+### Modo 0 — Sin cámara
 
-## 3. Y el puntero tiene que ser `huge`
+El capítulo 20. Está aquí para comparar de un vistazo.
 
-En el 8086 una dirección son dos números de 16 bits:
-
-```
-   fisica = segmento * 16 + desplazamiento
-```
-
-La aritmética de un puntero `far` **solo toca el desplazamiento**. Y el
-desplazamiento son 16 bits, así que al pasar de 65.535 **da la vuelta a cero**
-en vez de llevarse una al segmento.
-
-En un buffer de 64.000 da igual, nunca llegas. En uno de 256.000 das la vuelta
-cuatro veces y lees basura.
-
-Un puntero **`huge`** se **normaliza** en cada operación: el compilador ajusta
-segmento y desplazamiento para que el desplazamiento quede siempre entre 0 y 15.
+### Modo 2 — Siempre centrada
 
 ```c
-extern unsigned char huge *buffer_original_background_bmp;
+	bmp_camera_snap((int)tank.position_x, (int)tank.position_y, TANK_WIDTH, TANK_HEIGHT);
 ```
 
-Y de ahí viene un detalle de `bmp_draw_world_window()` que si no parece
-absurdo: la dirección se **reconstruye desde la base** en cada vuelta del bucle
-en vez de irse acumulando. Al reconstruirla, Turbo C la normaliza, y entonces el
-`memcpy` de 320 bytes que viene detrás no puede cruzar la frontera del segmento.
+El tanque clavado en el centro y el mundo moviéndose debajo. Es lo primero que
+se le ocurre a uno, y es de los tres el peor.
 
-## 4. Un bit por píxel
+**Pruébalo un rato de verdad, no cinco segundos.** El mundo se mueve en **todos
+y cada uno de los frames**, incluso cuando das un pasito de 2 píxeles para
+ajustar la puntería. Y te quita la sensación de estar moviendo tu tanque: lo ves
+quieto y lo que se mueve es el suelo.
 
-El mapa de colisiones tiene que cubrir el mundo **entero**, no solo lo que se
-ve: en red las dos máquinas simulan los dos tanques, así que tu máquina tiene
-que saber si el tanque del otro, en una sala que no ves, ha chocado.
+### Modo 1 — Zona muerta (el del juego)
 
-A un byte por píxel serían **256.000 bytes**. No caben.
+La cámara **no se mueve** mientras el tanque esté dentro de un rectángulo en el
+centro de la pantalla:
 
-Pero mira lo que se le pregunta a ese mapa:
+```
+   LA PANTALLA, 320x200
+
+   +----------------------------------------+
+   |                                        |
+   |          <-- 70 px -->                 |
+   |     +----------------------------+     |
+   |     |                            |     |
+   |     |        ZONA MUERTA         |     |
+   |     |   aqui la camara NO se     |     |
+   |     |          mueve             |     |
+   |     |                            |     |
+   |     +----------------------------+     |
+   |          <-- 70 px -->                 |
+   |                                        |
+   +----------------------------------------+
+    <- 100 px ->                <- 100 px ->
+```
+
+Midiendo un paseo de 200 frames por el mapa real, **la cámara está quieta el 88%
+de los frames**. Eso es exactamente lo que se busca: que el mundo solo se mueva
+cuando de verdad vas a algún sitio.
+
+## 3. De dónde salen el 100 y el 70
 
 ```c
-	if (bmp_is_wall(x, y) == 1)
+#define CAMERA_DEAD_ZONE_X 	100
+#define CAMERA_DEAD_ZONE_Y 	 70
 ```
 
-**Solo hay dos respuestas posibles.** De los 256 valores que caben en un byte te
-importa uno. Estás gastando 8 bits para un sí/no.
+Son los **márgenes** desde el borde de la pantalla hasta el borde de la zona
+muerta. Y no son el mismo número por un motivo concreto: **la pantalla no es
+cuadrada.**
 
-```
-   Un byte por pixel (8 pixeles = 8 bytes):
-     [00] [00] [FF] [FF] [00] [00] [00] [FF]
+| | Pantalla | Máximo posible | Usado | Carril resultante |
+|---|---:|---:|---:|---:|
+| **X** | 320 | (320−18)/2 = **151** | 100 | 320−100−100−18 = **102 px** |
+| **Y** | 200 | (200−18)/2 = **91** | 70 | 200−70−70−18 = **42 px** |
 
-   Un bit por pixel (8 pixeles = 1 byte):
-     [ 00110001 ]
-```
+En vertical hay 120 píxeles menos de pantalla para repartir, así que el margen
+tiene que ser más pequeño o no quedaría zona muerta.
 
-| | Bytes |
-|---|---|
-| 640x400 a 1 byte/px | 256.000 |
-| 640x400 a **1 bit/px** | **32.000** |
+### El límite que no puedes pasar
 
-Y fíjate bien: son **la mitad** de lo que costaba el mapa de colisiones de **una
-sola pantalla** antes (64.000). El mundo entero ocupa menos que una pantalla.
+Fíjate en la columna "máximo posible". El margen tiene que ser **menor que la
+mitad de la pantalla menos el tanque**.
 
-El coste de leer un bit es un desplazamiento y dos ANDs. Nada.
+Si lo pasas, el borde izquierdo de la zona muerta queda **a la derecha** del
+derecho. Los dos empujes se disparan a la vez y **la cámara se pelea consigo
+misma**, temblando en el sitio.
 
-## 5. La lección cara: fragmentación
+Pruébalo: pon `CAMERA_DEAD_ZONE_X` a 160 y compila.
 
-Durante el desarrollo, el juego cargaba todo **menos el último efecto de
-sonido**:
+## 4. El código, línea por línea
 
-```
-Sound: could not load died.wav
-```
+```c
+void bmp_camera_follow(int target_x, int target_y, int target_width, int target_height){
 
-Y la cuenta decía que **debería caber**: quedaban **129.982 bytes libres** y el
-fichero pide **42.090**.
+	int screen_x;
+	int screen_y;
+	int right_edge;
+	int bottom_edge;
 
-No faltaba memoria. **La memoria libre estaba en el sitio equivocado.**
+	/* 1. Donde esta el objetivo DENTRO de la ventana ahora mismo */
+	screen_x = target_x - camera_x;
+	screen_y = target_y - camera_y;
 
-El orden de arranque era:
+	/* 2. Donde estan los bordes de la zona muerta */
+	right_edge  = WIDTH  - CAMERA_DEAD_ZONE_X - target_width;
+	bottom_edge = HEIGHT - CAMERA_DEAD_ZONE_Y - target_height;
 
-```
-  1. farmalloc(256000)   el mapa
-  2. malloc(64000)       la hoja de sprites
-  3. recortar los sprites
-  4. free(64000)         soltarla        <- DEJA UN AGUJERO
-  5. farmalloc(42090)    el WAV          <- no lo encuentra
-```
+	/* 3. Empujar solo si se ha salido */
+	if (screen_x < CAMERA_DEAD_ZONE_X){
+		camera_x = camera_x - (CAMERA_DEAD_ZONE_X - screen_x);
+	}else if (screen_x > right_edge){
+		camera_x = camera_x + (screen_x - right_edge);
+	}
 
-```
-   +----------------------------------------------------+
-   |  MAPA 256000 | agujero 64000 | pantalla |  libre   |
-   +----------------------------------------------------+
-                   ^^^^^^^^^^^^^^
-                   libre, pero enterrado en medio
-```
+	if (screen_y < CAMERA_DEAD_ZONE_Y){
+		camera_y = camera_y - (CAMERA_DEAD_ZONE_Y - screen_y);
+	}else if (screen_y > bottom_edge){
+		camera_y = camera_y + (screen_y - bottom_edge);
+	}
 
-De los 129.982 libres, 64.000 estaban en ese agujero y el resto arriba del todo.
-**Y no están pegados.**
+	bmp_camera_clamp();
 
-> ## MEMORIA LIBRE TOTAL NO ES MEMORIA LIBRE CONTIGUA.
-
-## 6. El intento que lo empeoró
-
-El primer arreglo fue cargar el sonido **antes** que el mapa. El sonido cargó
-perfectamente... **y entonces el mapa no cupo**: quedaban 247.371 bytes
-contiguos y pedía 256.000. Faltaban 8.629.
-
-Y como `farmalloc` devolvió NULL y el código siguió con un puntero nulo, el
-resultado fue el fondo desaparecido y los tanques dibujados sobre basura.
-
-El log lo decía con toda claridad, pero había que saber leerlo:
-
-```
-Sound: loaded, 375680 bytes left        <- los cuatro WAV cargaron
-Map 640x400  memory now: near 246800    <- pero init_graphics solo gasto 128880
+}
 ```
 
-`init_graphics` consumió 128.880 bytes cuando el mapa solo ya son 256.000. **La
-resta no engaña: el mapa nunca se reservó.**
+### Por qué `- target_width`
 
-## 7. El arreglo bueno: quitar el agujero
+```c
+	right_edge = WIDTH - CAMERA_DEAD_ZONE_X - target_width;
+```
 
-No mover cosas de sitio. **Quitar el agujero.**
+Porque **`position_x` es la esquina superior IZQUIERDA** del sprite, no su
+centro. El borde derecho del tanque está 18 píxeles más allá.
 
-La hoja de sprites era un buffer de 64.000 bytes del que se recortaban los
-sprites al arrancar y que después no se leía nunca más. Se eliminó del todo:
-`sprites.bmp` **se abre y cada sprite se lee directamente del fichero** (eso es
-lo que viste en el capítulo 4).
+Sin restarlo, el margen derecho se mediría contra la esquina izquierda y el
+tanque se metería 18 píxeles de más en la zona de empuje: la zona muerta
+quedaría descentrada.
 
-- Se ahorran 64.000 bytes
-- **No se libera nada nunca**, así que no hay agujero
-- Cuesta unos 340 `fseek` al arrancar y nada más
+### Por qué `else if` y no dos `if`
 
-## 8. Las cuatro reglas
+Con la zona muerta bien dimensionada (punto 3) los dos casos son excluyentes: no
+puedes estar a la vez a la izquierda del borde izquierdo y a la derecha del
+derecho.
 
-1. **Mide, no supongas.** Dos líneas de `coreleft()` en el log valieron más que
-   todo el razonamiento sobre cómo debería comportarse el asignador.
-2. **Total libre no es contiguo libre.** La lección de verdad.
-3. **La reserva más grande, la primera**, sobre un montón limpio. Y si puedes,
-   no liberes nada durante la ejecución.
-4. **Un fallo silencioso cuesta más que uno ruidoso.** `farmalloc` devolvió
-   NULL, el código hizo un `printf` sobre una pantalla en modo gráfico (o sea,
-   invisible) y siguió. Por eso el síntoma fue *"se ha roto todo"* en vez de
-   *"el mapa no cupo"*.
+Pero **si alguien pone un margen demasiado grande**, los dos serían ciertos a la
+vez y con dos `if` sueltos se aplicarían las dos correcciones, una detrás de
+otra, cada frame. El `else if` limita el daño a un temblor en vez de a una
+cámara disparada.
 
-## 9. Experimentos
+### Por qué recibe enteros y no un `struct player *`
 
-1. **Mira los números que imprime.** Compáralos con los 571.344 del texto.
-2. **Pide un mapa de 1280x800** en `bmp_init_buffers()`. Son 1.024.000 bytes:
-   `farmalloc` devuelve NULL y lo verás.
-3. **Añade `coreleft()` a tus propios programas.** Es la costumbre que más
-   tiempo ahorra en DOS.
+```c
+	bmp_camera_follow((int)tank.position_x, (int)tank.position_y, TANK_WIDTH, TANK_HEIGHT);
+```
 
-## 10. Lo que hay que llevarse
+A propósito: así **`bmp.c` sigue sin saber qué es un tanque**. Mañana la cámara
+puede seguir a una nave, a un ratón o al punto medio de dos cosas, y `bmp.c` no
+se entera.
+
+Es la misma decisión que se tomó con `sound.c` (el log se lo pasas tú) y con
+`net.c`. Una librería no debe conocer a su cliente.
+
+## 5. "Exactamente lo que se ha salido"
+
+Esta es la parte elegante, y es fácil pasarla por alto.
+
+La corrección es `screen_x - right_edge`: **cuántos píxeles se ha salido**. Ni
+más ni menos.
+
+Sigue un tanque andando a la derecha a 2 píxeles por frame, con la cámara en 0:
+
+| Frame | Tanque (mundo) | Cámara | En pantalla | Qué pasa |
+|---|---:|---:|---:|---|
+| 1 | 250 | 0 | 250 | 250 > 202: se sale **48** → cámara +48 |
+| | | 48 | **202** | queda justo en el borde |
+| 2 | 252 | 48 | 204 | se sale **2** → cámara +2 |
+| | | 50 | **202** | otra vez en el borde |
+| 3 | 254 | 50 | 204 | se sale **2** → cámara +2 |
+| | | 52 | **202** | |
+
+**El tanque anda 2, la cámara anda 2.** El tanque se queda pegado al borde de la
+zona muerta y el mundo se desliza detrás a la misma velocidad exacta.
+
+Ni salto (porque el desplazamiento es continuo) ni retraso (porque la corrección
+es exacta). Y al soltar la tecla, **la cámara para en seco** con él.
+
+### Compara con un suavizado
+
+Lo típico es escribir algo así:
+
+```c
+	camera_x = camera_x + (objetivo - camera_x) / 8;     /* NO es lo que hace el juego */
+```
+
+Se siente "cinematográfico" y para este juego es peor:
+
+- **Siempre va con retraso**: nunca alcanza el objetivo, solo se le acerca
+- **Sigue moviéndose después de que pares**, con inercia
+- Y en un juego donde apuntas con el morro del tanque, esa inercia molesta al
+  ajustar
+
+La zona muerta no tiene ninguno de esos dos problemas porque no persigue nada:
+**solo empuja cuando debe, y lo justo**.
+
+## 6. La resta va en TODOS los objetos
+
+En este capítulo solo hay un tanque, así que se ve una sola resta. En el juego
+real hay **cinco**:
+
+```c
+	draw_sprite_to_buffer(sprite1, ..., (int)player1.position_x - camera_x, ...);
+	draw_sprite_to_buffer(sprite2, ..., (int)player2.position_x - camera_x, ...);
+	draw_sprite_to_buffer(bala1,   ..., (int)player1.bullet_position_x - camera_x, ...);
+	draw_sprite_to_buffer(bala2,   ..., (int)player2.bullet_position_x - camera_x, ...);
+	draw_sprite_to_buffer(boom,    ..., (int)(p->position_x + OFFSET) - camera_x, ...);
+```
+
+**Si se te olvida en uno solo**, el síntoma es muy característico y muy fácil de
+reconocer:
+
+> Ese objeto se queda **pegado a la pantalla** mientras todo lo demás se desliza.
+
+Una bala que te sigue a todas partes en vez de quedarse donde la disparaste. Una
+explosión que viaja contigo. Una vez lo has visto, lo diagnosticas en dos
+segundos.
+
+Y el error simétrico: **restarla dos veces** hace que el objeto se mueva al
+doble de velocidad y en sentido contrario.
+
+## 7. Aquí se cobra el recorte del capítulo 4
+
+```c
+	screen_x = (int)tank.position_x - camera_x;
+```
+
+Esa resta **da negativo constantemente**: cada vez que el tanque se acerca al
+borde izquierdo de la pantalla, o cuando la cámara está topada y el tanque se
+aleja.
+
+En el capítulo 4, `-9` convertido a `unsigned int` valía **65.527** y escribía a
+65.000 bytes del buffer. Aquí eso pasaría **todo el rato**, no como caso raro.
+
+El recorte dejó de ser prudencia y pasó a ser el mecanismo normal de
+funcionamiento.
+
+## 8. El clamp, ahora automático
+
+```c
+	limit_x = map_width  - WIDTH;     /* 640 - 320 = 320 */
+	limit_y = map_height - HEIGHT;    /* 400 - 200 = 200 */
+```
+
+Lo mismo que escribiste a mano en el capítulo 21, ahora dentro de
+`bmp_camera_clamp()`, y llamado al final de `follow` y de `snap`.
+
+Cuando la cámara está topada, **el tanque sí se sale de la zona muerta** y se
+acerca al borde de la pantalla. Es lo correcto: no hay más mapa que enseñar, así
+que lo que se mueve vuelve a ser el tanque.
+
+## 9. Y aquí está lo bonito: el modo normal es el mismo código
+
+Con un mapa de 320x200:
+
+```
+   limit_x = 320 - 320 = 0
+   limit_y = 200 - 200 = 0
+```
+
+El clamp deja la cámara **clavada en (0,0) para siempre**, calcule lo que
+calcule `bmp_camera_follow()`.
+
+Y entonces:
+
+- `mundo − cámara` es `mundo − 0`, o sea `mundo`
+- `bmp_draw_world_window()` copia 200 filas de 320 empezando en (0,0), que es
+  **exactamente el `memcpy` de 64.000 bytes de toda la vida**
+- El recorte no recorta nada, porque nada se sale
+
+> **Un mundo de una pantalla no es un caso especial: es el caso general con la
+> cámara topada en cero.**
+
+Por eso el juego **no tiene ni un solo `if (big_map_mode)` en el dibujado**. No
+hay dos caminos que mantener ni dos sitios donde meter la pata.
+
+Está comprobado con un test: llama a `follow` y a `snap` con valores absurdos y
+un mapa de 320x200, y verifica que la cámara sigue en (0,0).
+
+## 10. El `snap`
+
+```c
+	camera_x = target_x + (target_width  / 2) - (WIDTH  / 2);
+	camera_y = target_y + (target_height / 2) - (HEIGHT / 2);
+	bmp_camera_clamp();
+```
+
+Centra el objetivo de golpe: coge su centro y le resta media pantalla.
+
+Es para el arranque de una ronda. Cuando los tanques se teletransportan a sus
+esquinas **no hay nada desde lo que seguir suavemente**: la cámara tiene que
+aparecer ya puesta.
+
+Y aplica el mismo clamp, así que en una esquina se queda en el borde en vez de
+enseñarte el vacío de fuera del mapa.
+
+## 11. El orden dentro del frame
+
+```c
+	update_camera();                                   /* 1. donde esta la ventana */
+	bmp_draw_world_window(buffer);                     /* 2. el fondo */
+	draw_sprite_to_buffer(..., mundo - camara, ...);   /* 3. todo lo demas */
+	wait_retrace();                                    /* 4. esperar al monitor */
+	bmp_paint_image_data_to_vga(buffer);               /* 5. volcar */
+```
+
+La cámara se decide **antes** de pintar nada.
+
+Si la movieras entre el paso 2 y el 3, el fondo sería de una posición y los
+tanques de otra: saldrían **desplazados respecto al suelo**, flotando. Un frame
+sí y otro no, según cuándo cambiara.
+
+## 12. En red, cada máquina tiene la suya
+
+```c
+	if (local_player_is_1 == 0){ target = &player2; }
+```
+
+Cada máquina sigue a **su propio tanque**. Los dos `camera_x` valen cosas
+distintas, **a propósito**.
+
+¿No rompe eso el determinismo del capítulo 18? **No**, y la razón es la regla de
+oro: la cámara **no decide nada del juego**. Las dos máquinas hacen las mismas
+cuentas sobre las mismas coordenadas de mundo y obtienen el mismo resultado;
+luego cada una pinta un trozo distinto de ese resultado idéntico.
+
+Es como dos personas mirando el mismo tablero de ajedrez desde lados opuestos.
+Ven cosas distintas. La partida es la misma.
+
+Por eso `camera_x` **nunca** entra en el checksum (capítulo 19): daría una
+desincronización falsa en el frame 1 de todas las partidas.
+
+Y por eso `/bigmap` **solo existe en modo red**: una cámara solo puede seguir a
+un tanque, y en un teclado compartido uno de los dos jugadores conduciría a
+ciegas.
+
+## 13. Experimentos
+
+1. **Pulsa `C` y pasea con los tres modelos**, un minuto largo con cada uno. El
+   2 marea de verdad; hay que darle tiempo.
+2. **Sube `CAMERA_DEAD_ZONE_X` a 160** en `header/bmp.h`. Se pasa del límite de
+   151: la cámara tiembla.
+3. **Ponlo a 0.** Se convierte en el modo 2.
+4. **Ponlo a 145**, casi el límite. Zona muerta de 12 píxeles: la cámara se
+   mueve casi siempre pero sin mareo. Interesante punto medio.
+5. **Cambia el `else if` por dos `if`** y pon el margen a 160. Ahora sí se
+   dispara de verdad.
+6. **Quita el `- target_width`.** La zona muerta queda descentrada 18 píxeles y
+   se nota al ir hacia la derecha.
+7. **Sustituye `bmp_camera_follow()` por el suavizado** del punto 5
+   (`camera_x += (objetivo - camera_x) / 8`) y compara la sensación al ajustar
+   la puntería.
+
+## 14. Lo que hay que llevarse
 
 | | |
 |---|---|
-| `malloc` no pasa de 65.535 | Para más, `farmalloc` |
-| Un puntero `far` **da la vuelta** a los 64 KB | Para más, `huge` |
-| **1 bit por píxel**: el mundo entero cabe en 32 KB | Menos que una pantalla antes |
-| **Total libre ≠ contiguo libre** | La lección cara |
-| Lo grande primero; mejor no liberar nada | |
-| **Mide, no supongas** | |
-
----
-
-## Fin del curso
-
-Has visto el camino entero: de una pantalla en negro a dos tanques peleando en
-red por un mundo de cuatro pantallas.
-
-Para profundizar:
-
-- [Manual de la cámara](../../../doc/ES/MANUAL-CAMARA.md) — 60 páginas sobre este bloque
-- [Manual de red](../../../doc/ES/MANUAL-RED.md) — lo mismo para los capítulos 15-19
-- [Tutorial de sonido](../../../doc/ES/TUTORIAL-SONIDO.md) — para reusar `sound.c`
-- [Tutorial de red](../../../doc/ES/TUTORIAL-RED.md) — para reusar `net.c`
+| La ventana ya funcionaba (ch21). Esto es **quién la mueve** | |
+| **Zona muerta**: quieta el 88% del tiempo | Ni salto ni mareo |
+| Empuja **exactamente lo que se ha salido** | Tanque 2, cámara 2 |
+| Los márgenes tienen un techo | Por encima, la cámara tiembla |
+| `- target_width` porque la posición es la **esquina** | |
+| **La resta va en TODOS los objetos** | Olvidarla = objeto pegado a la pantalla |
+| **Un mundo de una pantalla es el caso general con clamp 0** | Un solo código |
+| En red cada máquina tiene la suya, y está bien | Nunca en el checksum |
 
 ---
 
 **Anterior:** [Capítulo 21](../../ch21/doc/README.md) ·
-**Índice:** [El curso](../../README.md)
+**Siguiente:** [Capítulo 23 — La máscara de bits y la memoria](../../ch23/doc/README.md)

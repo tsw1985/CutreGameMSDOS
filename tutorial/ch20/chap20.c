@@ -76,13 +76,24 @@ int main(){
 	bmp_close_sprite_sheet();
 
 	//-------------------------------------------------------
-	// Ese spawn es de header/players.h y es para el mapa GRANDE.
+	// EL PUNTO DE PARTIDA, y aqui hay dos lecciones de golpe.
 	//
-	// El de siempre, PLAYER2_START_Y = 16, caeria dentro del muro del borde
-	// del mapa grande, que tiene 17 pixeles de grosor. El tanque naceria
-	// atrapado. Al cambiar de mundo hay que revisar los puntos de partida.
+	// 1) El spawn del JUEGO para el mapa grande es BIG_PLAYER1_START, que
+	//    esta en (166, 299): la sala de abajo a la izquierda. Con la ventana
+	//    clavada en (0,0), como esta en este capitulo, ese punto NI SE VE:
+	//    la pantalla solo llega hasta y=199. Arrancarias sin tanque.
+	//
+	//    Asi que este capitulo arranca en la sala 0, dentro de la ventana,
+	//    para que puedas VER el tanque antes de perderlo.
+	//
+	// 2) Y el spawn del juego normal, PLAYER2_START_Y = 16, caeria dentro
+	//    del muro del borde del mapa grande, que tiene 17 pixeles de grosor.
+	//    El tanque naceria atrapado, con todas las direcciones bloqueadas y
+	//    sin ningun mensaje.
+	//
+	// Las dos dicen lo mismo: AL CAMBIAR DE MUNDO, REVISA LOS SPAWNS.
 	//-------------------------------------------------------
-	player_reset(&tank, BIG_PLAYER1_START_X, BIG_PLAYER1_START_Y, BIG_PLAYER1_START_DIRECTION);
+	player_reset(&tank, 128, 90, MOVE_UP);
 
 	install_kbd();
 	set_video_mode(0x0013);

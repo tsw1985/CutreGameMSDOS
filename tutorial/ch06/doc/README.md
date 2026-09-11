@@ -55,15 +55,41 @@ La solución es contar:
 	}
 ```
 
-Con `speed_total = 5`, el dibujo cambia una vez cada 5 frames: **14 cambios por
-segundo**. Eso sí se lee como movimiento.
+Con `speed_total = 2`, que es lo que usa el juego, el dibujo cambia una vez cada
+2 frames: **35 cambios por segundo**. Suena mucho, pero funciona porque los dos
+fotogramas de la oruga se parecen: lo que ves es el movimiento, no el cambio.
 
 | `speed_total` | Cambios por segundo | Cómo se ve |
 |---|---|---|
-| 1 | 70 | Un borrón |
-| 3 | 23 | Frenético |
-| **5** | **14** | Lo que usa el juego |
+| 1 | 70 | Demasiado: se pierde |
+| **2** | **35** | **Lo que usa el juego** |
+| 5 | 14 | Se distinguen los dos dibujos |
 | 15 | 4,6 | A cámara lenta |
+
+### Y ojo: hay que ponerlos a mano
+
+```c
+	tank.total_frames = 2;
+	tank.speed_total  = 2;
+```
+
+**`player_init()` NO los pone.** En el juego los pone `main.c` por su cuenta
+(líneas 1684-1685), y aquí hay que hacer lo mismo.
+
+Si se quedan a 0 — que es como nacen, por ser una variable global — el contador
+hace esto en la misma vuelta:
+
+```
+	speed_counter = 1      y  1 >= 0  es cierto  ->  cambiar de dibujo
+	current_frame = 1      y  1 >= 0  es cierto  ->  vuelta a 0
+```
+
+El fotograma 1 **se pone y se quita en la misma vuelta**, así que nunca llega a
+dibujarse. Las orugas se quedan congeladas en el fotograma 0 para siempre, y no
+hay ningún error en ningún sitio: simplemente el tanque se desliza como una
+pegatina.
+
+Es un fallo muy típico de campos que "parecen" inicializados y no lo están.
 
 Ese contador es un patrón que vas a usar siempre: **separar la velocidad del
 juego de la velocidad de la animación**.

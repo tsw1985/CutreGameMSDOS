@@ -70,5 +70,8 @@ cd ..
 cd ch23
 make clean
 cd ..
+cd ch24
+make clean
+cd ..
 echo.
 echo Limpio.

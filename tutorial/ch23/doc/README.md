@@ -2,8 +2,8 @@
 
 *[English version](README-EN.md)*
 
-**Último capítulo.** Va de la pieza que hace que el mapa grande **quepa**, y de
-la lección más cara de todo el proyecto.
+**Último capítulo del bloque del mapa grande.** Va de la pieza que hace que el
+mapa grande **quepa**, y de la lección más cara de todo el proyecto.
 
 ```
 make
@@ -290,10 +290,15 @@ lo que viste en el capítulo 4).
 
 ---
 
-## Fin del curso
+## Y ya está el mundo grande entero
 
-Has visto el camino entero: de una pantalla en negro a dos tanques peleando en
-red por un mundo de cuatro pantallas.
+Con esto el bloque 5 está cerrado: el mundo, la ventana, la cámara y la memoria
+que hace que todo quepa.
+
+Queda una cosa por resolver, y es consecuencia directa de la cámara: si cada uno
+sigue a su tanque, **¿cómo encuentras al otro?** De eso va el
+[capítulo 24](../../ch24/doc/README.md), que pone un número en pantalla dibujado
+con sprites.
 
 Para profundizar:
 
@@ -305,4 +310,5 @@ Para profundizar:
 ---
 
 **Anterior:** [Capítulo 22](../../ch22/doc/README.md) ·
+**Siguiente:** [Capítulo 24](../../ch24/doc/README.md) ·
 **Índice:** [El curso](../../README.md)

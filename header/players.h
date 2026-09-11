@@ -55,6 +55,29 @@
 // Sprites the explosion animation has
 #define EXPLOSION_TOTAL_SPRITES 2
 
+// Size of one cell in numbers.bmp, the sheet the proximity radar is drawn
+// with. It is ONE row of 11 cells: the digits 0 to 9 and then the % sign,
+// cell N starting at x = N * NUMBER_WIDTH and every one of them the same
+// 18x18 box a tank uses. That is why bmp_extract_sprite() cuts them with no
+// special case, the same way it cuts a tank.
+#define NUMBER_WIDTH 			18
+#define NUMBER_HEIGHT 			18
+
+// Cells in the sheet: the ten digits, and the % after them
+#define NUMBER_TOTAL_SPRITES 	11
+#define NUMBER_PERCENT_CELL 	10
+
+// Pixels from the left edge of one figure to the left edge of the next one
+// when they are painted side by side.
+//
+// It is NOT NUMBER_WIDTH, and it must not be: the ink of a cell only spans
+// columns 2 to 15 of its 18, so figures placed 18 apart read as three
+// separate numbers instead of one. 13 slides them together until they read
+// as a single figure, and the cells are allowed to overlap because color 0
+// is transparent: only the ink is ever written, and the widest glyph here is
+// 14 pixels, so no two of them can touch.
+#define NUMBER_ADVANCE 			13
+
 // How long the whole explosion lasts, and how long each of its 2 sprites
 // stays on screen, in main loop iterations. The loop waits for one vertical
 // retrace per iteration and mode 13h runs at about 70 Hz, so 35 is roughly
@@ -302,6 +325,30 @@ struct player{
 		char *sprite_tank_explosion2;
 
 	};
+
+
+// The 11 figures of the proximity radar, cut out of the theme's
+// numbers.bmp by init_sprite_numbers() in main.c, which is also where they
+// live.
+//
+// They are ONE set for the whole game and deliberately NOT a field of
+// struct player. The radar is a single figure at the bottom of the screen,
+// not something a tank owns, and inside the struct the same 11 sprites
+// would be reserved twice, once per player, for nothing.
+//
+// They are ALL NULL whenever there is no radar, which is most of the time:
+// see init_sprite_numbers(). Everything that reads them checks for that.
+extern char *number_0;
+extern char *number_1;
+extern char *number_2;
+extern char *number_3;
+extern char *number_4;
+extern char *number_5;
+extern char *number_6;
+extern char *number_7;
+extern char *number_8;
+extern char *number_9;
+extern char *number_percent;
 
 
 	// Reserves / releases this player's sprite buffers. Called once each.

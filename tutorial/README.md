@@ -33,7 +33,7 @@ chap01
 O **todos de una vez**, desde `tutorial\`:
 
 ```
-makeall           compila los 22
+makeall           compila los 24
 makeall 07        compila solo el 07
 cleanall          borra todos los .exe y .obj
 ```
@@ -146,12 +146,13 @@ Desde `tutorial\ch01\`, ese `..\..\res\` es la carpeta `res\` del proyecto.
 | ✅ | [**ch21** — La ventana](ch21/doc/README.md) | El *stride*, y por qué un `memcpy` deja de valer. **Mueves tú la ventana** |
 | ✅ | [**ch22** — La cámara](ch22/doc/README.md) | Que la ventana siga al tanque sola. La zona muerta |
 | ✅ | [**ch23** — Máscara de 1 bit y la memoria](ch23/doc/README.md) | Fragmentación: la lección cara |
+| ✅ | [**ch24** — El radar de cercanía](ch24/doc/README.md) | Números con sprites, y el único dibujo que **no** resta la cámara |
 
 ---
 
 ## Si ya sabes algo
 
-- ¿Solo te interesa la **cámara**? Los capítulos 1, 4, 20, 21, 22 y 23. Y el
+- ¿Solo te interesa la **cámara**? Los capítulos 1, 4, 20, 21, 22, 23 y 24. Y el
   [manual completo](../doc/ES/MANUAL-CAMARA.md).
 - ¿Solo la **red**? Del 15 al 19, más el [manual de red](../doc/ES/MANUAL-RED.md).
 - ¿Solo el **sonido**? Del 11 al 14, más el [tutorial de sonido](../doc/ES/TUTORIAL-SONIDO.md).

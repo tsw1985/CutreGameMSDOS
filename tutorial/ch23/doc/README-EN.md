@@ -2,8 +2,8 @@
 
 *[Versión en español](README.md)*
 
-**The last chapter.** It covers the piece that makes the big map **fit**, and the
-most expensive lesson of the whole project.
+**The last chapter of the big map block.** It covers the piece that makes the
+big map **fit**, and the most expensive lesson of the whole project.
 
 ```
 make
@@ -287,10 +287,15 @@ and each sprite read straight from the file** (which is what you saw in chapter
 
 ---
 
-## End of the course
+## And that is the big world complete
 
-You have seen the whole road: from a black screen to two tanks fighting over a
-network across a world four screens wide.
+Block 5 is closed with this: the world, the window, the camera and the memory
+that makes it all fit.
+
+One thing is left, and it follows straight from the camera: if each machine
+follows its own tank, **how do you find the other one?** That is
+[chapter 24](../../ch24/doc/README-EN.md), which puts a number on screen drawn
+with sprites.
 
 To go deeper:
 
@@ -302,4 +307,5 @@ To go deeper:
 ---
 
 **Previous:** [Chapter 22](../../ch22/doc/README-EN.md) ·
+**Next:** [Chapter 24](../../ch24/doc/README-EN.md) ·
 **Index:** [The course](../../README-EN.md)

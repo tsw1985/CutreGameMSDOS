@@ -1,8 +1,8 @@
 //===========================================================
 // CAPITULO 23 - La mascara de bits y la memoria de DOS
 //
-// Ultimo capitulo. Va de la pieza que hace que el mapa grande QUEPA, y de
-// la leccion mas cara del proyecto entero.
+// Ultimo capitulo del bloque del mapa grande. Va de la pieza que hace que el
+// mapa grande QUEPA, y de la leccion mas cara del proyecto entero.
 //
 // Lo que se aprende aqui:
 //
@@ -203,9 +203,11 @@ int main(){
 	printf("  capitulo 4 lee los sprites directamente del fichero.\n");
 	printf("  ------------------------------------------------\n");
 	printf("\n");
-	printf("  Aqui acaba el curso. Ya has visto entero el camino desde una\n");
-	printf("  pantalla en negro hasta dos tanques peleando en red por un\n");
-	printf("  mundo de cuatro pantallas.\n");
+	printf("  Con esto el mundo grande esta entero: el mundo, la ventana,\n");
+	printf("  la camara y la memoria que hace que todo quepa.\n");
+	printf("\n");
+	printf("  Queda el capitulo 24: si cada uno sigue a su tanque, como\n");
+	printf("  encuentras al otro.\n");
 	printf("\n");
 	printf("  Pulsa una tecla.\n");
 

@@ -34,7 +34,7 @@ chap01
 Or **all of them at once**, from `tutorial\`:
 
 ```
-makeall           build all 23
+makeall           build all 24
 makeall 07        build only 07
 cleanall          delete every .exe and .obj
 ```
@@ -147,12 +147,13 @@ From `tutorial\ch01\`, that `..\..\res\` is the project's `res\` folder.
 | ✅ | [**ch21** — The window](ch21/doc/README-EN.md) | The *stride*, and why a `memcpy` stops working. **You** move the window |
 | ✅ | [**ch22** — The camera](ch22/doc/README-EN.md) | Making the window follow the tank. The dead zone |
 | ✅ | [**ch23** — 1-bit mask and memory](ch23/doc/README-EN.md) | Fragmentation: the expensive lesson |
+| ✅ | [**ch24** — The proximity radar](ch24/doc/README-EN.md) | Numbers made of sprites, and the one drawing that does **not** subtract the camera |
 
 ---
 
 ## If you already know some of it
 
-- Only interested in the **camera**? Chapters 1, 4, 20, 21, 22 and 23. Plus the
+- Only interested in the **camera**? Chapters 1, 4, 20, 21, 22, 23 and 24. Plus the
   [full manual](../doc/EN/CAMERA-MANUAL.md).
 - Only the **network**? 15 to 19, plus the [network manual](../doc/EN/NETWORK-MANUAL.md).
 - Only the **sound**? 11 to 14, plus the [sound tutorial](../doc/EN/SOUND-TUTORIAL.md).

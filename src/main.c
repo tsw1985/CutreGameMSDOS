@@ -100,6 +100,10 @@ void draw_to_buffer();
 void update_camera(int snap_to_target);
 void draw_explosion(struct player *_player);
 void update_keyboard();
+void init_sprite_numbers();
+void free_sprite_numbers();
+int compute_proximity_percent();
+void draw_proximity_radar();
 
 /*  Players */
 struct player player1;
@@ -176,6 +180,28 @@ char *theme_collision_file;
 
 char level_map_path[64];
 char level_collision_path[64];
+
+// The 11 figures of the proximity radar, declared in players.h. They live
+// here because main.c is what owns the screen: players.c only knows tank
+// geometry and has no business with a HUD.
+//
+// NULL means there is no radar this run, and that is the normal case: see
+// init_sprite_numbers() for the two conditions that have to hold.
+char *number_0 = NULL;
+char *number_1 = NULL;
+char *number_2 = NULL;
+char *number_3 = NULL;
+char *number_4 = NULL;
+char *number_5 = NULL;
+char *number_6 = NULL;
+char *number_7 = NULL;
+char *number_8 = NULL;
+char *number_9 = NULL;
+char *number_percent = NULL;
+
+// Built with sprintf by init_sprite_numbers(), so it needs somewhere to
+// live for the same reason level_map_path does.
+char numbers_path[64];
 
 // Which tank THIS machine drives over the network. Meaningless in local
 // mode, where this keyboard drives both of them.
@@ -493,6 +519,12 @@ int main(int argc, char *argv[]){
 	init_players();
 	init_graphics();
 
+	// The radar, and it goes HERE for two reasons that are both about
+	// init_graphics(): the theme is not decided until it runs, and the sheet
+	// reader has a single FILE * that it does not let go of until it has cut
+	// out the last tank. It does nothing at all on the small map.
+	init_sprite_numbers();
+
 	// The camera has to be aimed AFTER init_graphics(), not before.
 	//
 	// init_players() ends by calling restart_game(), which aims it too, but at
@@ -808,6 +840,7 @@ int main(int argc, char *argv[]){
 
 	player_free(&player1);
 	player_free(&player2);
+	free_sprite_numbers();
 	bmp_delete_buffers();
 	bmp_close_files();
 
@@ -1625,6 +1658,12 @@ void draw_to_buffer(){
 					  buffer_background_image_data);
 	}
 
+	// The radar last, so nothing can be painted over it, and in SCREEN
+	// coordinates: it is the only thing in this function that is not part of
+	// the world, which is why it is also the only one that does not subtract
+	// the camera. It does nothing at all when there is no radar.
+	draw_proximity_radar();
+
 }
 
 
@@ -1651,6 +1690,370 @@ void draw_explosion(struct player *_player){
 				  (int)(_player->position_x + EXPLOSION_OFFSET_X) - camera_x,
 				  (int)(_player->position_y + EXPLOSION_OFFSET_Y) - camera_y,
 				  buffer_background_image_data);
+
+}
+
+
+//===========================================================
+// THE PROXIMITY RADAR
+//
+// On the big map the two tanks start in opposite corners and cannot see each
+// other, so without something like this looking for the other one is walking
+// around at random until you trip over him. The radar answers one question
+// and nothing else: how close is he, from 0% to 100%.
+//
+// It is DECORATION, in exactly the sense camera_x is. It is worked out from
+// two positions that both machines already simulate identically, so both of
+// them show the same figure without one byte crossing the network, and like
+// the camera it must never end up in compute_state_checksum().
+//===========================================================
+
+// Figures the radar paints: three digits and the % after them.
+//
+// Three and not "as many as it needs", so 9 comes out as 009 and the figure
+// is always the same width. A centered number whose width changes jumps
+// sideways every time it crosses 10 or 100, and a thing that jumps is a
+// thing you look at instead of playing.
+#define RADAR_DIGITS 			3
+#define RADAR_CELLS 			(RADAR_DIGITS + 1)
+
+// The box the whole figure occupies. The first cells only advance
+// NUMBER_ADVANCE each; the last one still takes its full width.
+#define RADAR_WIDTH 			(((RADAR_CELLS - 1) * NUMBER_ADVANCE) + NUMBER_WIDTH)
+
+// Where it sits. SCREEN coordinates: the radar is not in the world, so
+// nothing in here ever subtracts the camera.
+#define RADAR_MARGIN_BOTTOM 	2
+#define RADAR_X 				((WIDTH - RADAR_WIDTH) / 2)
+#define RADAR_Y 				(HEIGHT - NUMBER_HEIGHT - RADAR_MARGIN_BOTTOM)
+
+// The outline the figures are drawn on top of.
+//
+// It is needed because the radar has no background of its own: it sits on
+// whatever part of the map the camera happens to be showing. Over the dark
+// floor of the sky theme the figures were perfectly readable and over the
+// pale stone border of the war theme they nearly disappeared, and that is
+// not something the number can be trusted to survive by luck.
+//
+// Color 0 and not a dark grey picked per theme, because index 0 is pure
+// black in the palette of all three of them, checked entry by entry. It is
+// also the transparent color in a SPRITE, which costs nothing here: what is
+// transparent is what is read from the sheet, and this is what gets written
+// to the screen.
+#define RADAR_OUTLINE_COLOR 	0
+#define RADAR_OUTLINE_STEPS 	4
+
+// The four places the outline is stamped: one pixel left, right, up and
+// down. Not the diagonals, which would cost half again as much for a
+// thickness the eye does not see at this size.
+static int radar_outline_x[RADAR_OUTLINE_STEPS] = { -1,  1,  0,  0 };
+static int radar_outline_y[RADAR_OUTLINE_STEPS] = {  0,  0, -1,  1 };
+
+
+//===========================================================
+// Reserves the 11 figures and cuts them out of the theme's numbers.bmp.
+//
+// TWO conditions have to hold, and neither of them is about taste:
+//
+//   big_map_mode - the radar only means anything when you cannot see the
+//                  other tank. It also settles the network on its own: the
+//                  argument check above refuses /bigmap without /net and
+//                  falls back to the small map, so big_map_mode is only ever
+//                  1 in a network game.
+//
+//   a theme      - numbers.bmp is drawn in the palette of its own theme, and
+//                  the DAC is loaded from the map. In the undressed original
+//                  look 254 of the 256 palette entries are different ones,
+//                  so the figures would come out in whatever colors happened
+//                  to land on those indexes. There is no
+//                  res\Numbers\ORIGINAL to read either.
+//
+// It has to run AFTER init_graphics(), and not just for the theme: the sheet
+// reader works on ONE FILE * (bmp.c, file_sprites_game_open) and it is not
+// handed back until init_graphics() has cut out the last tank.
+//
+// Either all 11 exist or none do. A half filled set would be drawn with a
+// NULL in the middle of it, so a failed malloc gives everything back and
+// leaves the game running exactly as it did before the radar existed.
+//===========================================================
+void init_sprite_numbers(){
+
+	// The 11 globals, in sheet order, so the loop below can reach them
+	char **target[NUMBER_TOTAL_SPRITES];
+	char *theme_folder;
+	char radar_log_text[96];
+	unsigned int cell;
+
+	if (big_map_mode == 0){
+		return;
+	}
+
+	if (map_theme == THEME_SKY){
+		theme_folder = "SKYNET";
+	}else if (map_theme == THEME_WAR){
+		theme_folder = "MILITAR";
+	}else if (map_theme == THEME_NEON){
+		theme_folder = "NEON";
+	}else{
+		tanks_log("Radar: the original look has no numbers, no radar");
+		return;
+	}
+
+	target[0]  = &number_0;
+	target[1]  = &number_1;
+	target[2]  = &number_2;
+	target[3]  = &number_3;
+	target[4]  = &number_4;
+	target[5]  = &number_5;
+	target[6]  = &number_6;
+	target[7]  = &number_7;
+	target[8]  = &number_8;
+	target[9]  = &number_9;
+	target[NUMBER_PERCENT_CELL] = &number_percent;
+
+	// 11 cells of 18x18 is 3564 bytes, and they are asked for AFTER the
+	// 256000 byte map already has its place. Small blocks reserved before a
+	// big one are what leaves the big one without a contiguous hole to fit
+	// in, and that is a lesson this game learned the hard way.
+	for (cell = 0; cell < NUMBER_TOTAL_SPRITES; cell++){
+
+		*target[cell] = (char *)malloc(NUMBER_WIDTH * NUMBER_HEIGHT);
+
+		if (*target[cell] == NULL){
+			tanks_log("Radar: no memory for the numbers, no radar");
+			free_sprite_numbers();
+			return;
+		}
+
+	}
+
+	// 8.3 all the way down: Numbers is 7 characters, SKYNET, MILITAR and
+	// NEON are 8 or fewer, numbers.bmp is 7.3. Go over that anywhere in this
+	// path and DOS mangles the name and the open fails.
+	sprintf(numbers_path, "..\\res\\Numbers\\%s\\numbers.bmp", theme_folder);
+
+	bmp_open_sprite_sheet(numbers_path);
+
+	// One row of 11 cells, left to right: the digits 0 to 9 and then the %.
+	// numbers.bmp is 320x200 like every other sheet, which is what
+	// bmp_extract_sprite() assumes when it flips the bottom-up rows of the
+	// BMP round.
+	for (cell = 0; cell < NUMBER_TOTAL_SPRITES; cell++){
+
+		bmp_extract_sprite(cell * NUMBER_WIDTH,
+		                   0,
+		                   NUMBER_WIDTH,
+		                   NUMBER_HEIGHT,
+		                   *target[cell]);
+
+	}
+
+	bmp_close_sprite_sheet();
+
+	sprintf(radar_log_text, "Radar: numbers loaded from %s", numbers_path);
+	tanks_log(radar_log_text);
+
+}
+
+
+//===========================================================
+// Gives the 11 figures back. Safe to call on a set that was never reserved,
+// which is how init_sprite_numbers() cleans up after itself.
+//===========================================================
+void free_sprite_numbers(){
+
+	char **target[NUMBER_TOTAL_SPRITES];
+	unsigned int cell;
+
+	target[0]  = &number_0;
+	target[1]  = &number_1;
+	target[2]  = &number_2;
+	target[3]  = &number_3;
+	target[4]  = &number_4;
+	target[5]  = &number_5;
+	target[6]  = &number_6;
+	target[7]  = &number_7;
+	target[8]  = &number_8;
+	target[9]  = &number_9;
+	target[NUMBER_PERCENT_CELL] = &number_percent;
+
+	for (cell = 0; cell < NUMBER_TOTAL_SPRITES; cell++){
+
+		if (*target[cell] != NULL){
+			free(*target[cell]);
+			*target[cell] = NULL;
+		}
+
+	}
+
+}
+
+
+//===========================================================
+// How close the two tanks are: 0 = as far apart as this map allows,
+// 100 = on top of each other.
+//
+// Integer arithmetic the whole way, on purpose. There is not one float in
+// this project, and a radar is not a good reason to drag Turbo C's floating
+// point library into a game that is already counting its bytes.
+//
+// So the distance is the cheap classic instead of a real one:
+//
+//     distance = bigger + (smaller / 2)
+//
+// It lands within about 11% of sqrt(dx*dx + dy*dy) and costs a compare, an
+// add and a shift. Plain |dx| + |dy| was the other candidate and it is worse
+// HERE: it makes a tank on the diagonal read much further away than one
+// straight ahead at the same real distance, and the diagonal is exactly
+// where the other player starts.
+//
+// The percentage has to be worked out in long. distance * 100 reaches about
+// 78000 on the 640x400 map, an unsigned int stops at 65535, and in 16 bit
+// arithmetic the radar would wrap round and read a cheerful 100% at the far
+// end of the map.
+//===========================================================
+int compute_proximity_percent(){
+
+	int dx;
+	int dy;
+	int swap;
+	long distance;
+	long worst_distance;
+	long percent;
+
+	// Cast to int BEFORE subtracting. The positions are unsigned, so a
+	// player1 standing to the LEFT of player2 gives 65000-something here
+	// instead of a negative number, and the radar would read 0% every time
+	// the tanks happened to be the wrong way round.
+	dx = (int)player1.position_x - (int)player2.position_x;
+	dy = (int)player1.position_y - (int)player2.position_y;
+
+	if (dx < 0){
+		dx = -dx;
+	}
+	if (dy < 0){
+		dy = -dy;
+	}
+
+	if (dx < dy){
+		swap = dx;
+		dx = dy;
+		dy = swap;
+	}
+
+	distance = (long)dx + ((long)dy / 2L);
+
+	// The same formula over the whole world, so the scale follows
+	// map_width and map_height instead of having 640 written into it. A tank
+	// is a box and not a point, so the furthest its corner can ever get from
+	// the other corner is the map minus one tank.
+	if (map_width > map_height){
+		worst_distance = (long)(map_width  - TANK_WIDTH)
+		               + ((long)(map_height - TANK_HEIGHT) / 2L);
+	}else{
+		worst_distance = (long)(map_height - TANK_HEIGHT)
+		               + ((long)(map_width  - TANK_WIDTH) / 2L);
+	}
+
+	if (worst_distance <= 0){
+		return 0;
+	}
+
+	percent = 100L - ((distance * 100L) / worst_distance);
+
+	if (percent < 0){
+		percent = 0;
+	}
+	if (percent > 100){
+		percent = 100;
+	}
+
+	return (int)percent;
+
+}
+
+
+//===========================================================
+// Paints the radar at the bottom of the screen.
+//
+// Nothing here subtracts the camera, and that is the whole point: this is the
+// one thing drawn each frame that does not live in the world. It stays in the
+// same 4 cells whatever the tank is doing.
+//
+// The one NULL check is enough for all 11: init_sprite_numbers() either
+// fills the whole set or leaves the whole set empty.
+//===========================================================
+void draw_proximity_radar(){
+
+	char *figure[RADAR_CELLS];
+	char *digit[10];
+	int percent;
+	int value;
+	int cell;
+	int step;
+
+	if (number_0 == NULL){
+		return;
+	}
+
+	digit[0] = number_0;
+	digit[1] = number_1;
+	digit[2] = number_2;
+	digit[3] = number_3;
+	digit[4] = number_4;
+	digit[5] = number_5;
+	digit[6] = number_6;
+	digit[7] = number_7;
+	digit[8] = number_8;
+	digit[9] = number_9;
+
+	percent = compute_proximity_percent();
+
+	// Right to left, so the units land in the last digit cell and a 9 comes
+	// out as 009 instead of shifting the whole figure one cell over.
+	value = percent;
+
+	for (cell = RADAR_DIGITS - 1; cell >= 0; cell--){
+		figure[cell] = digit[value % 10];
+		value = value / 10;
+	}
+
+	figure[RADAR_DIGITS] = number_percent;
+
+	// Two passes, and they cannot be folded into one.
+	//
+	// The figures are placed NUMBER_ADVANCE apart while their ink is up to 14
+	// pixels wide, so every cell overlaps the one before it a little. If each
+	// figure were outlined and then filled before moving on to the next, the
+	// black outline of a digit would land on top of the right hand edge of
+	// the digit already painted and eat it. So: every outline first, and
+	// every figure afterwards.
+	for (cell = 0; cell < RADAR_CELLS; cell++){
+
+		for (step = 0; step < RADAR_OUTLINE_STEPS; step++){
+
+			draw_sprite_silhouette_to_buffer(figure[cell],
+			                      NUMBER_WIDTH,
+			                      NUMBER_HEIGHT,
+			                      RADAR_X + (cell * NUMBER_ADVANCE) + radar_outline_x[step],
+			                      RADAR_Y + radar_outline_y[step],
+			                      RADAR_OUTLINE_COLOR,
+			                      buffer_background_image_data);
+
+		}
+
+	}
+
+	for (cell = 0; cell < RADAR_CELLS; cell++){
+
+		draw_sprite_to_buffer(figure[cell],
+		                      NUMBER_WIDTH,
+		                      NUMBER_HEIGHT,
+		                      RADAR_X + (cell * NUMBER_ADVANCE),
+		                      RADAR_Y,
+		                      buffer_background_image_data);
+
+	}
 
 }
 

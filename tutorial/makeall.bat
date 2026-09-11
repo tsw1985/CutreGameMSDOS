@@ -155,6 +155,12 @@ make
 cd ..
 
 echo.
+echo ===== CAPITULO 24 =====
+cd ch24
+make
+cd ..
+
+echo.
 echo ===== TERMINADO =====
 echo.
 echo Cada chapNN.exe esta en su carpeta chNN.

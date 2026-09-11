@@ -711,6 +711,86 @@ void draw_sprite_to_buffer(unsigned char *sprite,
     }
 }
 
+//===========================================================
+// The same as above, but every pixel that is not transparent is written as
+// ONE colour instead of its own: the silhouette of the sprite.
+//
+// The proximity radar draws its figures four times in black, one pixel out
+// in each direction, before drawing them properly on top. That is what
+// gives them an outline, and an outline is what makes a number readable
+// over a background nobody chose: the radar sits wherever the map happens
+// to be, and over the pale stone of the war theme the figures were nearly
+// gone.
+//
+// Everything else is draw_sprite_to_buffer() word for word, clipping
+// included, and for the same reasons. Only the byte that gets stored is
+// different.
+//===========================================================
+void draw_sprite_silhouette_to_buffer(unsigned char *sprite,
+			                         unsigned int sprite_width,
+			                         unsigned int sprite_height,
+			                         int dest_x,
+			                         int dest_y,
+			                         unsigned char color,
+			                         unsigned char *dest_buffer)
+{
+    int y, x;
+    int start_x, start_y;
+    int end_x, end_y;
+    unsigned int src_offset, dest_offset;
+
+    // Completely off the screen: nothing to do at all
+    if (dest_x >= WIDTH){
+    	return;
+    }
+    if (dest_y >= HEIGHT){
+    	return;
+    }
+    if (dest_x + (int)sprite_width <= 0){
+    	return;
+    }
+    if (dest_y + (int)sprite_height <= 0){
+    	return;
+    }
+
+    // Which part of the sprite actually lands on the screen
+    start_x = 0;
+    if (dest_x < 0){
+    	start_x = -dest_x;
+    }
+
+    start_y = 0;
+    if (dest_y < 0){
+    	start_y = -dest_y;
+    }
+
+    end_x = (int)sprite_width;
+    if (dest_x + end_x > WIDTH){
+    	end_x = WIDTH - dest_x;
+    }
+
+    end_y = (int)sprite_height;
+    if (dest_y + end_y > HEIGHT){
+    	end_y = HEIGHT - dest_y;
+    }
+
+    for(y = start_y; y < end_y; y++) {
+        for(x = start_x; x < end_x; x++) {
+
+            src_offset  = ((unsigned int)y * sprite_width) + (unsigned int)x;
+            dest_offset = ((unsigned int)(dest_y + y) * WIDTH) + (unsigned int)(dest_x + x);
+
+            // The shape of the sprite decides WHERE to write, "color"
+            // decides WHAT. Color 0 is still the transparent one in the
+            // source, so the box around the glyph stays empty.
+            if(sprite[src_offset] != 0) {
+                dest_buffer[dest_offset] = color;
+            }
+        }
+    }
+}
+
+
 
 
 

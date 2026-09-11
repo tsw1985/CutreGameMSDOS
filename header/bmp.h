@@ -221,6 +221,24 @@ void draw_sprite_to_buffer(unsigned char *sprite,
 			                         int dest_y,
 			                         unsigned char *dest_buffer);
 
+// The same sprite, painted as ONE FLAT COLOR instead of its own colors:
+// every pixel that is not the transparent 0 is written as "color".
+//
+// It draws the SILHOUETTE of the sprite, and it exists so the proximity
+// radar can put a black outline behind its figures. Over a dark floor the
+// numbers were readable and over a pale stone wall they were not, and an
+// outline fixes that without touching the .bmp the artist drew.
+//
+// Clipping, transparency and the signed coordinates all work exactly like
+// draw_sprite_to_buffer(). The only difference is the one byte written.
+void draw_sprite_silhouette_to_buffer(unsigned char *sprite,
+			                         unsigned int sprite_width,
+			                         unsigned int sprite_height,
+			                         int dest_x,
+			                         int dest_y,
+			                         unsigned char color,
+			                         unsigned char *dest_buffer);
+
 
 
 

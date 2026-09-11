@@ -28,3 +28,7 @@ tutorial/*/*.obj
 tutorial/*/*.OBJ
 tutorial/*/*.map
 tutorial/*/*.MAP
+
+# Fichero de contexto y reglas de trabajo de Claude. Es privado de la
+# maquina de desarrollo y no se sube nunca.
+CLAUDE.md

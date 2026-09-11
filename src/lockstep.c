@@ -337,7 +337,7 @@ int net_agree_level(int my_level){
 		// Player 1 keeps offering until it hears an ACK.
 		// Player 2 keeps quiet until it hears an offer.
 		//-----------------------------------------------
-		if (is_player1 == 1){
+		if (is_player1 == 1 && agreed < 0){
 
 			if (now_tick >= next_send_tick){
 
@@ -381,10 +381,10 @@ int net_agree_level(int my_level){
 
 				if (is_player1 == 1 && incoming.type == LEVEL_ACK){
 
-					// Player 1: they have it. Done.
+					// Player 1: they have it. Note it and stop offering, but
+					// do NOT leave yet: see the wait at the bottom of the loop.
 					if ((int)incoming.level == my_level){
 						agreed = my_level;
-						return agreed;
 					}
 
 				}
@@ -396,12 +396,29 @@ int net_agree_level(int my_level){
 		}
 
 		//-----------------------------------------------
-		// Player 2 does not return the moment it has the number: it stays a
-		// little longer answering, so player 1's last offers keep getting
-		// their ACK. Leaving at once would often make player 1 wait out the
-		// full timeout for an ACK that was never sent again.
+		// NEITHER machine returns the moment it has the number. Both stay
+		// here until the same deadline, counted from the same start.
+		//
+		// Two different reasons, and both matter:
+		//
+		//   Player 2 has to keep answering for a while, so player 1's last
+		//   offers keep getting their ACK. Leaving at once would often make
+		//   player 1 wait out the full timeout for an ACK that was never
+		//   sent again.
+		//
+		//   Player 1 has to wait for the SAME length of time, or it walks out
+		//   of here a second ahead of player 2 and stays a second ahead for
+		//   the rest of the game. The tanks would not care, because lockstep
+		//   makes whoever is early wait at frame 0 anyway. The music would:
+		//   it is streamed, nobody synchronises it, and the two songs would
+		//   play a second apart from the first note to the last.
+		//
+		// Both machines got here within a packet of each other (net_pair()
+		// only lets go when both ends have heard a HELLO and had their own
+		// answered), so counting the same number of ticks from their own
+		// start_tick lands them on the same moment.
 		//-----------------------------------------------
-		if (is_player1 == 0 && agreed >= 0){
+		if (agreed >= 0){
 
 			if (now_tick - start_tick > LEVEL_RETRY_TICKS * 4){
 				return agreed;

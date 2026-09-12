@@ -29,6 +29,8 @@ THEME=""
 THEME_CLIENT=""
 LEVEL=""
 SERVER_IP=""
+DEMO=0
+DEMO_FOUND=0
 
 red()   { printf '\033[31m%s\033[0m\n' "$*"; }
 green() { printf '\033[32m%s\033[0m\n' "$*"; }
@@ -47,6 +49,7 @@ cat <<'END'
     ./play.sh both                       dos ventanas, mapa pequeno
     ./play.sh both -b                    dos ventanas, mapa grande
     ./play.sh both -b -t neon -l 3       ... con tema y nivel
+    ./play.sh local -demo                con la intro delante
 
   DOS ORDENADORES
     ./play.sh server -b -t war -l 3           en el primero
@@ -60,6 +63,7 @@ cat <<'END'
     -t TEMA       sky, war o neon.  Necesita -b
     -l N          nivel 1 a 5.      Necesita -b
     -T TEMA       solo en 'both': tema de la SEGUNDA ventana
+    -d, -demo     la intro: 15 imagenes con efectos antes de jugar
     -p PUERTO     puerto UDP del tunel. Por defecto 5213
     -y CICLOS     cycles= de DOSBox. Por defecto "fixed 30000"
 
@@ -71,6 +75,18 @@ cat <<'END'
     Si los -l no coinciden el juego lo negocia en vez de romperse, pero
     gana el JUGADOR 1, que se sortea al azar en cada partida y NO es
     quien lanzo el server. Asi que ponlo igual en las dos.
+
+  LA INTRO  (-d)
+    Ensena res/demo/demo01.bmp .. demo15.bmp, cada una con un efecto
+    distinto, 8 segundos, con la musica. ESC se la salta y empieza la
+    partida.
+
+    Las imagenes tienen que ser BMP de 320x200 y 256 COLORES, de 65078
+    bytes. Una que falte se salta sin mas.
+
+    La intro va ANTES de emparejar por red, asi que en 'both', 'server'
+    y 'client' cada maquina ve la suya y luego se buscan. Si en una le
+    das a ESC y en la otra no, la primera espera: no pasa nada.
 
   CONTROLES
     local     jugador 1: flechas + 5 del numerico
@@ -107,9 +123,28 @@ MODE_NAME="$MODE"
 GAME_ARGS=""
 [ "$MODE" != "local" ] && GAME_ARGS="/net"
 
-while getopts "bt:T:l:p:y:h" option; do
+# ------------------------------------------------------------
+# getopts solo entiende opciones de UNA letra: le pasas -demo y lo lee como
+# -d -e -m -o. Como el juego se llama con "-demo" y es lo que uno escribe
+# sin pensar, se saca de la lista antes y se acepta de las dos formas.
+# ------------------------------------------------------------
+FILTERED=()
+for argument in "$@"; do
+    case "$argument" in
+        -demo|--demo|/demo) DEMO=1 ;;
+        *)                  FILTERED+=("$argument") ;;
+    esac
+done
+if [ ${#FILTERED[@]} -gt 0 ]; then
+    set -- "${FILTERED[@]}"
+else
+    set --
+fi
+
+while getopts "bdt:T:l:p:y:h" option; do
     case "$option" in
         b) GAME_ARGS="$GAME_ARGS /bigmap" ;;
+        d) DEMO=1 ;;
         t) THEME="$OPTARG" ;;
         T) THEME_CLIENT="$OPTARG" ;;
         l) LEVEL="$OPTARG" ;;
@@ -244,6 +279,58 @@ fi
 
 
 # ------------------------------------------------------------
+# LA INTRO
+#
+# Va la ultima de la linea porque asi se lee bien lo que se ejecuta, y al
+# juego el orden de los argumentos le da igual.
+#
+# Las imagenes se comprueban aqui por lo mismo que los niveles: el juego se
+# salta en silencio la que no encuentre, asi que sin esto una intro con las
+# quince mal puestas seria una pantalla en negro de dos minutos sin que
+# nadie te diga por que.
+# ------------------------------------------------------------
+if [ "$DEMO" = "1" ]; then
+
+    GAME_ARGS="$GAME_ARGS -demo"
+
+    [ -d "$GAME_ROOT/res/demo" ] || error \
+"No encuentro la carpeta res/demo/
+       La intro busca ahi res/demo/demo01.bmp .. demo15.bmp"
+
+    DEMO_FOUND=0
+    DEMO_BAD=""
+
+    for n in 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15; do
+
+        img="$GAME_ROOT/res/demo/demo$n.bmp"
+        [ -f "$img" ] || continue
+
+        DEMO_FOUND=$((DEMO_FOUND + 1))
+
+        # 65078 bytes exactos: 54 de cabecera + 1024 de paleta + 320*200.
+        # Un BMP de 256 colores que use menos colores sale mas corto, y el
+        # juego hace fseek(1078) a pelo: la imagen saldria descuadrada en
+        # diagonal en vez de dar un error.
+        size=$(stat -c %s "$img")
+        [ "$size" = "65078" ] || DEMO_BAD="$DEMO_BAD demo$n.bmp($size)"
+
+    done
+
+    [ "$DEMO_FOUND" -gt 0 ] || error \
+"En res/demo/ no hay ninguna imagen.
+       Tienen que llamarse demo01.bmp .. demo15.bmp, ser BMP de 320x200 y
+       256 colores, y ocupar 65078 bytes exactos."
+
+    if [ -n "$DEMO_BAD" ]; then
+        red "AVISO: estas no miden 65078 bytes y saldran torcidas:"
+        red "      $DEMO_BAD"
+        grey "  Guardalas como BMP de 320x200 con la paleta de 256 entradas completa."
+    fi
+
+fi
+
+
+# ------------------------------------------------------------
 # Cada instancia corre desde SU PROPIO directorio, y no es por orden.
 #
 # El juego escribe su log con fopen("game.log"), una ruta RELATIVA, asi que
@@ -330,6 +417,7 @@ summary() {
     grey "  modo       : $MODE_NAME"
     [ "$BIGMAP" = "1" ] && grey "  tema       : ${THEME:-original}"
     [ "$BIGMAP" = "1" ] && grey "  nivel      : ${LEVEL:-0}   (0 = el mapa grande original)"
+    [ "$DEMO" = "1" ]   && grey "  intro      : si, $DEMO_FOUND imagenes de res/demo/  (ESC se la salta)"
     grey "  linea      : game.exe $GAME_ARGS"
     grey "  ejecutable : $(date -r "$EXE" '+%Y-%m-%d %H:%M')"
     [ "$MODE" != "local" ] && grey "  puerto     : $PORT/udp"

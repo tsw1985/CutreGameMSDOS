@@ -45,8 +45,7 @@ int demo_cycle(unsigned char *image,
 
 	// La imagen se pinta una vez y no se vuelve a tocar en todo el efecto
 	memcpy(screen, image, DEMO_SCREEN);
-	demo_wait_retrace();
-	bmp_paint_image_data_to_vga(screen);
+	demo_show(screen);
 
 	counter = 0;
 
@@ -61,6 +60,7 @@ int demo_cycle(unsigned char *image,
 		demo_wait_retrace();
 
 		counter++;
+
 
 		if (counter >= CYCLE_EVERY){
 
@@ -93,6 +93,16 @@ int demo_cycle(unsigned char *image,
 			bmp_write_pallete_data_into_dac(palette);
 
 		}
+
+		//---------------------------------------------------
+		// Y a alimentar la tarjeta, DESPUES de escribir el DAC.
+		//
+		// Este efecto no puede usar demo_show(): no repinta nada, y lo
+		// unico que hace en el frame es escribir la paleta, que tiene que
+		// caer dentro del borrado vertical. Mezclar el sonido antes se
+		// comeria esa ventana y la paleta entraria con el haz pintando.
+		//---------------------------------------------------
+		demo_sound();
 
 	}
 

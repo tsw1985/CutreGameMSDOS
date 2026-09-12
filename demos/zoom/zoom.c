@@ -109,8 +109,7 @@ int demo_zoom(unsigned char *image,
 
 		}
 
-		demo_wait_retrace();
-		bmp_paint_image_data_to_vga(screen);
+		demo_show(screen);
 
 		breath = (breath + ZOOM_BREATH) & DEMO_ANGLE_MASK;
 

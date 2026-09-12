@@ -98,8 +98,7 @@ int demo_bounce(unsigned char *image,
 
 		}
 
-		demo_wait_retrace();
-		bmp_paint_image_data_to_vga(screen);
+		demo_show(screen);
 
 		angle_x = (angle_x + BOUNCE_SPEED_X) & DEMO_ANGLE_MASK;
 		angle_y = (angle_y + BOUNCE_SPEED_Y) & DEMO_ANGLE_MASK;

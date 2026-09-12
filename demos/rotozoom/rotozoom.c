@@ -141,8 +141,7 @@ int demo_rotozoom(unsigned char *image,
 
 		}
 
-		demo_wait_retrace();
-		bmp_paint_image_data_to_vga(screen);
+		demo_show(screen);
 
 		angle  = (angle  + ROTOZOOM_SPIN)   & DEMO_ANGLE_MASK;
 		breath = (breath + ROTOZOOM_BREATH) & DEMO_ANGLE_MASK;

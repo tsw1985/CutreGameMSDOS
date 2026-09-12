@@ -86,8 +86,7 @@ int demo_stripes(unsigned char *image,
 
 		}
 
-		demo_wait_retrace();
-		bmp_paint_image_data_to_vga(screen);
+		demo_show(screen);
 
 	}
 

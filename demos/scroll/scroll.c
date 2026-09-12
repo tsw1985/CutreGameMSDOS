@@ -71,8 +71,7 @@ int demo_scroll(unsigned char *image,
 
 		}
 
-		demo_wait_retrace();
-		bmp_paint_image_data_to_vga(screen);
+		demo_show(screen);
 
 		offset_x = offset_x + SCROLL_SPEED_X;
 		if (offset_x >= DEMO_WIDTH){

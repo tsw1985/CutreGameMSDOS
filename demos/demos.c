@@ -118,6 +118,26 @@ void demo_wait_retrace(void){
 }
 
 
+//===========================================================
+// El fin de frame. Ver demolib.h: aqui esta la razon de que la musica no se
+// quede en bucle.
+//===========================================================
+void demo_show(unsigned char *screen){
+
+	demo_wait_retrace();
+	bmp_paint_image_data_to_vga(screen);
+	sound_update();
+
+}
+
+
+void demo_sound(void){
+
+	sound_update();
+
+}
+
+
 unsigned long demo_now(void){
 
 	return (unsigned long)biostime(0, 0L);
@@ -363,9 +383,22 @@ int demo_run(char **image_paths, int image_count, unsigned int seconds_each){
 
 	for (index = 0; index < image_count; index++){
 
+		//---------------------------------------------------
+		// Alimentar la tarjeta a los dos lados de la carga.
+		//
+		// Leer 65078 bytes de disco es lo unico de todo el bucle que no
+		// esta paceado por el retrazo, y la tarjeta se come medio buffer
+		// cada tercio de segundo sin preguntar. En un disco duro esto son
+		// milisegundos y no se nota; desde un disquete, se notaria.
+		//---------------------------------------------------
+		demo_sound();
+
 		if (demo_load_image(image_paths[index], image, palette) == 0){
+			demo_sound();
 			continue;		// no estaba: a la siguiente
 		}
+
+		demo_sound();
 
 		//---------------------------------------------------
 		// La pantalla entra en negro SIEMPRE.

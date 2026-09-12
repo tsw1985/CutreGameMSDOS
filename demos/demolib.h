@@ -95,6 +95,40 @@ void demo_tables_init(void);
 // Two lines are a cheap price for a folder that travels on its own.
 void demo_wait_retrace(void);
 
+
+//-----------------------------------------------------------
+// END OF FRAME. Every effect calls one of these two exactly once a turn of
+// its loop, and that is not a convenience, it is the whole point.
+//
+// An effect that runs for eight seconds is 560 frames, and during all of
+// them the Sound Blaster is reading the DMA buffer on its own. If nobody
+// refills the half it has just finished, the card plays that same half
+// again, and again: the music gets stuck in a loop of a fraction of a
+// second and stays there until the effect ends.
+//
+// The first version of this folder called sound_update() in the fades and
+// NOT inside the effects, and that is exactly what it sounded like. Putting
+// it inside the one call every effect already makes per frame is what stops
+// it from happening again to the eleventh effect somebody writes.
+//
+// sound_update() is cheap: it returns immediately unless the card has
+// actually finished a half, which at 512 samples happens about 3 times a
+// second against 70 frames.
+//-----------------------------------------------------------
+
+// Waits for the retrace, puts the frame on screen and feeds the card.
+//
+// The order matters: the 64000 byte copy to video memory goes FIRST, while
+// the beam is still in the vertical blanking, and the sound is fed with
+// what is left of the frame. The other way round, mixing would eat the
+// blanking window and the picture would tear.
+void demo_show(unsigned char *screen);
+
+// Just feeds the card, for an effect that does not repaint. Only cycle
+// needs it: it paints once at the start and after that all it changes is
+// the palette, and the palette write has to stay inside the blanking.
+void demo_sound(void);
+
 // 1 if ESC is down. Read through the BIOS and not through an INT 9 handler
 // of our own, on purpose: an interrupt vector is exactly the kind of thing
 // that makes a module impossible to lift into another program. It also

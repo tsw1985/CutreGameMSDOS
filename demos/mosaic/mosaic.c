@@ -86,8 +86,7 @@ int demo_mosaic(unsigned char *image,
 
 		}
 
-		demo_wait_retrace();
-		bmp_paint_image_data_to_vga(screen);
+		demo_show(screen);
 
 		phase = (phase + MOSAIC_SPEED) & DEMO_ANGLE_MASK;
 

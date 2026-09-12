@@ -27,6 +27,25 @@ int demo_zoom(unsigned char *image,
               unsigned char *palette,
               unsigned long end_tick)
 {
+	//-------------------------------------------------------
+	// LA TABLA DE COLUMNAS, y es de lo que va esta funcion.
+	//
+	// En un zoom sin giro, la columna de origen de un pixel depende SOLO
+	// de su x: la fila 0 y la fila 199 leen exactamente las mismas 320
+	// columnas. La version anterior calculaba esa cuenta 64000 veces por
+	// frame, una por pixel, cuando hay 320 respuestas distintas.
+	//
+	// Aqui se calculan las 320 una vez al principio del frame y el bucle
+	// interior se queda en "leer la tabla, sumar y copiar": ni una suma
+	// larga, ni un desplazamiento, ni una comparacion de limites.
+	//
+	// 320 cuentas por frame en vez de 64000. Y de paso salen gratis las
+	// dos columnas donde la imagen empieza y acaba, asi que los bordes
+	// negros se rellenan con memset en lugar de pixel a pixel.
+	//-------------------------------------------------------
+	unsigned int column[DEMO_WIDTH];
+	int first, last;
+
 	int breath;
 	long scale;
 	long step;
@@ -64,6 +83,35 @@ int demo_zoom(unsigned char *image,
 		start_u = ((long)(DEMO_WIDTH  / 2) << DEMO_SHIFT) - (step * (DEMO_WIDTH  / 2));
 		start_v = ((long)(DEMO_HEIGHT / 2) << DEMO_SHIFT) - (step * (DEMO_HEIGHT / 2));
 
+		//---------------------------------------------------
+		// Las 320 columnas del frame, y de paso donde empieza y acaba la
+		// parte visible.
+		//
+		// step es siempre positivo, asi que las columnas van creciendo y
+		// la parte de dentro es un tramo seguido: un principio y un final,
+		// sin agujeros en medio.
+		//---------------------------------------------------
+		first = DEMO_WIDTH;
+		last  = -1;
+
+		u = start_u;
+
+		for (x = 0; x < DEMO_WIDTH; x++){
+
+			sx = (int)(u >> DEMO_SHIFT);
+
+			if ((unsigned int)sx < DEMO_WIDTH){
+				column[x] = (unsigned int)sx;
+				if (x < first){
+					first = x;
+				}
+				last = x;
+			}
+
+			u += step;
+
+		}
+
 		destination = 0;
 		v = start_v;
 
@@ -72,39 +120,33 @@ int demo_zoom(unsigned char *image,
 			sy = (int)(v >> DEMO_SHIFT);
 
 			//-----------------------------------------------
-			// La fila entera de origen se decide AQUI, una vez.
-			//
-			// Y si esta fila cae fuera de la imagen, se pinta negra de
-			// golpe con un memset en vez de mirar pixel a pixel. Cuando la
-			// imagen esta lejos, la mayoria de las filas son estas.
+			// Una fila fuera de la imagen se pinta negra de golpe. Cuando
+			// la imagen esta lejos, la mayoria de las filas son estas.
 			//-----------------------------------------------
-			if ((unsigned int)sy >= DEMO_HEIGHT){
+			if ((unsigned int)sy >= DEMO_HEIGHT || last < first){
 
 				memset(screen + destination, 0, DEMO_WIDTH);
-				destination += DEMO_WIDTH;
 
 			}else{
 
 				source_row = demo_row[sy];
-				u = start_u;
 
-				for (x = 0; x < DEMO_WIDTH; x++){
+				// Los dos bordes negros, de una vez
+				if (first > 0){
+					memset(screen + destination, 0, first);
+				}
+				if (last < DEMO_WIDTH - 1){
+					memset(screen + destination + last + 1, 0, DEMO_WIDTH - 1 - last);
+				}
 
-					sx = (int)(u >> DEMO_SHIFT);
-
-					if ((unsigned int)sx < DEMO_WIDTH){
-						screen[destination] = image[source_row + (unsigned int)sx];
-					}else{
-						screen[destination] = 0;
-					}
-
-					destination++;
-					u += step;
-
+				// Y la parte visible, sin una sola comprobacion dentro
+				for (x = first; x <= last; x++){
+					screen[destination + x] = image[source_row + column[x]];
 				}
 
 			}
 
+			destination += DEMO_WIDTH;
 			v += step;
 
 		}

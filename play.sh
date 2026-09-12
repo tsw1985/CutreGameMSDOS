@@ -24,7 +24,31 @@ set -u
 GAME_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 PORT=5213
-CYCLES="fixed 30000"
+
+# ------------------------------------------------------------
+# LA POTENCIA QUE SE LE DA A DOSBOX
+#
+# 'dynamic' traduce el codigo 16 bits a codigo nativo del anfitrion en vez
+# de interpretarlo instruccion a instruccion. Es varias veces mas rapido que
+# el 'auto' que habia antes y no cambia nada de lo que hace el programa.
+#
+# 'max' deja que DOSBox use el nucleo entero de tu PC. Antes habia un
+# "fixed 30000", que es un 386DX-40 flojo: los efectos de la intro que van
+# pixel a pixel se arrastraban a 8 o 9 fotogramas por segundo.
+#
+# Y subir ciclos AQUI es seguro, que es lo que normalmente no lo es en DOS.
+# Todo el programa espera al retrazo vertical: el bucle del juego llama a
+# wait_retrace() y las demos pasan todas por demo_show(), que hace lo mismo.
+# El tope son ~70 fotogramas por segundo pase lo que pase, asi que mas
+# potencia no acelera nada, solo hace que a cada fotograma le sobre tiempo
+# en vez de faltarle. El clasico "en un PC rapido el juego va a mil por
+# hora" aqui no puede pasar.
+#
+# Si el sonido diera tirones, que puede pasar si tu Linux esta cargado,
+# vuelve a un numero fijo:   -y "fixed 100000"
+# ------------------------------------------------------------
+CORE="dynamic"
+CYCLES="max"
 THEME=""
 THEME_CLIENT=""
 LEVEL=""
@@ -65,7 +89,8 @@ cat <<'END'
     -T TEMA       solo en 'both': tema de la SEGUNDA ventana
     -d, -demo     la intro: 15 imagenes con efectos antes de jugar
     -p PUERTO     puerto UDP del tunel. Por defecto 5213
-    -y CICLOS     cycles= de DOSBox. Por defecto "fixed 30000"
+    -y CICLOS     cycles= de DOSBox. Por defecto "max" (todo tu PC)
+    -c NUCLEO     core= de DOSBox.   Por defecto "dynamic"
 
   QUE TIENE QUE COINCIDIR ENTRE LAS DOS MAQUINAS
     -b   SI.  Mapas de distinto tamano = partidas distintas.
@@ -87,6 +112,17 @@ cat <<'END'
     La intro va ANTES de emparejar por red, asi que en 'both', 'server'
     y 'client' cada maquina ve la suya y luego se buscan. Si en una le
     das a ESC y en la otra no, la primera espera: no pasa nada.
+
+  SI VA LENTO O SI VA RARO
+    Por defecto DOSBox va a core=dynamic y cycles=max, o sea a todo lo que
+    de tu PC. Nada puede ir "demasiado rapido": el juego y las demos
+    esperan al retrazo vertical y estan topados a unos 70 fps.
+
+    Si el SONIDO da tirones, fija los ciclos:
+      ./play.sh local -demo -y "fixed 100000"
+
+    Si algo se comporta raro, vuelve al interprete lento de siempre:
+      ./play.sh local -c auto -y "fixed 30000"
 
   CONTROLES
     local     jugador 1: flechas + 5 del numerico
@@ -141,7 +177,7 @@ else
     set --
 fi
 
-while getopts "bdt:T:l:p:y:h" option; do
+while getopts "bdt:T:l:p:y:c:h" option; do
     case "$option" in
         b) GAME_ARGS="$GAME_ARGS /bigmap" ;;
         d) DEMO=1 ;;
@@ -150,6 +186,7 @@ while getopts "bdt:T:l:p:y:h" option; do
         l) LEVEL="$OPTARG" ;;
         p) PORT="$OPTARG" ;;
         y) CYCLES="$OPTARG" ;;
+        c) CORE="$OPTARG" ;;
         h) usage 0 ;;
         *) usage 1 ;;
     esac
@@ -383,10 +420,14 @@ generate_conf() {
 machine=svga_s3
 
 [cpu]
-core=auto
-# Las dos maquinas tienen que ir a los mismos ciclos. El lockstep sincroniza
-# por frame y no por tiempo, asi que no vas a desincronizar por ir a
-# velocidades distintas, pero la rapida se pasaria media vida esperando.
+# dynamic recompila a codigo nativo en vez de interpretar. max le da el
+# nucleo entero de la maquina.
+#
+# No hace falta que las dos maquinas vayan a la misma velocidad: el lockstep
+# sincroniza por fotograma, y ademas los dos extremos estan topados por el
+# retrazo vertical a unos 70 fps, asi que en cuanto las dos llegan a ese tope
+# van igual de rapidas aunque una sea el doble de potente.
+core=$CORE
 cycles=$CYCLES
 
 [sblaster]
@@ -420,6 +461,7 @@ summary() {
     [ "$DEMO" = "1" ]   && grey "  intro      : si, $DEMO_FOUND imagenes de res/demo/  (ESC se la salta)"
     grey "  linea      : game.exe $GAME_ARGS"
     grey "  ejecutable : $(date -r "$EXE" '+%Y-%m-%d %H:%M')"
+    grey "  dosbox     : core=$CORE  cycles=$CYCLES"
     [ "$MODE" != "local" ] && grey "  puerto     : $PORT/udp"
     grey "--------------------------------------------------------"
 }

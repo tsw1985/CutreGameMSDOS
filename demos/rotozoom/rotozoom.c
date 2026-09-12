@@ -41,6 +41,94 @@
 #define ROTOZOOM_BREATH 	1
 
 
+//-----------------------------------------------------------
+// EN QUE TRAMO DE x SE CUMPLE   0 <= inicio + x*paso < limite
+//
+// Esta funcioncita es toda la optimizacion.
+//
+// El valor crece (o decrece) en linea recta con x, asi que los x que
+// cumplen la condicion son UN TRAMO SEGUIDO: un principio y un final, sin
+// agujeros en medio. En vez de preguntarlo 320 veces por fila, se calcula
+// donde empieza y donde acaba, y dentro ya no hay nada que preguntar.
+//
+// Todas las divisiones son de positivo entre positivo, a proposito: en C89
+// el redondeo de una division con negativos queda a gusto del compilador,
+// y eso es exactamente el tipo de cosa que funciona en gcc y hace otra
+// cosa en Turbo C. Cuando el paso es negativo se le da la vuelta al signo
+// y se resuelve el mismo problema al reves.
+//
+// Devuelve 0 si no hay ningun x que valga.
+//-----------------------------------------------------------
+static int rotozoom_span(long start, long step, long limit,
+                         int *out_first, int *out_last)
+{
+	long first;
+	long last;
+	long down;
+
+	if (step == 0){
+
+		// No se mueve: o vale toda la fila o no vale ninguna
+		if (start >= 0 && start < limit){
+			*out_first = 0;
+			*out_last  = DEMO_WIDTH - 1;
+			return 1;
+		}
+		return 0;
+
+	}
+
+	if (step > 0){
+
+		// Sube. Entra por abajo y sale por arriba.
+		if (start >= 0){
+			first = 0;
+		}else{
+			// el primer x con start + x*step >= 0, redondeando hacia arriba
+			first = ((-start) + step - 1) / step;
+		}
+
+		if (start > limit - 1){
+			return 0;			// ya empieza pasado del limite y sigue subiendo
+		}
+		last = (limit - 1 - start) / step;
+
+	}else{
+
+		// Baja. Se le da la vuelta al paso para dividir en positivo.
+		down = -step;
+
+		if (start < 0){
+			return 0;			// ya empieza por debajo y sigue bajando
+		}
+		last = start / down;
+
+		if (start <= limit - 1){
+			first = 0;
+		}else{
+			first = ((start - (limit - 1)) + down - 1) / down;
+		}
+
+	}
+
+	if (first < 0){
+		first = 0;
+	}
+	if (last > DEMO_WIDTH - 1){
+		last = DEMO_WIDTH - 1;
+	}
+	if (first > last){
+		return 0;
+	}
+
+	*out_first = (int)first;
+	*out_last  = (int)last;
+
+	return 1;
+
+}
+
+
 int demo_rotozoom(unsigned char *image,
                   unsigned char *screen,
                   unsigned char *palette,
@@ -56,6 +144,11 @@ int demo_rotozoom(unsigned char *image,
 	int x, y;
 	int sx, sy;
 	unsigned int destination;
+
+	int first_u, last_u;
+	int first_v, last_v;
+	int first, last;
+	int visible;
 
 	// palette no se toca aqui: este efecto no juega con los colores
 	(void)palette;
@@ -107,34 +200,78 @@ int demo_rotozoom(unsigned char *image,
 
 		for (y = 0; y < DEMO_HEIGHT; y++){
 
-			u = row_u;
-			v = row_v;
+			//-----------------------------------------------
+			// EL TRAMO VISIBLE DE ESTA FILA.
+			//
+			// La imagen girada es un cuadrilatero, y una recta horizontal
+			// lo corta en UN solo trozo. Ese trozo es la interseccion del
+			// tramo donde u esta dentro con el tramo donde lo esta v.
+			//
+			// Lo de fuera se pinta con memset, que mueve bytes de 2 en 2 o
+			// de 4 en 4, en vez de con el bucle de arriba. Y en un
+			// rotozoom con la imagen girada y alejada, lo de fuera son la
+			// mayoria de los pixeles de la pantalla.
+			//-----------------------------------------------
+			visible = 0;
+			first   = 0;
+			last    = -1;
 
-			for (x = 0; x < DEMO_WIDTH; x++){
+			if (rotozoom_span(row_u, du_dx, (long)DEMO_WIDTH  << DEMO_SHIFT, &first_u, &last_u) == 1){
+				if (rotozoom_span(row_v, dv_dx, (long)DEMO_HEIGHT << DEMO_SHIFT, &first_v, &last_v) == 1){
 
-				sx = (int)(u >> DEMO_SHIFT);
-				sy = (int)(v >> DEMO_SHIFT);
+					first = first_u;
+					if (first_v > first){
+						first = first_v;
+					}
 
-				//-------------------------------------------
-				// Fuera de la imagen se pinta negro.
-				//
-				// Las dos comparaciones son en unsigned a proposito: un sx
-				// negativo se convierte en un numero enorme y falla el
-				// "menor que 320" de una vez, asi que una sola comparacion
-				// hace de las dos. Es el truco de siempre para recortar.
-				//-------------------------------------------
-				if ((unsigned int)sx < DEMO_WIDTH && (unsigned int)sy < DEMO_HEIGHT){
-					screen[destination] = image[demo_row[sy] + (unsigned int)sx];
-				}else{
-					screen[destination] = 0;
+					last = last_u;
+					if (last_v < last){
+						last = last_v;
+					}
+
+					if (first <= last){
+						visible = 1;
+					}
+
+				}
+			}
+
+			if (visible == 0){
+
+				memset(screen + destination, 0, DEMO_WIDTH);
+
+			}else{
+
+				if (first > 0){
+					memset(screen + destination, 0, first);
+				}
+				if (last < DEMO_WIDTH - 1){
+					memset(screen + destination + last + 1, 0, DEMO_WIDTH - 1 - last);
 				}
 
-				destination++;
+				// Saltar de golpe a donde empieza lo visible
+				u = row_u + (du_dx * first);
+				v = row_v + (dv_dx * first);
 
-				u += du_dx;
-				v += dv_dx;
+				//-------------------------------------------
+				// Y aqui dentro ya no se comprueba nada: por construccion
+				// del tramo, todos estos pixeles caen dentro de la imagen.
+				//-------------------------------------------
+				for (x = first; x <= last; x++){
+
+					sx = (int)(u >> DEMO_SHIFT);
+					sy = (int)(v >> DEMO_SHIFT);
+
+					screen[destination + x] = image[demo_row[sy] + (unsigned int)sx];
+
+					u += du_dx;
+					v += dv_dx;
+
+				}
 
 			}
+
+			destination += DEMO_WIDTH;
 
 			row_u += du_dy;
 			row_v += dv_dy;

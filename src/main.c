@@ -161,6 +161,25 @@ int map_theme;
 #define THEME_WAR 		2
 #define THEME_NEON 		3
 
+// Which end of the network game this machine was started as, and it exists
+// for ONE job: deciding who shows the intro.
+//
+// The game does not otherwise care. Discovery is a symmetric broadcast and
+// which tank you drive comes from comparing two random ids, so there is no
+// server and no client once the match is running.
+//
+// But the intro needs somebody to be in charge, and it cannot be the id
+// comparison: net.c seeds those ids with the BIOS tick, and two machines
+// that start within an eighteenth of a second of each other get the SAME
+// one. Then both believe they are player 2 and both sit waiting for an
+// intro nobody is showing. play.sh knows perfectly well which end it is
+// launching, so it says so.
+#define ROLE_NONE 		0
+#define ROLE_SERVER 	1
+#define ROLE_CLIENT 	2
+
+int net_role;
+
 // 1 when the intro was asked for with /demo or -demo.
 //
 // It is a switch and nothing else: everything the demos need is reserved by
@@ -310,6 +329,7 @@ int main(int argc, char *argv[]){
 	// byte buffer sitting on the stack, which on DOS is not a crash, it is
 	// whatever happens next being wrong.
 	char log_message_text[96];
+	int  sound_ready;
 	unsigned int cannon_tip_pixel_value;	// map color under the cannon tip, for the log
 
 	// Raised when a bullet has hit a tank this frame. Checked after BOTH
@@ -353,6 +373,7 @@ int main(int argc, char *argv[]){
 	network_mode        = 0;
 	big_map_mode        = 0;
 	demo_mode           = 0;
+	net_role            = ROLE_NONE;
 	map_theme           = THEME_ORIGINAL;
 	map_level           = 0;
 	local_player_is_1   = 1;
@@ -386,6 +407,26 @@ int main(int argc, char *argv[]){
 
 		if (stricmp(argv[argument_index], "-demo") == 0){
 			demo_mode = 1;
+		}
+
+		// Which end we are. Only used to settle who shows the intro, and
+		// play.sh is what passes them: it is the one that knows, because it
+		// is the one writing "ipxnet startserver" in one window and
+		// "ipxnet connect" in the other.
+		if (stricmp(argv[argument_index], "/server") == 0){
+			net_role = ROLE_SERVER;
+		}
+
+		if (stricmp(argv[argument_index], "-server") == 0){
+			net_role = ROLE_SERVER;
+		}
+
+		if (stricmp(argv[argument_index], "/client") == 0){
+			net_role = ROLE_CLIENT;
+		}
+
+		if (stricmp(argv[argument_index], "-client") == 0){
+			net_role = ROLE_CLIENT;
 		}
 
 		// The look of the big map. They are alternatives, so the last one on
@@ -484,44 +525,6 @@ int main(int argc, char *argv[]){
 
 	}
 
-	//---------------------------------------------------
-	// THE INTRO, and it goes HERE for three separate reasons.
-	//
-	// 1. THE HEAP HAS TO BE CLEAN. demo_run() reserves two buffers of 64000
-	//    plus the sound, and gives all of it back before it returns. Doing
-	//    that after the game had already reserved things would leave a hole
-	//    in the middle of the heap, and a hole is what stops a 256000 byte
-	//    map from fitting even when there is plenty free. That lesson cost
-	//    an afternoon once; see chapter 23 of the course.
-	//
-	// 2. THE KEYBOARD IS STILL THE BIOS ONE. install_kbd() has not run, so
-	//    the demos can read ESC with bioskey() and never touch an interrupt
-	//    vector. That is what keeps the demos\ folder liftable into another
-	//    project.
-	//
-	// 3. BEFORE THE NETWORK. Pairing up talks to the player through
-	//    printf, and the intro leaves the screen in text mode precisely so
-	//    that still works. Running the intro after the handshake would also
-	//    mean two minutes without reading the socket, and the other machine
-	//    gives up after ten seconds.
-	//---------------------------------------------------
-	if (demo_mode == 1){
-
-		sprintf(log_message_text, "Demo: starting, memory free %lu",
-		        (unsigned long)coreleft());
-		tanks_log(log_message_text);
-
-		demo_run(demo_images, (int)DEMO_IMAGE_COUNT, DEMO_DEFAULT_SECONDS);
-
-		// The number that matters. It has to be the SAME as the line above:
-		// if it is lower, the demos kept something, and whatever they kept
-		// is sitting between the game and its contiguous 256000 bytes.
-		sprintf(log_message_text, "Demo: finished, memory free %lu",
-		        (unsigned long)coreleft());
-		tanks_log(log_message_text);
-
-	}
-
 	// The two machines find each other BEFORE the screen is switched to
 	// VGA, on purpose: in graphics mode there is nowhere to print, and this
 	// is exactly the part that needs to be able to say what is going on.
@@ -601,6 +604,124 @@ int main(int argc, char *argv[]){
 
 	}
 
+	//---------------------------------------------------
+	// THE INTRO
+	//
+	// It goes here, AFTER the machines have paired up and agreed a level,
+	// and that placement is the whole fix for a bug worth remembering.
+	//
+	// It used to run before the network, and then two machines started with
+	// -demo each played their own intro to an empty room for two minutes,
+	// while a machine WITHOUT -demo gave up looking for its partner after
+	// thirty seconds. The intro lasts a hundred and thirty four.
+	//
+	// It cannot be settled without talking, either: the game has no idea
+	// which end started the server. Discovery is a symmetric broadcast and
+	// player 1 is a coin toss between two random ids, so "the server plays
+	// it" is not a question this code can answer on its own. The two
+	// machines have to ask each other, and that is net_agree_demo().
+	//
+	// Moving it here costs nothing that matters:
+	//
+	//   THE HEAP IS STILL CLEAN. The network allocates nothing at all,
+	//   everything in net.c and lockstep.c is static, so demo_run() still
+	//   reserves its two 64000 byte buffers on a heap nobody has touched
+	//   and still hands them back before init_graphics() asks for the
+	//   256000 contiguous bytes of the map.
+	//
+	//   THE KEYBOARD IS STILL THE BIOS ONE. install_kbd() is below.
+	//
+	//   THE SCREEN IS STILL TEXT. demo_run() puts it back before returning,
+	//   so anything printed after this is still readable.
+	//---------------------------------------------------
+	if (demo_mode == 1 || network_mode == 1){
+
+		int intro_role;
+
+		// On one machine there is nobody to ask: -demo means play it.
+		intro_role = -1;
+
+		if (network_mode == 0){
+
+			if (demo_mode == 1){
+				intro_role = 1;
+			}
+
+		}else{
+
+			//-------------------------------------------
+			// Over the network the SERVER shows it and the client waits.
+			//
+			// Decided here, from the role on the command line, and not by
+			// the two machines arguing about it. The version that let them
+			// argue broke exactly the way this comment warns about further
+			// up: with two equal ids both ends thought they were player 2
+			// and both waited for an intro nobody was showing.
+			//
+			// A client is never the one to show it, even if somebody passes
+			// it -demo by hand. play.sh refuses that combination anyway.
+			//-------------------------------------------
+			int i_play_it;
+
+			i_play_it = 0;
+
+			if (demo_mode == 1 && net_role != ROLE_CLIENT){
+				i_play_it = 1;
+			}
+
+			intro_role = net_agree_demo(i_play_it);
+
+		}
+
+		if (intro_role == 1){
+
+			sprintf(log_message_text, "Demo: playing, memory free %lu",
+			        (unsigned long)coreleft());
+			tanks_log(log_message_text);
+
+			//-------------------------------------------
+			// Over the network the intro has to keep the link alive while
+			// it runs, and demos\ knows nothing about networks. So it is
+			// handed a callback it calls once a frame, which sends the
+			// heartbeat and returns 1 if the other machine pressed ESC.
+			//-------------------------------------------
+			if (network_mode == 1){
+				demo_set_idle(net_demo_idle);
+			}
+
+			demo_run(demo_images, (int)DEMO_IMAGE_COUNT, DEMO_DEFAULT_SECONDS);
+
+			demo_set_idle(NULL);
+
+			if (network_mode == 1){
+				net_demo_finished();
+			}
+
+			// The number that matters. It has to be the SAME as the line
+			// above: if it is lower, the demos kept something, and whatever
+			// they kept is sitting between the game and its contiguous
+			// 256000 bytes.
+			sprintf(log_message_text, "Demo: finished, memory free %lu",
+			        (unsigned long)coreleft());
+			tanks_log(log_message_text);
+
+		}else if (intro_role == 0){
+
+			tanks_log("Demo: the other machine is playing it, waiting");
+
+			printf("\n");
+			printf("The other machine is showing the intro.\n");
+			printf("Press ESC to skip it on both.\n");
+			printf("\n");
+
+			if (net_demo_wait() == 0){
+				connection_was_lost = 1;
+			}
+
+		}
+
+	}
+
 	// Instal custom Vector ( INT 9 ) keyboard
 	install_kbd();
 
@@ -641,7 +762,11 @@ int main(int argc, char *argv[]){
 	// WAV files to load, and how loud each one has to be.
 	sound_set_log(tanks_log);
 
-	if (sound_start() == 1){
+	// Kept, because play_song() happens further down now, after the barrier,
+	// and by then sound_start() is long gone.
+	sound_ready = sound_start();
+
+	if (sound_ready == 1){
 
 		sound_fire     = load_sound("..\\res\\fire.wav");
 		sound_engine_1 = load_sound("..\\res\\engip1.wav");
@@ -674,18 +799,43 @@ int main(int argc, char *argv[]){
 		player1.sound_engine_sample = sound_engine_1;
 		player2.sound_engine_sample = sound_engine_2;
 
-		// Background music. Unlike the effects above it is NOT loaded: it is
-		// read from the file while it plays, so a one minute song costs the
-		// same 16 KB as a five second one and loops for ever.
-		//
-		// Drop an 8 bit mono 44100 Hz WAV in res\\ under this name. Unlike the
-		// effects, the rate has to be EXACTLY that: load_sound() can convert a
-		// file because it does it once at startup, and there is nowhere to do
-		// that while streaming. If it is not there, or it is at another rate,
-		// play_song() says so in the log and the game carries on perfectly well
-		// without music.
-		play_song("..\\res\\prody8.wav");
+	}
 
+	//---------------------------------------------------
+	// THE START LINE
+	//
+	// Both machines meet here, with every file read and every buffer
+	// filled, and the very next thing either of them does is start the
+	// music. That order is the whole point.
+	//
+	// It is outside the sound block on purpose. A machine with no card
+	// never enters that block, and if the barrier lived inside it the two
+	// ends would call it a different number of times and hang.
+	//---------------------------------------------------
+	if (network_mode == 1){
+		net_wait_together();
+	}
+
+	//---------------------------------------------------
+	// Background music. Unlike the effects it is NOT loaded: it is read
+	// from the file while it plays, so a one minute song costs the same 16
+	// KB as a five second one and loops for ever.
+	//
+	// Drop an 8 bit mono 44100 Hz WAV in res\\ under this name. Unlike the
+	// effects, the rate has to be EXACTLY that: load_sound() can convert a
+	// file because it does it once at startup, and there is nowhere to do
+	// that while streaming. If it is not there, or it is at another rate,
+	// play_song() says so in the log and the game carries on perfectly well
+	// without music.
+	//
+	// And it is the FIRST thing after the barrier, deliberately. Everything
+	// that used to sit between the last handshake and this line -- the
+	// 256000 byte map, the collision bitmap, 39 sprites, four WAV files --
+	// is disk work that no two machines finish at the same moment, and any
+	// difference landed straight in the song and stayed there.
+	//---------------------------------------------------
+	if (sound_ready == 1){
+		play_song("..\\res\\prody8.wav");
 	}
 
 	//---------------------------------------------------

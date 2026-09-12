@@ -15,9 +15,15 @@ If this works, the code is correct and anything that goes wrong afterwards is
 a network problem.
 
 ```
-dosbox -conf net-test/dosbox-local-a.conf     <- this one first
-dosbox -conf net-test/dosbox-local-b.conf     <- and then this one
+./play.sh both
 ```
+
+It opens both windows already connected to each other, with no IP to type and
+nothing to configure.
+
+> There used to be two standalone `.conf` files here, `dosbox-local-a/b.conf`,
+> doing this by hand. They were deleted: `play.sh both` does the same and also
+> takes a theme, a level and `-demo`, which they did not.
 
 Nothing to configure.
 
@@ -74,13 +80,20 @@ overwrite each other's log, right where you need it most.
 
 | How you launched | Server / A | Client / B |
 |---|---|---|
-| The scripts | `net-test/log-server/GAME.LOG` | `net-test/log-client/GAME.LOG` |
-| `dosbox-local-*.conf` | `net-test/log-a/GAME.LOG` | `net-test/log-b/GAME.LOG` |
+| `play.sh both` | `runserv/GAME.LOG` | `runcli/GAME.LOG` |
+| `play.sh local` | `runlocal/GAME.LOG` | - |
+| `dosbox-debug-*.conf` | `bin/game.log` | `bin/game.log` **(the same one: they overwrite)** |
+
+That last row is the reason `play.sh` gives each instance **its own
+directory**. The game writes the log with a RELATIVE path (`LOG_FILE_PATH` in
+`src/util.c`), so it lands wherever DOS is: with both copies running from
+`c:\bin`, the second one wipes the first one's log exactly when you need it
+most.
 
 With two machines, each log stays **on its own machine**.
 
 ```
-tail -f net-test/log-server/GAME.LOG | grep --line-buffered "NET\|Tank hit"
+tail -f runserv/GAME.LOG | grep --line-buffered "NET\|Tank hit"
 ```
 
 | Line | What it means |

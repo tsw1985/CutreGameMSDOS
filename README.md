@@ -173,6 +173,68 @@ machine follows its own and hunting for the other one is the game. On one
 keyboard it would leave the second player driving blind, so `/bigmap` without
 `/net` is refused and the game falls back to the normal map.
 
+#### The proximity radar
+
+The camera solved one problem and created another: in a world four screens wide
+the other tank is almost always off screen, and finding him was wandering at
+random. So supernet shows a number at the bottom of the screen, **000% to
+100%**, telling you how close he is.
+
+It is drawn with **sprites**, not text — in mode 13h there is no text — cut from
+`res/Numbers/<THEME>/numbers.bmp`. It only appears **with a theme**: those
+figures are painted in their theme's palette, and against the undressed
+`big.bmp` 254 of the 256 palette entries differ, so they would come out in
+random colours.
+
+The distance is worked out with integers only, `bigger + smaller/2`, an
+approximation of the real one that lands within 11% and needs no square root
+and no floating point. It is **decoration**: both machines work out the same
+number from positions they already both simulate, nothing crosses the wire, and
+it never enters the state checksum. Same rule as the camera.
+
+#### The intro
+
+```bash
+./play.sh local -demo
+game.exe /demo
+```
+
+Fifteen pictures from `res/demo/`, **each one through a different 90s screen
+effect** — rotozoom, wobble, ripple, palette cycling, venetian blinds and six
+more — eight seconds each, with the music playing. **ESC** skips it and the
+match begins.
+
+The whole thing lives in `demos/`, one effect per folder, and it borrows exactly
+eleven functions from `bmp.c` and `sound.c`: it includes no header of the game,
+so the folder can be lifted into another project as it is.
+
+Over a network **the server shows it and the client waits**, and that is
+settled by the role on the command line — `play.sh` passes `/server` or
+`/client`, because it is the only thing that knows which end it is launching.
+
+It is deliberately not negotiated between the two machines. The version that
+was broke in a way worth remembering: with both ends carrying `/demo` the tie
+went to player 1, and player 1 comes from comparing two ids seeded with the
+BIOS tick. Two machines started within an eighteenth of a second of each other
+draw the *same* id, `lower than` is false on both, both believe they are player
+2 — and both sat waiting for an intro nobody was showing.
+
+While it runs, the machine playing it sends a heartbeat every two seconds,
+because ten seconds of silence is all it takes for the other end to decide the
+connection is gone. And **ESC skips it from either keyboard** — the person
+looking at a "waiting" message is the one most likely to want out. Both
+machines then leave at the same moment, which matters because the music is
+streamed and nobody ever resynchronises it.
+
+**Without `/demo` it costs nothing**: not a byte of memory, not a file opened.
+With it, everything is reserved when it runs and handed back before the game
+starts — which it has to be, because the map needs 256000 *contiguous* bytes and
+a block freed in the middle of the heap leaves a hole that a request that size
+cannot use.
+
+Pictures must be **320x200, 256 colours, 65078 bytes exactly**. See
+[`COMANDOS.md`](COMANDOS.md) for why the byte count matters.
+
 ### Network play
 
 Two machines can play each other over IPX. One acts as the **server** and the
@@ -238,8 +300,9 @@ before the round starts.
 | `NET: discovery timed out` in the log | The tunnel is up but the games did not find each other |
 | `NET: node 000000000000` in the log | This machine is not joined to any tunnel |
 
-The log for each machine is at `net-test/log-server/GAME.LOG` and
-`net-test/log-client/GAME.LOG`, on that machine. Leave the game with **ESC**
+The log for each machine is at `runserv/GAME.LOG` and `runcli/GAME.LOG`
+(`runlocal/GAME.LOG` in local mode), on that machine: the game writes it with a
+RELATIVE path, so it lands in the directory `play.sh` ran it from. Leave the game with **ESC**
 (not by closing the window) so the summary line gets written.
 
 #### On real DOS, and by hand
@@ -436,6 +499,67 @@ al suyo, y buscar al otro es el juego. En un solo teclado dejaría al segundo
 jugador conduciendo a ciegas, así que `/bigmap` sin `/net` se rechaza y el
 juego arranca en el mapa normal.
 
+#### El radar de cercanía
+
+La cámara resolvió un problema y creó otro: en un mundo de cuatro pantallas el
+otro tanque está casi siempre fuera de la vista, y encontrarlo era dar vueltas
+al azar. Así que supernet enseña un número abajo, de **000% a 100%**, que dice
+cómo de cerca está.
+
+Está dibujado con **sprites**, no con texto — en el modo 13h no hay texto —,
+recortados de `res/Numbers/<TEMA>/numbers.bmp`. Solo aparece **con tema**: esas
+cifras están pintadas con la paleta de su tema, y contra el `big.bmp` sin vestir
+difieren 254 de las 256 entradas, así que saldrían de colores al azar.
+
+La distancia se calcula solo con enteros, `mayor + menor/2`, una aproximación de
+la de verdad que se queda a un 11% y no necesita raíz cuadrada ni coma flotante.
+Es **decoración**: las dos máquinas sacan el mismo número de unas posiciones que
+ya simulan las dos, no cruza nada por el cable, y no entra en el checksum de
+estado. La misma regla que la cámara.
+
+#### La intro
+
+```bash
+./play.sh local -demo
+game.exe /demo
+```
+
+Quince imágenes de `res/demo/`, **cada una con un efecto de pantalla noventero
+distinto** — rotozoom, ondulado, ondas, ciclado de paleta, persiana veneciana y
+seis más —, ocho segundos cada una y con la música sonando. **ESC** se la salta
+y empieza la partida.
+
+Todo vive en `demos/`, un efecto por carpeta, y toma prestadas exactamente once
+funciones de `bmp.c` y `sound.c`: no incluye ni un header del juego, así que la
+carpeta se lleva a otro proyecto tal cual.
+
+En red **la pone el servidor y el cliente espera**, y lo decide el rol de la
+línea de órdenes: `play.sh` pasa `/server` o `/client`, porque es lo único que
+sabe qué extremo está lanzando.
+
+No lo negocian las dos máquinas, y a propósito. La versión que sí lo hacía se
+rompía de una forma que merece la pena recordar: con `/demo` en las dos, el
+desempate era el jugador 1, y el jugador 1 sale de comparar dos ids sembrados
+con el tick de la BIOS. Dos máquinas arrancadas con menos de 1/18 de segundo de
+diferencia sacan el *mismo* id, `menor que` es falso en las dos, las dos se
+creen el jugador 2 — y las dos se quedaban esperando una intro que no ponía
+nadie.
+
+Mientras corre, la que la reproduce manda un latido cada dos segundos, porque
+diez segundos de silencio bastan para que la otra dé la conexión por perdida.
+Y **ESC la salta desde cualquiera de los dos teclados** — quien está mirando un
+*"esperando"* es justo el que más ganas tiene. Luego las dos salen en el mismo
+instante, que importa porque la música va en streaming y nadie la sincroniza.
+
+**Sin `/demo` no cuesta nada**: ni un byte de memoria, ni un fichero abierto. Con
+él, todo se reserva al ejecutarse y se devuelve antes de que arranque el juego
+— y tiene que ser así, porque el mapa necesita 256.000 bytes *contiguos* y un
+bloque liberado en mitad del montón deja un agujero que una petición de ese
+tamaño no puede usar.
+
+Las imágenes tienen que ser **320x200, 256 colores y 65.078 bytes exactos**. En
+[`COMANDOS.md`](COMANDOS.md) está por qué importa el número de bytes.
+
 ### Juego en red
 
 Dos máquinas pueden jugar entre ellas por IPX. Una hace de **servidor** y la
@@ -502,8 +626,10 @@ te lo dice antes de empezar la partida.
 | `NET: discovery timed out` en el log | El túnel está montado pero los juegos no se han encontrado |
 | `NET: node 000000000000` en el log | Esta máquina no está unida a ningún túnel |
 
-El log de cada máquina queda en `net-test/log-server/GAME.LOG` y
-`net-test/log-client/GAME.LOG`, en esa misma máquina. Sal del juego con
+El log de cada máquina queda en `runserv/GAME.LOG` y `runcli/GAME.LOG`
+(`runlocal/GAME.LOG` en modo local), en esa misma máquina: el juego lo escribe
+con una ruta RELATIVA, así que cae en el directorio desde el que lo lanzó
+`play.sh`. Sal del juego con
 **ESC** (no cerrando la ventana) para que se escriba la línea de resumen.
 
 #### En DOS real, y a mano

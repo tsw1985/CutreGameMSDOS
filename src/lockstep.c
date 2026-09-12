@@ -431,6 +431,656 @@ int net_agree_level(int my_level){
 }
 
 
+//===========================================================
+// THE INTRO, OVER THE NETWORK
+//
+// Read the block in header\lockstep.h first: it says what the three
+// problems are. This is the same shape as net_agree_level() above, message
+// for message, because it is the same kind of job.
+//===========================================================
+
+#define DEMO_START 		1		// I am about to show the intro
+#define DEMO_START_ACK 	2		// understood, I will wait
+#define DEMO_ALIVE 		3		// still going, do not give up on me
+#define DEMO_STOP 		4		// cut it short (ESC on the watching machine)
+#define DEMO_OVER 		5		// the intro has finished
+#define DEMO_OVER_ACK 	6		// heard you
+#define DEMO_READY 		7		// loaded and standing at the start line
+
+struct demo_message {
+	unsigned char magic[2];		// "DM", so a stray packet cannot pass for one
+	unsigned char type;
+	unsigned char spare;		// keeps it 4 bytes, like the level message
+};
+
+// How often the two ends shout "still here", in ticks. Two seconds against a
+// ten second timeout: four missed heartbeats in a row before anybody worries.
+#define DEMO_BEAT_TICKS 	36
+
+// Giving up on agreeing who plays. Short on purpose: if this does not settle
+// in ten seconds something is wrong with the link, and the match matters more
+// than the intro.
+#define DEMO_AGREE_TIMEOUT 	(18 * 10)
+
+// How long the machine waiting for an intro puts up with hearing nothing at
+// all. The one showing it beats every two seconds, so ten of silence means
+// there is no intro and nobody is coming to say so.
+#define DEMO_SILENCE_TICKS 	(18 * 10)
+
+// Set by net_agree_demo() and read by the two functions below, so the caller
+// does not have to carry it around.
+static int  demo_stop_requested = 0;
+static long demo_next_beat_tick = 0;
+
+
+//-----------------------------------------------------------
+// Fills in a message of ours. Four lines in one place instead of four lines
+// in five places.
+//-----------------------------------------------------------
+static void demo_fill(struct demo_message *message, int type){
+
+	message->magic[0] = 'D';
+	message->magic[1] = 'M';
+	message->type     = (unsigned char)type;
+	message->spare    = 0;
+
+}
+
+
+//-----------------------------------------------------------
+// Is this one of ours? Same three comparisons as the level handshake, and
+// for the same reason: a stray packet on the socket must never be read as
+// an instruction.
+//-----------------------------------------------------------
+static int demo_is_ours(struct demo_message *message, int length){
+
+	if (length != (int)sizeof(struct demo_message)){
+		return 0;
+	}
+	if (message->magic[0] != 'D' || message->magic[1] != 'M'){
+		return 0;
+	}
+
+	return 1;
+
+}
+
+
+//===========================================================
+// WHO PLAYS THE INTRO
+//
+// Nothing is negotiated here, and that is the point. The caller has already
+// decided, from the role it was started with, and this only tells the other
+// machine so it knows to wait.
+//
+// It used to be a negotiation: both ends said whether they had -demo and, if
+// both did, player 1 won the tie. That deadlocked, and the reason is worth
+// keeping:
+//
+//   net.c seeds its instance id with srand(biostime()), and the BIOS tick
+//   moves 18.2 times a second. Two machines whose clocks agree and that
+//   start within a eighteenth of a second of each other get the SAME id.
+//   Then "local < remote" is false on BOTH of them, both believe they are
+//   player 2, and both sat waiting for an intro nobody was showing.
+//
+// One direction cannot deadlock. Only a machine that was told to play sends
+// DEMO_START, and only a machine that has RECEIVED one waits.
+//
+//   i_play_it   1 if this machine is the one that shows the intro
+//
+//   returns     1  play it
+//               0  wait for the other machine to play it
+//              -1  no intro, go straight to the match
+//===========================================================
+int net_agree_demo(int i_play_it){
+
+	struct demo_message message;
+	struct demo_message incoming;
+	long start_tick;
+	long now_tick;
+	long next_send_tick;
+	int  length;
+	int  acked;
+	int  heard_start;
+
+	demo_stop_requested = 0;
+	demo_next_beat_tick = biostime(0, 0L);
+
+	acked       = 0;
+	heard_start = 0;
+
+	start_tick     = biostime(0, 0L);
+	next_send_tick = start_tick;
+
+	while (1){
+
+		now_tick = biostime(0, 0L);
+
+		if (now_tick - start_tick > DEMO_AGREE_TIMEOUT){
+			break;
+		}
+
+		if (net_connection_lost() == 1){
+			tanks_log("NET: connection lost settling the intro");
+			return -1;
+		}
+
+		//-----------------------------------------------
+		// The one that plays keeps announcing until it is answered. There is
+		// no state to agree, only a fact to deliver, so repeating it is the
+		// whole of the reliability.
+		//-----------------------------------------------
+		if (i_play_it == 1 && acked == 0){
+
+			if (now_tick >= next_send_tick){
+
+				next_send_tick = now_tick + LEVEL_RETRY_TICKS;
+
+				demo_fill(&message, DEMO_START);
+				net_send(&message, sizeof(struct demo_message));
+
+			}
+
+		}
+
+		net_update();
+
+		length = net_receive(&incoming, sizeof(struct demo_message));
+
+		while (length > 0){
+
+			if (demo_is_ours(&incoming, length) == 1){
+
+				// Answer EVERY announcement, not just the first: they keep
+				// sending until one of our acks gets through.
+				if (incoming.type == DEMO_START){
+
+					heard_start = 1;
+
+					demo_fill(&message, DEMO_START_ACK);
+					net_send(&message, sizeof(struct demo_message));
+
+				}
+
+				if (incoming.type == DEMO_START_ACK){
+					acked = 1;
+				}
+
+			}
+
+			length = net_receive(&incoming, sizeof(struct demo_message));
+
+		}
+
+		//-----------------------------------------------
+		// Both sides hold for the same few ticks after they know, the same
+		// way the level handshake does, so the last acks keep flowing.
+		//-----------------------------------------------
+		if (i_play_it == 1 && acked == 1){
+			if (now_tick - start_tick > LEVEL_RETRY_TICKS * 4){
+				break;
+			}
+		}
+
+		if (i_play_it == 0 && heard_start == 1){
+			if (now_tick - start_tick > LEVEL_RETRY_TICKS * 4){
+				break;
+			}
+		}
+
+	}
+
+	demo_next_beat_tick = biostime(0, 0L);
+
+	//---------------------------------------------------
+	// And the answer, which has no room for both ends agreeing on the same
+	// thing by accident.
+	//---------------------------------------------------
+	if (i_play_it == 1){
+
+		if (acked == 1){
+			tanks_log("NET: showing the intro, the other machine is waiting");
+			return 1;
+		}
+
+		// Nobody answered. Playing anyway would leave them in the game loop
+		// with nothing arriving, and ten seconds of that is a lost
+		// connection. An intro is not worth a broken match.
+		tanks_log("NET: nobody acked the intro, skipping it");
+		return -1;
+
+	}
+
+	if (heard_start == 1){
+		tanks_log("NET: the other machine is showing the intro, waiting");
+		return 0;
+	}
+
+	tanks_log("NET: no intro announced, straight to the match");
+
+	return -1;
+
+}
+
+
+//===========================================================
+// THE HEARTBEAT, on the machine that is playing.
+//
+// Handed to demo_set_idle(), so the intro calls it once a frame without
+// knowing what it is. It has to be CHEAP: it runs 9000 times over the two
+// minutes and it is competing with a rotozoom for the frame.
+//
+// Returns 1 when they have asked us to stop.
+//===========================================================
+int net_demo_idle(void){
+
+	struct demo_message message;
+	struct demo_message incoming;
+	long now_tick;
+	int  length;
+
+	if (net_is_connected() == 0){
+		return 0;
+	}
+
+	now_tick = biostime(0, 0L);
+
+	if (now_tick >= demo_next_beat_tick){
+
+		demo_next_beat_tick = now_tick + DEMO_BEAT_TICKS;
+
+		demo_fill(&message, DEMO_ALIVE);
+		net_send(&message, sizeof(struct demo_message));
+
+	}
+
+	net_update();
+
+	length = net_receive(&incoming, sizeof(struct demo_message));
+
+	while (length > 0){
+
+		if (demo_is_ours(&incoming, length) == 1){
+
+			if (incoming.type == DEMO_STOP){
+				demo_stop_requested = 1;
+			}
+
+		}
+
+		length = net_receive(&incoming, sizeof(struct demo_message));
+
+	}
+
+	if (demo_stop_requested == 1){
+		return 1;
+	}
+
+	return 0;
+
+}
+
+
+//===========================================================
+// THE OTHER SIDE: waiting for an intro that is playing somewhere else.
+//
+// Returns 1 when it is over, 0 if the connection went.
+//===========================================================
+int net_demo_wait(void){
+
+	struct demo_message message;
+	struct demo_message incoming;
+	long now_tick;
+	long start_tick;
+	long last_heard_tick;
+	int  length;
+	int  finished;
+
+	finished = 0;
+
+	demo_next_beat_tick = biostime(0, 0L);
+	last_heard_tick     = biostime(0, 0L);
+
+	while (finished == 0){
+
+		if (net_connection_lost() == 1){
+			tanks_log("NET: connection lost while waiting for the intro");
+			return 0;
+		}
+
+		now_tick = biostime(0, 0L);
+
+		//-----------------------------------------------
+		// A way out that does not depend on anybody telling us.
+		//
+		// The machine showing the intro beats every two seconds. Ten of
+		// silence means it is not showing one: most likely it heard nothing
+		// back from us, gave up, and went to the match while we sat here.
+		// Walking in a few seconds late beats waiting for good.
+		//-----------------------------------------------
+		if (now_tick - last_heard_tick > DEMO_SILENCE_TICKS){
+			tanks_log("NET: ten seconds without a word about the intro, giving up on it");
+			return 1;
+		}
+
+		//-----------------------------------------------
+		// We answer with our own heartbeat, and that is not politeness: the
+		// machine playing the intro is watching ITS timeout too, and a
+		// silent partner for two minutes looks exactly like a dead one.
+		//-----------------------------------------------
+		if (now_tick >= demo_next_beat_tick){
+
+			demo_next_beat_tick = now_tick + DEMO_BEAT_TICKS;
+
+			if (demo_stop_requested == 1){
+				demo_fill(&message, DEMO_STOP);
+			}else{
+				demo_fill(&message, DEMO_ALIVE);
+			}
+
+			net_send(&message, sizeof(struct demo_message));
+
+		}
+
+		//-----------------------------------------------
+		// ESC here stops the intro over there. The person staring at a
+		// screen that says "waiting" is the one most likely to want out,
+		// so it would be daft to make them walk to the other machine.
+		//
+		// It is sent at once and then on every heartbeat, because this is
+		// the one message in the whole exchange that has no reply to tell
+		// us it arrived.
+		//-----------------------------------------------
+		if (demo_stop_requested == 0){
+
+			if (bioskey(1) != 0){
+
+				if ((bioskey(0) & 0x00FF) == 27){
+
+					demo_stop_requested = 1;
+
+					demo_fill(&message, DEMO_STOP);
+					net_send(&message, sizeof(struct demo_message));
+
+					printf("Skipping the intro on the other machine...\n");
+
+				}
+
+			}
+
+		}
+
+		net_update();
+
+		length = net_receive(&incoming, sizeof(struct demo_message));
+
+		while (length > 0){
+
+			if (demo_is_ours(&incoming, length) == 1){
+
+				last_heard_tick = now_tick;
+
+				if (incoming.type == DEMO_OVER){
+
+					// Answer EVERY one, not just the first: they keep
+					// sending until one of our acks gets through.
+					demo_fill(&message, DEMO_OVER_ACK);
+					net_send(&message, sizeof(struct demo_message));
+
+					finished = 1;
+
+				}
+
+			}
+
+			length = net_receive(&incoming, sizeof(struct demo_message));
+
+		}
+
+	}
+
+	//---------------------------------------------------
+	// Hold for the same few ticks the other machine holds, counted from the
+	// moment we learned it was over. Both walk out together, and the two
+	// songs of the match start on the same beat.
+	//
+	// And keep answering while we wait: they carry on sending DEMO_OVER
+	// until one of our acks arrives, and an unanswered one would leave them
+	// counting out their whole timeout.
+	//---------------------------------------------------
+	start_tick = biostime(0, 0L);
+
+	while (biostime(0, 0L) - start_tick <= LEVEL_RETRY_TICKS * 4){
+
+		net_update();
+
+		length = net_receive(&incoming, sizeof(struct demo_message));
+
+		while (length > 0){
+
+			if (demo_is_ours(&incoming, length) == 1){
+
+				if (incoming.type == DEMO_OVER){
+					demo_fill(&message, DEMO_OVER_ACK);
+					net_send(&message, sizeof(struct demo_message));
+				}
+
+			}
+
+			length = net_receive(&incoming, sizeof(struct demo_message));
+
+		}
+
+	}
+
+	return 1;
+
+}
+
+
+//===========================================================
+// The intro is over. Say so until they answer, then leave together.
+//===========================================================
+void net_demo_finished(void){
+
+	struct demo_message message;
+	struct demo_message incoming;
+	long start_tick;
+	long now_tick;
+	long next_send_tick;
+	long ack_tick;
+	int  length;
+	int  acked;
+
+	if (net_is_connected() == 0){
+		return;
+	}
+
+	acked    = 0;
+	ack_tick = 0;
+
+	start_tick     = biostime(0, 0L);
+	next_send_tick = start_tick;
+
+	while (1){
+
+		now_tick = biostime(0, 0L);
+
+		// Not getting an ack is not a reason to refuse to play. Worst case
+		// the other machine is a couple of seconds behind, and lockstep
+		// makes whoever is early wait at frame 0 anyway.
+		if (now_tick - start_tick > DEMO_AGREE_TIMEOUT){
+			tanks_log("NET: nobody acked the end of the intro");
+			return;
+		}
+
+		if (net_connection_lost() == 1){
+			return;
+		}
+
+		if (acked == 0 && now_tick >= next_send_tick){
+
+			next_send_tick = now_tick + LEVEL_RETRY_TICKS;
+
+			demo_fill(&message, DEMO_OVER);
+			net_send(&message, sizeof(struct demo_message));
+
+		}
+
+		net_update();
+
+		length = net_receive(&incoming, sizeof(struct demo_message));
+
+		while (length > 0){
+
+			if (demo_is_ours(&incoming, length) == 1){
+
+				if (incoming.type == DEMO_OVER_ACK && acked == 0){
+
+					// The one moment BOTH machines witness: they sent it,
+					// we received it. See the hold below.
+					acked    = 1;
+					ack_tick = now_tick;
+
+				}
+
+			}
+
+			length = net_receive(&incoming, sizeof(struct demo_message));
+
+		}
+
+		//-----------------------------------------------
+		// THE HOLD, counted from ACK_TICK and not from start_tick.
+		//
+		// That distinction is a whole bug. The first version counted from
+		// the moment this machine STARTED announcing the end, while the
+		// other counted from the moment it HEARD it. Those are the same
+		// instant only if the first announcement got through.
+		//
+		// Drop three of them and the announcement lands fifteen ticks late:
+		// this machine has already run its hold out and leaves at once, the
+		// other starts its fifteen ticks later, and the match begins nearly
+		// a second apart on the two screens. The tanks would not care,
+		// lockstep makes whoever is early wait at frame 0. The music would:
+		// it is streamed, nobody resynchronises it, and the two songs stay
+		// that second apart from the first note to the last.
+		//
+		// The ack is the event both machines witness. Counting from there
+		// puts them a network latency apart instead of a lost packet apart.
+		//-----------------------------------------------
+		if (acked == 1){
+
+			if (now_tick - ack_tick > LEVEL_RETRY_TICKS * 4){
+				return;
+			}
+
+		}
+
+	}
+
+}
+
+
+//===========================================================
+// THE BARRIER
+//
+// See header\lockstep.h for why this exists at all. Short version: the
+// music is streamed and never resynchronised, so the two machines have to
+// start it on the same moment, and everything they do between the last
+// handshake and that moment is several seconds of disk work that no two
+// machines do in the same time.
+//
+// It is symmetric and there is no leader: both shout READY until they hear
+// the other one, and leave the instant they do.
+//
+// READY goes out IMMEDIATELY on arrival and then once a tick, not once
+// every LEVEL_RETRY_TICKS. It matters: the machine that gets here first is
+// already shouting, so the late one hears it on arrival and leaves at once,
+// and the early one leaves one network latency later. Throttling to five
+// ticks would put a quarter of a second of slack in exactly the place this
+// function exists to remove.
+//===========================================================
+void net_wait_together(void){
+
+	struct demo_message message;
+	struct demo_message incoming;
+	long start_tick;
+	long now_tick;
+	long next_send_tick;
+	int  length;
+	int  heard;
+
+	if (net_is_connected() == 0){
+		return;
+	}
+
+	heard = 0;
+
+	start_tick     = biostime(0, 0L);
+	next_send_tick = start_tick;
+
+	while (heard == 0){
+
+		now_tick = biostime(0, 0L);
+
+		// Waiting for ever for a machine that has died would be worse than
+		// a song out of step.
+		if (now_tick - start_tick > DEMO_SILENCE_TICKS){
+			tanks_log("NET: the other machine never reached the start, going anyway");
+			return;
+		}
+
+		if (net_connection_lost() == 1){
+			tanks_log("NET: connection lost at the start line");
+			return;
+		}
+
+		if (now_tick >= next_send_tick){
+
+			next_send_tick = now_tick + 1;
+
+			demo_fill(&message, DEMO_READY);
+			net_send(&message, sizeof(struct demo_message));
+
+		}
+
+		net_update();
+
+		length = net_receive(&incoming, sizeof(struct demo_message));
+
+		while (length > 0){
+
+			if (demo_is_ours(&incoming, length) == 1){
+
+				if (incoming.type == DEMO_READY){
+					heard = 1;
+				}
+
+			}
+
+			length = net_receive(&incoming, sizeof(struct demo_message));
+
+		}
+
+	}
+
+	//---------------------------------------------------
+	// One last READY on the way out.
+	//
+	// The other machine may still be waiting to hear from us: if it arrived
+	// first, it has been shouting into the void and our first READY is the
+	// one that releases it. Sending one more here means it does not have to
+	// wait for our next tick.
+	//---------------------------------------------------
+	demo_fill(&message, DEMO_READY);
+	net_send(&message, sizeof(struct demo_message));
+
+	tanks_log("NET: both machines at the start line");
+
+}
+
+
 int net_find_opponent(void){
 
 	int index;

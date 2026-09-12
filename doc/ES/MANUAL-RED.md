@@ -2160,7 +2160,7 @@ Con `Ctrl+F12` los subes otra vez y las dos recuperan.
 En otra terminal, mientras juegas:
 
 ```
-tail -f net-test/log-server/GAME.LOG | grep --line-buffered "NET\|Tank hit"
+tail -f runserv/GAME.LOG | grep --line-buffered "NET\|Tank hit"
 ```
 
 Verás el emparejamiento y los impactos según ocurren.

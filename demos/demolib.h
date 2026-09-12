@@ -124,9 +124,14 @@ void demo_wait_retrace(void);
 // blanking window and the picture would tear.
 void demo_show(unsigned char *screen);
 
-// Just feeds the card, for an effect that does not repaint. Only cycle
-// needs it: it paints once at the start and after that all it changes is
-// the palette, and the palette write has to stay inside the blanking.
+// Feeds the card AND runs the idle callback: the end of a frame for an
+// effect that does not repaint. Only cycle needs it directly: it paints once
+// at the start and after that all it changes is the palette, and the palette
+// write has to stay inside the blanking.
+//
+// demo_show() calls this one, so there is exactly ONE place in the folder
+// where a frame is accounted for. Same reasoning as the sound: what lives in
+// the single funnel cannot be forgotten by the eleventh effect.
 void demo_sound(void);
 
 // 1 if ESC is down. Read through the BIOS and not through an INT 9 handler

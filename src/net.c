@@ -852,12 +852,30 @@ int net_start(void){
 
 	ipx_get_local_address();
 
-	// Our id for this run. The other machine will almost certainly have
-	// booted at a different moment, so its BIOS tick, and therefore its id,
-	// is different. Both halves are filled so the two ids differ in every
-	// bit, not just the low ones.
+	// Our id for this run. Whoever draws the lower one is player 1, so two
+	// machines drawing the SAME one is not a curiosity, it is a hang: the
+	// comparison is "lower than", which is false on both sides at once, so
+	// both believe they are player 2. Nobody offers a level and the game
+	// refuses to start; and the intro handshake used to deadlock the same
+	// way, with both ends waiting for an intro nobody was showing.
+	//
+	// And it is not far fetched. The seed is the BIOS tick, which moves 18.2
+	// times a second and counts from midnight, so two machines whose clocks
+	// agree and that are started within an eighteenth of a second of each
+	// other draw exactly the same number.
+	//
+	// So the node address goes into it. IPX gives every machine a different
+	// one (DOSBox builds it from the IP address), which means two ids can
+	// only collide now if the random halves collide AND the nodes match,
+	// and the nodes cannot match.
 	srand((unsigned int)biostime(0, 0L));
 	local_instance_id = ((unsigned long)rand() << 16) | (unsigned long)rand();
+
+	local_instance_id = local_instance_id
+	                  ^ (((unsigned long)local_node[2] << 24)
+	                   | ((unsigned long)local_node[3] << 16)
+	                   | ((unsigned long)local_node[4] <<  8)
+	                   |  (unsigned long)local_node[5]);
 
 	sprintf(net_log_text, "NET: node %02X%02X%02X%02X%02X%02X id %lu",
 	        local_node[0], local_node[1], local_node[2],

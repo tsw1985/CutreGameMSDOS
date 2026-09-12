@@ -2170,7 +2170,7 @@ watching it happen live explains it better than any paragraph.
 In another terminal, while you play:
 
 ```
-tail -f net-test/log-server/GAME.LOG | grep --line-buffered "NET\|Tank hit"
+tail -f runserv/GAME.LOG | grep --line-buffered "NET\|Tank hit"
 ```
 
 You will see the pairing and the hits as they happen.

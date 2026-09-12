@@ -105,6 +105,84 @@ int net_find_opponent(void);
 // -1 if they could not agree, which means DO NOT START.
 int net_agree_level(int my_level);
 
+
+//===========================================================
+// THE INTRO, OVER THE NETWORK
+//
+// The intro runs for over two minutes. On one machine that is fine; with
+// two of them it is a problem with three separate edges, and these four
+// functions are the answer to all three:
+//
+//   WHO PLAYS IT. The game has no idea which machine started the server:
+//   discovery is a symmetric broadcast and player 1 is a coin toss between
+//   two random ids. So the machines have to ASK each other, and that is
+//   net_agree_demo().
+//
+//   THE OTHER ONE MUST NOT GIVE UP. net_connection_lost() fires after ten
+//   seconds of silence and the intro lasts a hundred and thirty four. Both
+//   ends keep a heartbeat going the whole time.
+//
+//   THEY MUST LEAVE TOGETHER. Same reason as the level handshake: the music
+//   is streamed and nobody ever resynchronises it, so a machine that starts
+//   the match a second early stays a second early until the last note.
+//===========================================================
+
+// Tells the other machine that this one is about to show the intro, or
+// listens for it being told. NOTHING is negotiated: the caller has already
+// decided from the role it was started with, /server or /client.
+//
+//   i_play_it   1 if this machine shows it
+//
+//   returns     1  play it
+//               0  wait for the other machine to play it
+//              -1  no intro, straight to the match
+//
+// It is one directional on purpose, and the comment on the function says
+// why: the version that negotiated could put BOTH machines into the waiting
+// state, because two ids that come out equal make both ends believe they are
+// player 2. A machine only waits here if it actually received an
+// announcement, so both waiting is not a state that exists.
+int net_agree_demo(int i_play_it);
+
+// The heartbeat, for the machine that IS playing. Hand it to
+// demo_set_idle() and the intro calls it once a frame on its own.
+//
+// Returns 1 when the other machine has asked to cut the intro short, which
+// demo_run() then treats exactly like a local ESC. So ESC works from either
+// keyboard, which matters: the one watching a black screen is the one most
+// likely to want out.
+int net_demo_idle(void);
+
+// The other side of it: sit here until the intro on the other machine is
+// over. Answers the heartbeat so neither end times out, and sends the stop
+// request if ESC is pressed here.
+//
+// Returns 1 when the intro ended normally, 0 if the connection was lost.
+int net_demo_wait(void);
+
+// Called by the machine that played it, once the intro is over. Tells the
+// other one and holds both of them here for the same few ticks, so the two
+// matches start on the same moment.
+void net_demo_finished(void);
+
+// A barrier: neither machine leaves until both have arrived.
+//
+// It exists for the music, and only for the music. The tanks do not need it:
+// lockstep makes whoever gets to frame 0 first wait for the other. The song
+// does, because it is streamed straight off the disk and nothing ever
+// resynchronises it, so two machines that start it a second apart stay a
+// second apart until the last note.
+//
+// And a second apart is easy. Between the moment the two machines last
+// agreed on anything and the moment the music starts, each one reads 256000
+// bytes of map, another 256000 of collision bitmap, 39 sprites and four WAV
+// files. Whatever difference there is between two disks lands straight in
+// the song. So instead of hoping they take the same time, they meet here,
+// with all the loading behind them and play_song() the very next thing.
+//
+// Does nothing at all when there is no network.
+void net_wait_together(void);
+
 // Which tank is ours: 1 = player 1 (the one at the bottom), 0 = player 2.
 //
 // Decided with no negotiation at all: each copy picks a random id at

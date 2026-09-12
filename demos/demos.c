@@ -38,6 +38,7 @@ int  sound_start(void);
 void sound_end(void);
 void sound_update(void);
 int  play_song(char *file_name);
+void set_song_volume(int volume);
 
 
 // Ticks de la BIOS en un segundo. Son 18,2 de verdad, no 18, y por eso las
@@ -93,6 +94,27 @@ int demo_sine[DEMO_ANGLE_STEPS] = {
 unsigned int demo_row[DEMO_HEIGHT];
 
 
+//===========================================================
+// EL CALLBACK DE CADA FRAME
+//
+// Ver demolib.h. Por defecto no hay ninguno y todo esto no cuesta mas que
+// una comparacion con NULL por frame.
+//
+// demo_aborted es lo que convierte un "corta ya" del que llama en una
+// salida limpia: demo_escape_pressed() lo mira, y como TODOS los efectos
+// preguntan por ahi, ninguno hay que tocarlo.
+//===========================================================
+static demo_idle_fn demo_idle = NULL;
+static int demo_aborted = 0;
+
+
+void demo_set_idle(demo_idle_fn callback){
+
+	demo_idle = callback;
+
+}
+
+
 void demo_tables_init(void){
 
 	int y;
@@ -120,20 +142,35 @@ void demo_wait_retrace(void){
 
 //===========================================================
 // El fin de frame. Ver demolib.h: aqui esta la razon de que la musica no se
-// quede en bucle.
+// quede en bucle, y aqui es donde el que llama mete baza.
 //===========================================================
 void demo_show(unsigned char *screen){
 
 	demo_wait_retrace();
 	bmp_paint_image_data_to_vga(screen);
-	sound_update();
+	demo_sound();
 
 }
 
 
+//===========================================================
+// EL EMBUDO. Todo frame de todo efecto pasa por aqui exactamente una vez.
+//
+// Por eso estan las dos cosas juntas: alimentar la tarjeta de sonido y dar
+// la palabra al que llamo. Si estuvieran en sitios distintos, el proximo
+// efecto que se escriba se olvidaria de una de las dos.
+//===========================================================
 void demo_sound(void){
 
 	sound_update();
+
+	if (demo_idle != NULL){
+
+		if (demo_idle() == 1){
+			demo_aborted = 1;
+		}
+
+	}
 
 }
 
@@ -155,6 +192,12 @@ unsigned long demo_now(void){
 int demo_escape_pressed(void){
 
 	int key;
+
+	// El que llama ha dicho que se corte. Se responde lo mismo que a un ESC,
+	// asi que los diez efectos salen por el camino que ya tenian.
+	if (demo_aborted == 1){
+		return 1;
+	}
 
 	if (bioskey(1) == 0){
 		return 0;
@@ -216,7 +259,7 @@ static void demo_fade_in(unsigned char *palette){
 	for (level = 0; level <= DEMO_FADE_STEPS; level++){
 		demo_wait_retrace();
 		bmp_write_pallete_data_into_dac_scaled(palette, level);
-		sound_update();
+		demo_sound();
 	}
 
 }
@@ -229,7 +272,7 @@ static void demo_fade_out(unsigned char *palette){
 	for (level = DEMO_FADE_STEPS; level >= 0; level--){
 		demo_wait_retrace();
 		bmp_write_pallete_data_into_dac_scaled(palette, level);
-		sound_update();
+		demo_sound();
 	}
 
 }
@@ -328,6 +371,9 @@ int demo_run(char **image_paths, int image_count, unsigned int seconds_each){
 
 	demo_tables_init();
 
+	// Una intro anterior pudo dejarlo puesto
+	demo_aborted = 0;
+
 	//-------------------------------------------------------
 	// La memoria. Tres bloques y ni uno mas.
 	//
@@ -370,7 +416,15 @@ int demo_run(char **image_paths, int image_count, unsigned int seconds_each){
 	had_sound = sound_start();
 
 	if (had_sound == 1){
+
 		play_song(DEMO_SONG);
+
+		// play_song() starts every song at half, which is the right level
+		// when engines and shots have to fit on top of it. Nothing else is
+		// making a noise here, so the intro sets its own. See demos.h: the
+		// number is measured against the file, not guessed.
+		set_song_volume(DEMO_SONG_VOLUME);
+
 	}
 
 	demo_set_video_mode(0x0013);

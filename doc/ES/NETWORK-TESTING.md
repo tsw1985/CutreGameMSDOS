@@ -13,11 +13,15 @@ Es la prueba que separa "mi codigo esta bien" de "mi red esta bien". Si esto
 funciona, el codigo es correcto y cualquier problema posterior es de red.
 
 ```
-dosbox -conf net-test/dosbox-local-a.conf     <- primero esta
-dosbox -conf net-test/dosbox-local-b.conf     <- y luego esta
+./play.sh both
 ```
 
-No hace falta configurar nada.
+Abre las dos ventanas ya conectadas entre si, sin escribir ninguna IP y sin
+configurar nada.
+
+> Aqui habia dos `.conf` sueltos, `dosbox-local-a/b.conf`, que hacian esto
+> mismo a mano. Se borraron: `play.sh both` hace lo de siempre y ademas admite
+> tema, nivel y `-demo`, que ellos no.
 
 ---
 
@@ -72,13 +76,20 @@ log la una a la otra justo donde mas falta hace.
 
 | Como lo lanzaste | Servidor / A | Cliente / B |
 |---|---|---|
-| Los scripts | `net-test/log-server/GAME.LOG` | `net-test/log-client/GAME.LOG` |
-| `dosbox-local-*.conf` | `net-test/log-a/GAME.LOG` | `net-test/log-b/GAME.LOG` |
+| `play.sh both` | `runserv/GAME.LOG` | `runcli/GAME.LOG` |
+| `play.sh local` | `runlocal/GAME.LOG` | - |
+| `dosbox-debug-*.conf` | `bin/game.log` | `bin/game.log` **(el mismo: se pisan)** |
+
+La razon de que `play.sh` le de a cada instancia **su propio directorio** es
+esa ultima fila. El juego escribe el log con una ruta RELATIVA
+(`LOG_FILE_PATH` en `src/util.c`), asi que cae donde este DOS: si las dos
+copias corren desde `c:\bin`, la segunda machaca el log de la primera justo
+donde mas falta hace.
 
 Con dos maquinas, cada log se queda **en su propia maquina**.
 
 ```
-tail -f net-test/log-server/GAME.LOG | grep --line-buffered "NET\|Tank hit"
+tail -f runserv/GAME.LOG | grep --line-buffered "NET\|Tank hit"
 ```
 
 | Linea | Que significa |

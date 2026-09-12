@@ -78,6 +78,75 @@ void bmp_write_pallete_data_into_dac(char *pallete_data){
 	}
 }
 
+//===========================================================
+// The palette dimmed to "level" out of FADE_TOTAL_STEPS. Level 0 is black,
+// FADE_TOTAL_STEPS is the palette untouched.
+//
+// A fade in mode 13h moves no pixels. The picture is already in video
+// memory and stays there: all that changes is what each of the 256 color
+// indexes means. Which is why a fade costs the same whether the screen is
+// empty or full of tanks.
+//
+// The arithmetic has to be done in an int. A DAC component is 6 bits, 0 to
+// 63, and 63 * 32 is 2016: in an unsigned char that is 224 and the screen
+// would flash instead of fade.
+//
+// And 0x3C8 is written ONCE, not per color: the DAC advances its own index
+// after every third byte written to 0x3C9. It saves 256 port writes per
+// step, which is worth having when the step is repeated 32 times and each
+// one has to fit inside a vertical blanking interval.
+//===========================================================
+void bmp_write_pallete_data_into_dac_scaled(char *pallete_data, int level){
+
+	unsigned int buffer_data_index = 0;
+	unsigned int color_counter = 0;
+	int r,v,a;
+
+	if (level < 0){
+		level = 0;
+	}
+	if (level > FADE_TOTAL_STEPS){
+		level = FADE_TOTAL_STEPS;
+	}
+
+	outportb(0x3c8, 0);
+
+	for(color_counter = 0 ; color_counter <= 255 ; color_counter++){
+
+		a = (int)(unsigned char)pallete_data[buffer_data_index++];  // Blue
+		v = (int)(unsigned char)pallete_data[buffer_data_index++];  // Green
+		r = (int)(unsigned char)pallete_data[buffer_data_index++];  // Red
+
+		outportb(0x3c9, (unsigned char)((r * level) / FADE_TOTAL_STEPS));
+		outportb(0x3c9, (unsigned char)((v * level) / FADE_TOTAL_STEPS));
+		outportb(0x3c9, (unsigned char)((a * level) / FADE_TOTAL_STEPS));
+
+	}
+}
+
+//===========================================================
+// Every color to black, with no palette to read from.
+//
+// It is a separate function and not bmp_write_pallete_data_into_dac_scaled()
+// with a level of 0, because it is needed at moments when there IS no
+// palette in memory yet: buffer_palleta_data does not exist until
+// bmp_init_buffers() has run.
+//===========================================================
+void bmp_write_black_pallete_into_dac(){
+
+	unsigned int color_counter = 0;
+
+	outportb(0x3c8, 0);
+
+	for(color_counter = 0 ; color_counter <= 255 ; color_counter++){
+
+		outportb(0x3c9, 0);
+		outportb(0x3c9, 0);
+		outportb(0x3c9, 0);
+
+	}
+}
+
 void bmp_load_pallete_data(char *buffer_data_dest , FILE *_file){
 	
 	int buffer_data_index = 0;

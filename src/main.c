@@ -104,6 +104,9 @@ void init_sprite_numbers();
 void free_sprite_numbers();
 int compute_proximity_percent();
 void draw_proximity_radar();
+void fade_in_from_black();
+void fade_out_to_black();
+void show_frame_in_the_dark();
 
 /*  Players */
 struct player player1;
@@ -598,6 +601,26 @@ int main(int argc, char *argv[]){
 
 	}
 
+	//---------------------------------------------------
+	// The screen has not been painted once yet: everything so far has gone
+	// into buffers. So this is the moment to put the DAC in the dark, drop
+	// the first frame onto a screen where every color is black, and bring it
+	// up.
+	//
+	// It goes AFTER the sound block on purpose. sound_update() is called
+	// inside the fade and it has to be able to answer, which means
+	// sound_start() must already have run (or already have failed, which is
+	// just as good: every sound call then does nothing).
+	//
+	// And the music starting half a second before the picture is not a
+	// problem, it is rather nice. It does not drift between the two machines
+	// either: the fade is paced by the vertical retrace, so 32 steps take the
+	// same time on a 386 and on a Pentium.
+	//---------------------------------------------------
+	bmp_write_black_pallete_into_dac();
+	show_frame_in_the_dark();
+	fade_in_from_black();
+
 	// The first round starts running, not burning
 	explosion_pause_counter = 0;
 
@@ -735,7 +758,35 @@ int main(int argc, char *argv[]){
 			explosion_pause_counter = explosion_pause_counter - 1;
 
 			if (explosion_pause_counter == 0){
+
+				//-------------------------------------------
+				// The round changes behind a fade: out with the burnt tank
+				// still on screen, the teleport in the dark, and in again on
+				// the new frame. It hides the jump of two tanks and a camera
+				// all moving at once.
+				//
+				// Over the network this is safe, and for a reason worth
+				// knowing. Both machines get here on the SAME frame number,
+				// because explosion_pause_counter is part of the simulation
+				// and not of the drawing. So the two of them stop for the
+				// same 64 retraces at the same moment, and the lockstep never
+				// even notices there was a pause.
+				//
+				// Nor does the connection: net_poll() keeps running inside
+				// both fades, and NET_TIMEOUT_SECONDS is 10 against the 0.9
+				// seconds this takes.
+				//
+				// The fade is NOT inside restart_game() on purpose.
+				// init_players() calls that too, long before there is a
+				// palette to fade or a screen to fade it on.
+				//-------------------------------------------
+				fade_out_to_black();
+
 				restart_game();
+
+				show_frame_in_the_dark();
+				fade_in_from_black();
+
 			}
 
 		}
@@ -1690,6 +1741,99 @@ void draw_explosion(struct player *_player){
 				  (int)(_player->position_x + EXPLOSION_OFFSET_X) - camera_x,
 				  (int)(_player->position_y + EXPLOSION_OFFSET_Y) - camera_y,
 				  buffer_background_image_data);
+
+}
+
+
+//===========================================================
+// THE FADES
+//
+// A fade in mode 13h does not touch one pixel. The picture is already sitting
+// in video memory and it stays there the whole time: what changes is what
+// each of the 256 color indexes MEANS, and that lives in the VGA DAC.
+//
+// So the trick for a load is to put the DAC in the dark FIRST, paint the
+// frame into a screen where every color is black, and only then bring the
+// palette up. Nobody sees the map arrive; they see it appear.
+//
+// Three things have to happen inside the loop, and none of them is optional:
+//
+//   wait_retrace()  paces it. One step per retrace at about 70 Hz, so
+//                   FADE_TOTAL_STEPS decides the duration in SECONDS and the
+//                   speed of the machine does not come into it. That is what
+//                   keeps two machines on the network fading for the same
+//                   length of time, which matters because the music is
+//                   streamed and nobody ever resynchronises it.
+//
+//   sound_update()  or the card replays whichever half of the DMA buffer it
+//                   has just finished and the music stutters for half a
+//                   second. Same reason it is called inside the lockstep
+//                   wait.
+//
+//   net_poll()      or the packets arriving during the fade are dropped. A
+//                   buffer that nobody picks up is a lost packet.
+//
+// The DAC is written immediately after wait_retrace() returns, which is the
+// START of the vertical blanking: that is the window where writing the
+// palette cannot show up as sparkle on a real VGA card.
+//===========================================================
+
+//===========================================================
+// From black up to the real palette.
+//===========================================================
+void fade_in_from_black(){
+
+	int level;
+
+	for (level = 0; level <= FADE_TOTAL_STEPS; level++){
+
+		wait_retrace();
+		bmp_write_pallete_data_into_dac_scaled(buffer_palleta_data, level);
+
+		sound_update();
+
+		if (network_mode == 1){
+			net_poll();
+		}
+
+	}
+
+}
+
+
+//===========================================================
+// And back down. Whatever is on screen stays on screen: it just goes dark.
+//===========================================================
+void fade_out_to_black(){
+
+	int level;
+
+	for (level = FADE_TOTAL_STEPS; level >= 0; level--){
+
+		wait_retrace();
+		bmp_write_pallete_data_into_dac_scaled(buffer_palleta_data, level);
+
+		sound_update();
+
+		if (network_mode == 1){
+			net_poll();
+		}
+
+	}
+
+}
+
+
+//===========================================================
+// Builds a frame and puts it on the VGA while the DAC is still black, so it
+// arrives invisible and there is something for fade_in_from_black() to bring
+// up. Without this the fade would bring up the PREVIOUS frame.
+//===========================================================
+void show_frame_in_the_dark(){
+
+	draw_to_buffer();
+	wait_retrace();
+	bmp_paint_image_data_to_vga(buffer_background_image_data);
 
 }
 

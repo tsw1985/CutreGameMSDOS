@@ -61,6 +61,17 @@
 // loaded and written into the VGA DAC
 #define PALLETA_DATA_SIZE 	309
 
+// Steps a fade takes to go from black to the real palette.
+//
+// One step per vertical retrace, and mode 13h retraces about 70 times a
+// second, so 32 steps is a fade of just under half a second. That number is
+// paced by the HARDWARE and not by the processor, which matters over the
+// network: two machines of very different speeds still take the same time to
+// fade, so the streaming music on the two of them does not drift apart.
+//
+// Going over 64 buys nothing: the DAC only has 64 levels per component.
+#define FADE_TOTAL_STEPS 	32
+
 // How close to the edge of the screen the tank may get before the camera
 // starts pushing. Inside this margin the camera does not move AT ALL, which
 // is the whole point: in normal play the picture is still, and it only
@@ -144,6 +155,20 @@ void bmp_fill_background_collision_in_buffer(char *_file);
 void bmp_revert_bmp(char *bmp_data);				// flips the rows of a 320x200 buffer: BMP stores them bottom-up
 void bmp_load_pallete_data(char *buffer_data_dest, FILE *file);
 void bmp_write_pallete_data_into_dac(char *pallete_data);	// sends the colors to the VGA DAC
+
+// The same palette, but dimmed to "level" out of FADE_TOTAL_STEPS: 0 paints
+// everything black, FADE_TOTAL_STEPS is the palette exactly as it is.
+//
+// This is what a fade is made of, and it touches no pixels at all. The
+// picture sits in video memory the whole time; what changes is what each
+// color index MEANS. Call it once per retrace with a level that climbs and
+// the image appears out of nothing.
+void bmp_write_pallete_data_into_dac_scaled(char *pallete_data, int level);
+
+// All 256 entries to black, without needing a palette to dim. Used right
+// before painting a frame that has to arrive invisible, so the fade has
+// something to bring up.
+void bmp_write_black_pallete_into_dac();
 void bmp_fill_buffer_with_image_data_from_file(char *buffer_data_dest, FILE *file);
 void bmp_paint_image_data_to_vga(char *buffer_image_data);	// dumps a whole screen buffer to the screen
 void bmp_extract_pallete_from_file(char *_file);

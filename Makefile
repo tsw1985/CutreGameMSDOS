@@ -54,6 +54,60 @@ bin\lockstep.obj: src\lockstep.c
 	$(CC) -c $(CFLAGS) -obin\lockstep.obj src\lockstep.c
 
 	
+################################################
+#                                 DEMOS                                                 #
+#
+# La intro. Cada efecto en su carpeta, y todos compilan igual.
+#
+# Fijate en que el -Idemos NO hace falta: los ficheros de demos\ se incluyen
+# entre ellos como "demos\zoom\zoom.h", o sea desde la raiz del proyecto,
+# que es justo desde donde MAKE ejecuta a tcc.
+################################################
+bin\demos.obj: demos\demos.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\demos.obj demos\demos.c
+
+bin\rotozoom.obj: demos\rotozoom\rotozoom.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\rotozoom.obj demos\rotozoom\rotozoom.c
+
+bin\wobble.obj: demos\wobble\wobble.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\wobble.obj demos\wobble\wobble.c
+
+bin\zoom.obj: demos\zoom\zoom.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\zoom.obj demos\zoom\zoom.c
+
+bin\scroll.obj: demos\scroll\scroll.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\scroll.obj demos\scroll\scroll.c
+
+bin\mosaic.obj: demos\mosaic\mosaic.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\mosaic.obj demos\mosaic\mosaic.c
+
+bin\blinds.obj: demos\blinds\blinds.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\blinds.obj demos\blinds\blinds.c
+
+bin\ripple.obj: demos\ripple\ripple.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\ripple.obj demos\ripple\ripple.c
+
+bin\bounce.obj: demos\bounce\bounce.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\bounce.obj demos\bounce\bounce.c
+
+bin\cycle.obj: demos\cycle\cycle.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\cycle.obj demos\cycle\cycle.c
+
+bin\stripes.obj: demos\stripes\stripes.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\stripes.obj demos\stripes\stripes.c
+
+
 ################################################	
 #                                 ASM FILES                                             # 	
 ################################################
@@ -81,10 +135,25 @@ $(TARGET): \
 	bin\gameloop.obj \
 	bin\sound.obj \
 	bin\net.obj \
-	bin\lockstep.obj
+	bin\lockstep.obj \
+	bin\demos.obj \
+	bin\rotozoom.obj \
+	bin\wobble.obj \
+	bin\zoom.obj \
+	bin\scroll.obj \
+	bin\mosaic.obj \
+	bin\blinds.obj \
+	bin\ripple.obj \
+	bin\bounce.obj \
+	bin\cycle.obj \
+	bin\stripes.obj
 	@echo bin\main.obj bin\util.obj bin\video.obj > bin\link.rsp
 	@echo bin\bmp.obj bin\players.obj bin\gameloop.obj >> bin\link.rsp
 	@echo bin\sound.obj bin\net.obj bin\lockstep.obj >> bin\link.rsp
+	@echo bin\demos.obj bin\rotozoom.obj bin\wobble.obj >> bin\link.rsp
+	@echo bin\zoom.obj bin\scroll.obj bin\mosaic.obj >> bin\link.rsp
+	@echo bin\blinds.obj bin\ripple.obj bin\bounce.obj >> bin\link.rsp
+	@echo bin\cycle.obj bin\stripes.obj >> bin\link.rsp
 	$(LD) $(LDFLAGS) -ebin\game.exe @bin\link.rsp
 
 clean:

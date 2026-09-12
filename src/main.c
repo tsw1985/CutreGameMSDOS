@@ -10,6 +10,7 @@
 #include "header\sound.h"
 #include "header\net.h"
 #include "header\lockstep.h"
+#include "demos\demos.h"
 
 //===========================================================
 // The game: main loop, keyboard, collisions against the map, and drawing.
@@ -159,6 +160,42 @@ int map_theme;
 #define THEME_SKY 		1
 #define THEME_WAR 		2
 #define THEME_NEON 		3
+
+// 1 when the intro was asked for with /demo or -demo.
+//
+// It is a switch and nothing else: everything the demos need is reserved by
+// demo_run() when it is called and given back before it returns. With this
+// at 0 the whole demos\ folder is dead weight in the .exe and not one byte
+// of memory is spent on it.
+int demo_mode;
+
+// The pictures the intro shows, in order, one effect each.
+//
+// Put your own 320x200 256 color BMPs in res\demo\ with these names. A file
+// that is not there is SKIPPED and the show carries on, so an empty folder
+// means the intro simply does not happen and the game starts as always.
+//
+// Names are 8.3 because DOS mangles anything longer: demo01.bmp is 6.3 and
+// the folder demo is 4 characters.
+char *demo_images[] = {
+	"..\\res\\demo\\demo01.bmp",
+	"..\\res\\demo\\demo02.bmp",
+	"..\\res\\demo\\demo03.bmp",
+	"..\\res\\demo\\demo04.bmp",
+	"..\\res\\demo\\demo05.bmp",
+	"..\\res\\demo\\demo06.bmp",
+	"..\\res\\demo\\demo07.bmp",
+	"..\\res\\demo\\demo08.bmp",
+	"..\\res\\demo\\demo09.bmp",
+	"..\\res\\demo\\demo10.bmp",
+	"..\\res\\demo\\demo11.bmp",
+	"..\\res\\demo\\demo12.bmp",
+	"..\\res\\demo\\demo13.bmp",
+	"..\\res\\demo\\demo14.bmp",
+	"..\\res\\demo\\demo15.bmp"
+};
+
+#define DEMO_IMAGE_COUNT 	(sizeof(demo_images) / sizeof(demo_images[0]))
 
 // Which of the five levels the big map uses, from -level1 to -level5.
 // 0 is the original big.bmp that came with the game.
@@ -315,6 +352,7 @@ int main(int argc, char *argv[]){
 	// the two players on one keyboard game that was here before.
 	network_mode        = 0;
 	big_map_mode        = 0;
+	demo_mode           = 0;
 	map_theme           = THEME_ORIGINAL;
 	map_level           = 0;
 	local_player_is_1   = 1;
@@ -337,6 +375,17 @@ int main(int argc, char *argv[]){
 
 		if (stricmp(argv[argument_index], "-bigmap") == 0){
 			big_map_mode = 1;
+		}
+
+		// The intro. Everything it needs is reserved when it runs and
+		// handed back before the game starts, so without this flag the
+		// demos cost exactly nothing: not a byte, not a file opened.
+		if (stricmp(argv[argument_index], "/demo") == 0){
+			demo_mode = 1;
+		}
+
+		if (stricmp(argv[argument_index], "-demo") == 0){
+			demo_mode = 1;
 		}
 
 		// The look of the big map. They are alternatives, so the last one on
@@ -432,6 +481,44 @@ int main(int argc, char *argv[]){
 		printf("\nThe levels only come dressed, so -level%d is using -sky.\n", map_level);
 		printf("Add -war or -neon if you want another look.\n\n");
 		tanks_log("Level without a theme, defaulted to sky");
+
+	}
+
+	//---------------------------------------------------
+	// THE INTRO, and it goes HERE for three separate reasons.
+	//
+	// 1. THE HEAP HAS TO BE CLEAN. demo_run() reserves two buffers of 64000
+	//    plus the sound, and gives all of it back before it returns. Doing
+	//    that after the game had already reserved things would leave a hole
+	//    in the middle of the heap, and a hole is what stops a 256000 byte
+	//    map from fitting even when there is plenty free. That lesson cost
+	//    an afternoon once; see chapter 23 of the course.
+	//
+	// 2. THE KEYBOARD IS STILL THE BIOS ONE. install_kbd() has not run, so
+	//    the demos can read ESC with bioskey() and never touch an interrupt
+	//    vector. That is what keeps the demos\ folder liftable into another
+	//    project.
+	//
+	// 3. BEFORE THE NETWORK. Pairing up talks to the player through
+	//    printf, and the intro leaves the screen in text mode precisely so
+	//    that still works. Running the intro after the handshake would also
+	//    mean two minutes without reading the socket, and the other machine
+	//    gives up after ten seconds.
+	//---------------------------------------------------
+	if (demo_mode == 1){
+
+		sprintf(log_message_text, "Demo: starting, memory free %lu",
+		        (unsigned long)coreleft());
+		tanks_log(log_message_text);
+
+		demo_run(demo_images, (int)DEMO_IMAGE_COUNT, DEMO_DEFAULT_SECONDS);
+
+		// The number that matters. It has to be the SAME as the line above:
+		// if it is lower, the demos kept something, and whatever they kept
+		// is sitting between the game and its contiguous 256000 bytes.
+		sprintf(log_message_text, "Demo: finished, memory free %lu",
+		        (unsigned long)coreleft());
+		tanks_log(log_message_text);
 
 	}
 

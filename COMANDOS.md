@@ -183,25 +183,31 @@ de 8 bits, mono y 44100 Hz exactos.
 -T sky|war|neon   solo en 'both': tema de la 2ª ventana
 -d, -demo     la intro antes de jugar
 -p PUERTO     puerto UDP. Por defecto 5213
--y CICLOS     cycles= de DOSBox. Por defecto "max"
--c NUCLEO     core= de DOSBox.   Por defecto "dynamic"
+-y CICLOS     cycles= de DOSBox. Por defecto "fixed 30000"
+-c NUCLEO     core= de DOSBox.   Por defecto "auto"
 ```
 
 ### Sobre `-y` y `-c`: la potencia de DOSBox
 
-Por defecto DOSBox va a `core=dynamic` y `cycles=max`, o sea **a todo lo que dé
-tu PC**. Antes iba a `fixed 30000`, que es un 386DX-40 flojo, y con eso los
-efectos de la intro que van píxel a píxel se arrastraban.
+Por defecto DOSBox va a `core=auto` y `cycles=fixed 30000`, que es más o menos
+un 386DX-40 y es **lo que el proyecto ha usado siempre**.
+
+Estuvieron un tiempo en `core=dynamic` / `cycles=max` (todo lo que dé tu PC) y
+se volvió atrás: `max` hace que DOSBox se agarre un núcleo a tope, y en algún
+equipo **la ventana se queda pillada**. Y un emulador congelado no es una intro
+lenta: en red, la otra máquina ve a un compañero que ha dejado de enviar y
+abandona la partida.
 
 **Nada puede ir "demasiado rápido".** El juego y las demos esperan al retrazo
 vertical, así que están topados a unos 70 fotogramas por segundo pase lo que
 pase: más potencia solo hace que a cada fotograma le **sobre** tiempo en vez de
-faltarle.
+faltarle. Lo único que nota los ciclos es la intro, que va píxel a píxel.
 
 | Si… | |
 |---|---|
-| el **sonido** da tirones | `./play.sh local -demo -y "fixed 100000"` |
-| algo va **raro** | `./play.sh local -c auto -y "fixed 30000"` (el comportamiento de siempre) |
+| la **intro** se arrastra | `./play.sh local -demo -c dynamic -y max` |
+| …y eso **bloquea** la ventana | `./play.sh local -demo -c dynamic -y "fixed 100000"` (casi igual de rápido, y no puede acaparar un núcleo) |
+| el **sonido** da tirones | baja los ciclos: `-y "fixed 100000"` o déjalo por defecto |
 
 ---
 

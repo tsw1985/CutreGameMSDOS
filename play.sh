@@ -27,28 +27,32 @@ PORT=5213
 # ------------------------------------------------------------
 # HOW MUCH POWER DOSBOX GETS
 #
-# 'dynamic' recompiles the 16 bit code into native host code instead of
-# interpreting it instruction by instruction. It is several times faster
-# than the 'auto' that was here before and changes nothing about what the
-# program does.
+# These are the values the project has always used, and they are back after
+# a detour worth writing down.
 #
-# 'max' lets DOSBox use a whole core of your PC. It used to be
-# "fixed 30000", which is a weak 386DX-40: the intro effects that work pixel
-# by pixel crawled along at 8 or 9 frames per second.
+# The detour: 'dynamic' recompiles the 16 bit code into native host code
+# instead of interpreting it, and 'max' hands DOSBox a whole core. Faster,
+# and the intro effects that work pixel by pixel do notice it. But 'max'
+# means DOSBox pins that core flat out, and on at least one PC here the
+# window simply stopped responding. A frozen emulator is not a slow intro:
+# over the network the OTHER machine sees a partner that has stopped
+# sending and drops the match.
 #
-# And raising the cycles HERE is safe, which is the thing that usually is
-# not safe on DOS. The whole program waits for the vertical retrace: the
-# game loop calls wait_retrace() and every demo goes through demo_show(),
-# which does the same. The ceiling is ~70 frames per second whatever
-# happens, so more power speeds nothing up, it only leaves each frame with
-# time to spare instead of running short. The classic "on a fast PC the game
-# runs at a thousand miles an hour" cannot happen here.
+# So the default is the safe pair, and the fast pair is one flag away:
 #
-# If the sound stutters, which can happen when your Linux is loaded, go back
-# to a fixed number:   -y "fixed 100000"
+#     -c dynamic -y max               fast
+#     -c dynamic -y "fixed 100000"    nearly as fast, and it cannot pin a core
+#
+# Raising them is safe as far as the GAME is concerned, which is the thing
+# that usually is not safe on DOS. The whole program waits for the vertical
+# retrace: the game loop calls wait_retrace() and every demo goes through
+# demo_show(), which does the same. The ceiling is ~70 frames per second
+# whatever happens, so more power speeds nothing up, it only leaves each
+# frame with time to spare instead of running short. The classic "on a fast
+# PC the game runs at a thousand miles an hour" cannot happen here.
 # ------------------------------------------------------------
-CORE="dynamic"
-CYCLES="max"
+CORE="auto"
+CYCLES="fixed 30000"
 THEME=""
 THEME_CLIENT=""
 LEVEL=""
@@ -90,8 +94,8 @@ cat <<'END'
     -d, -demo     the intro: 15 pictures with effects before you play
                   (in 'both' only window 1 shows it)
     -p PORT       UDP port of the tunnel. Default 5213
-    -y CYCLES     DOSBox cycles=. Default "max" (all of your PC)
-    -c CORE       DOSBox core=.   Default "dynamic"
+    -y CYCLES     DOSBox cycles=. Default "fixed 30000"
+    -c CORE       DOSBox core=.   Default "auto"
 
   WHAT HAS TO MATCH BETWEEN THE TWO MACHINES
     -b   YES. Maps of different sizes = different games.
@@ -110,25 +114,27 @@ cat <<'END'
     The pictures have to be 320x200 BMPs with 256 COLOURS, 65078 bytes
     each. One that is missing is simply skipped.
 
-    Over a network the two machines AGREE who shows it: whoever was
-    started with -demo does, and the other one waits with a message on
-    screen until it is over. If both were started with it, player 1 shows
-    it. ESC skips it from EITHER keyboard, including the one that is only
-    watching a "waiting" message.
+    Over a network the SERVER shows it and the client waits with a message
+    on screen until it is over. It is decided by the mode you typed, not
+    negotiated, which is why 'client' refuses -demo. ESC skips it from
+    EITHER keyboard, including the one that is only watching the message.
 
     In 'both' only window 1 gets -demo, because watching the same intro
     twice on one screen would be daft.
 
-  IF IT IS SLOW, OR IF IT IS ODD
-    By default DOSBox runs at core=dynamic and cycles=max, that is, all
-    your PC can give. Nothing can run "too fast": the game and the demos
-    wait for the vertical retrace and are capped at about 70 fps.
+  IF IT IS SLOW
+    By default DOSBox runs at core=auto and cycles=fixed 30000, which is
+    about a 386DX-40. The game does not care, it is capped at ~70 fps by
+    the vertical retrace anyway, but the intro effects that work pixel by
+    pixel do: they crawl at 8 or 9 frames per second.
 
-    If the SOUND stutters, pin the cycles:
-      ./play.sh local -demo -y "fixed 100000"
+    To give it everything your PC has:
+      ./play.sh local -demo -c dynamic -y max
 
-    If something behaves oddly, go back to the old slow interpreter:
-      ./play.sh local -c auto -y "fixed 30000"
+    If that LOCKS UP the DOSBox window, and on some machines it does,
+    'max' is the culprit. Ask for a big fixed number instead, which is
+    nearly as fast and cannot pin a core:
+      ./play.sh local -demo -c dynamic -y "fixed 100000"
 
   CONTROLS
     local     player 1: arrows + 5 on the numeric keypad

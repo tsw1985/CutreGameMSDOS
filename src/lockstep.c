@@ -467,6 +467,18 @@ struct demo_message {
 // there is no intro and nobody is coming to say so.
 #define DEMO_SILENCE_TICKS 	(18 * 10)
 
+// How long the barrier below waits, and it is deliberately NOT the ten
+// seconds above.
+//
+// What it is waiting for is the other machine finishing its LOADING: the
+// map, the collision map, thirty nine sprites and the WAVs, half a megabyte
+// off a DOS disk. Two machines never take the same time over that, and
+// absorbing that difference is the entire reason this barrier exists. Ten
+// seconds is not enough room: whoever loaded first would give up and leave
+// before the other one even arrived, which is the very desync it is here to
+// prevent.
+#define START_LINE_TICKS 	(18 * 30)
+
 // Set by net_agree_demo() and read by the two functions below, so the caller
 // does not have to carry it around.
 static int  demo_stop_requested = 0;
@@ -577,6 +589,42 @@ int net_agree_demo(int i_play_it){
 				next_send_tick = now_tick + LEVEL_RETRY_TICKS;
 
 				demo_fill(&message, DEMO_START);
+				net_send(&message, sizeof(struct demo_message));
+
+			}
+
+		}
+
+		//-----------------------------------------------
+		// AND THE ONE THAT LISTENS HAS TO SPEAK TOO.
+		//
+		// It has nothing to say: it is here in case the other machine is about
+		// to show an intro, and if nobody is, the right answer is silence for
+		// the full DEMO_AGREE_TIMEOUT.
+		//
+		// Except that with NO -demo anywhere BOTH ends are this branch, so
+		// nobody sends anything at all, and DEMO_AGREE_TIMEOUT is ten seconds,
+		// which is exactly NET_TIMEOUT_SECONDS. Ten seconds of self inflicted
+		// silence on a link that is perfectly alive: net_connection_lost()
+		// fired here every single time, and because the flag in net.c sticks
+		// once set, the match was dead before it started.
+		//
+		// So the listener beats as well. This file already knows the rule,
+		// net_demo_idle() is built on it: while the intro runs, the machine
+		// showing it beats every two seconds for this very reason. The
+		// listening side of this handshake was the one place that forgot.
+		//
+		// DEMO_ALIVE and not DEMO_START_ACK: an ack means "I heard your
+		// announcement" and nobody has announced anything. Whoever is playing
+		// reads this type and does nothing with it, which is the point.
+		//-----------------------------------------------
+		if (i_play_it == 0){
+
+			if (now_tick >= next_send_tick){
+
+				next_send_tick = now_tick + LEVEL_RETRY_TICKS;
+
+				demo_fill(&message, DEMO_ALIVE);
 				net_send(&message, sizeof(struct demo_message));
 
 			}
@@ -1025,16 +1073,36 @@ void net_wait_together(void){
 		now_tick = biostime(0, 0L);
 
 		// Waiting for ever for a machine that has died would be worse than
-		// a song out of step.
-		if (now_tick - start_tick > DEMO_SILENCE_TICKS){
+		// a song out of step. This clock starts HERE, which is the whole
+		// point of it, and see below for what used to be underneath.
+		if (now_tick - start_tick > START_LINE_TICKS){
 			tanks_log("NET: the other machine never reached the start, going anyway");
 			return;
 		}
 
-		if (net_connection_lost() == 1){
-			tanks_log("NET: connection lost at the start line");
-			return;
-		}
+		//-----------------------------------------------
+		// THERE IS NO net_connection_lost() HERE ANY MORE. Do not put it
+		// back.
+		//
+		// That function measures the time since the last packet ARRIVED,
+		// and this is the one place in the program where that number means
+		// nothing. Between the last handshake and this line both machines
+		// spend several seconds loading half a megabyte off disk, with
+		// nobody sending and nobody polling. The silence is not the network
+		// failing, it is us not talking, and it is the same silence this
+		// barrier was written to absorb.
+		//
+		// It cost a whole evening. On a load slow enough to cross
+		// NET_TIMEOUT_SECONDS, this was the FIRST thing to ask the question,
+		// so the answer came back yes on arrival: the machine left without
+		// sending a single READY, the other one waited for a shout that was
+		// never coming, and because the flag in net.c is sticky once set,
+		// the game loop then killed the match on frame 0. Symptom: it opens
+		// for a few seconds and closes.
+		//
+		// The clock above does the same job honestly. It starts when the
+		// waiting starts.
+		//-----------------------------------------------
 
 		if (now_tick >= next_send_tick){
 

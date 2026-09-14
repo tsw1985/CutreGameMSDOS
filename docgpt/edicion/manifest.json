@@ -1,0 +1,417 @@
+{
+  "edition": "2026-09",
+  "source_commit": "2bc401ed00e9bd3ce8c1cb297ca63836e1520988",
+  "books": {
+    "curso_completo": {
+      "html": "lectura/curso_completo.html",
+      "pdf": "pdf/curso_completo.pdf",
+      "language": "es",
+      "sources": [
+        {
+          "path": "README.md",
+          "sha256": "cc1fbb30c98a46b3f3f1382114906aac3b02d6d951fd06a491d43220c42a12e8"
+        },
+        {
+          "path": "ch00.md",
+          "sha256": "aa7137dc2644eaa5e55bc4a3ead95dd3fde635192144c89edebb448863ff7be7"
+        },
+        {
+          "path": "ch01.md",
+          "sha256": "84d8ffa14bd3a7f5371f95e2706d7c0a8037e4ac28cf9bd2d6c8458841e35fed"
+        },
+        {
+          "path": "ch02.md",
+          "sha256": "0912bf57c1a0a8d185663b29c4a6116784cd92e6d3ba129bea5e1bece8be71d3"
+        },
+        {
+          "path": "ch03.md",
+          "sha256": "8a2347bb63befd57a3bda538af3d3843c850e06b7718044f1b05e44527888266"
+        },
+        {
+          "path": "ch04.md",
+          "sha256": "e8b66c8ab25f0b50528f03ecc550b414e32cb061a8e37d998b056fae72bd1d7e"
+        },
+        {
+          "path": "ch05.md",
+          "sha256": "efb6648ad6845909638fd6a6071353b5ac7974dca16b3c246bdc9a98e62beba2"
+        },
+        {
+          "path": "ch06.md",
+          "sha256": "d5760ea4e9ad6fdefee0efbe4fd6444aec896493379cfbb8172553eb0cf82bd4"
+        },
+        {
+          "path": "ch07.md",
+          "sha256": "848e8e77aabd82429247760d115507393d3393607ccebaca3d2acedb4ab935db"
+        },
+        {
+          "path": "ch08.md",
+          "sha256": "2e57bb67e49ab15fa2c07a6330f845da397af4356854e772403734f5e50dd9b3"
+        },
+        {
+          "path": "ch09.md",
+          "sha256": "1c89c30c785ee93e42f50de3b7b10da2dbb7b7676c8bda4f8a54bd78fd7f60d5"
+        },
+        {
+          "path": "ch10.md",
+          "sha256": "2d3a7afbfedcbd8ac69d831cd22ab24110ea8ad21173eceb8cd7b4203095084b"
+        },
+        {
+          "path": "ch11.md",
+          "sha256": "39d3c73b7dc8f3a27bbad6d50bdb402148984facfba723ee804c0d15443e0cd3"
+        },
+        {
+          "path": "ch12.md",
+          "sha256": "7a991ab7b52722b43940883aae7467ba18e0b160d8ef907e2ba7107e026084f2"
+        },
+        {
+          "path": "ch13.md",
+          "sha256": "aecf215264584fe869a491192a1c5bdf4ce71fd56f6c1850f5487164b2f82051"
+        },
+        {
+          "path": "ch14.md",
+          "sha256": "0148dc32e9ab965be5f43b78b4bfe4ddd1ced2a43897ab7529beed4175bce6e8"
+        },
+        {
+          "path": "ch15.md",
+          "sha256": "04600d11f9e00d461bbaec6426c993f2c0ceb727a7e9629d9c75463d3f247d86"
+        },
+        {
+          "path": "ch16.md",
+          "sha256": "495171f93d8ffffd3ce42c119cbb7b98c52fe58847cde9f8e16858a12c5b5461"
+        },
+        {
+          "path": "ch17.md",
+          "sha256": "45ae57b2f16c7b47357ccf818b66338a52bdd9ab9a9bc34cac609259c62f3196"
+        },
+        {
+          "path": "ch18.md",
+          "sha256": "0ad7e3301126c18bd9f991000e9cd0324c98ac4aca028d6df4dbeea68c5eabeb"
+        },
+        {
+          "path": "ch19.md",
+          "sha256": "a16a8580d120f3f53280c57639595882bf6786acc1178c534ef733eabcb32793"
+        },
+        {
+          "path": "ch20-paso-a-paso.md",
+          "sha256": "f3332cedf1b4bcfbd35491dbd1bf7a3bc7fcf15cf4efa62292c69a0a73473b2f"
+        },
+        {
+          "path": "ch20.md",
+          "sha256": "20028aede9caf30a87a561397528cbb79b1a26e8ddb1af72d8027f9153c051d0"
+        },
+        {
+          "path": "ch21.md",
+          "sha256": "077c6b75e983bc3080cb3afb8d0c0e9f27b2a6facac9a7714be69d5b05f22d54"
+        },
+        {
+          "path": "ch22.md",
+          "sha256": "892dcfbe222c1d18c3422b39b505fd0cef398563a4b2ce48b2a00d69d848ff77"
+        },
+        {
+          "path": "ch23.md",
+          "sha256": "00e2a703c4649a50eaa5445b7d1a3c36d9fe1ba318fb4d4282c0b81ffa5894c8"
+        },
+        {
+          "path": "ch24.md",
+          "sha256": "3e1ef42dbb8e1f68b5aa301650cec2d13b93554796da5178f577e386b8772cc2"
+        },
+        {
+          "path": "ch25-paso-a-paso.md",
+          "sha256": "1a4a596adaec0d8a0ca6956a775d7b836724d347ff5d6c62b762c1030baa78a9"
+        },
+        {
+          "path": "ch25.md",
+          "sha256": "6812c23a89b6327511ccf5fc0759b517dcc55d780a04e5c95e07f8366f67d949"
+        },
+        {
+          "path": "ch26.md",
+          "sha256": "3dafa770c874bbac77f57fa254cf5b1fc530457ede09dbcbf8610f385f92c582"
+        },
+        {
+          "path": "ch27.md",
+          "sha256": "cf77be2db504afeb578ef03493026e330620c9e7c7d21d41046eb07f4d768364"
+        },
+        {
+          "path": "ch28.md",
+          "sha256": "535dfc740726f603f9d8fb4e15ffde5a6ac7c38030cef364737a05fb3ac13f2a"
+        },
+        {
+          "path": "ch29.md",
+          "sha256": "b0536c67c9b694417e6eb68fdaae68bc0671735c21645a0dcac32569b65b46a6"
+        },
+        {
+          "path": "ch30.md",
+          "sha256": "46dfac92653bf7ffefebc82bfee5d2815131ff08e90718744cea1a7afbae1db5"
+        },
+        {
+          "path": "ch31.md",
+          "sha256": "a34a7cd83a02be83746bcc4216226c6b9367a731216c768e8a205981a6f242f2"
+        },
+        {
+          "path": "demos/README.md",
+          "sha256": "5dded0b865d65c1ca621ecfa81efb8eb9f453c747b4137dd151708054c461792"
+        },
+        {
+          "path": "demos/BASES.md",
+          "sha256": "2208dec1317f45c876a4b6d25161e08dc6fe9091134a7d3c6960e1fc7bf07848"
+        },
+        {
+          "path": "demos/cycle/doc/README.md",
+          "sha256": "bd023aab5a84b9f6f190786af4729333481d12e215e96f6d25fe36d28fb800c4"
+        },
+        {
+          "path": "demos/scroll/doc/README.md",
+          "sha256": "fee54842b82c4900895141f7d0511157573dfe5ac4d8c7667229fcaed10e5feb"
+        },
+        {
+          "path": "demos/blinds/doc/README.md",
+          "sha256": "b666120e33a808cf8d9c21e3e85bccdcdbb8fd81eccf12d3d12730f0828044c9"
+        },
+        {
+          "path": "demos/stripes/doc/README.md",
+          "sha256": "d37f0bd9d8320c5c5e3f11d2f0931e1278c298a76dd93d2dbe0ec3f80a19ac71"
+        },
+        {
+          "path": "demos/wobble/doc/README.md",
+          "sha256": "d21680cc1cfc399936f36c132350c5ed7ac3bfc6d5268cba4ad2c56f6da80836"
+        },
+        {
+          "path": "demos/bounce/doc/README.md",
+          "sha256": "9976abe75545415eaf248d7612a5933d37474b535256f1d5c9e5ebf7d7da13d2"
+        },
+        {
+          "path": "demos/ripple/doc/README.md",
+          "sha256": "2d8be3dde5053f859d19b6bbb44f0263de42084821749dc66e59341823121410"
+        },
+        {
+          "path": "demos/mosaic/doc/README.md",
+          "sha256": "1e44944b4949a283c992a43cd6507c25a461413092ac716d8675d3e15ce1024d"
+        },
+        {
+          "path": "demos/zoom/doc/README.md",
+          "sha256": "921def83809917a86dd46ab5508ad9cb1a11dc2d4faed58b6ca208fb6dd1532e"
+        },
+        {
+          "path": "demos/rotozoom/doc/README.md",
+          "sha256": "3f0f8e9ae34f8e72c6a8ff6aabb678cf609cb6638923aeb461fa90ba029c4fb7"
+        },
+        {
+          "path": "LABS.md",
+          "sha256": "3ca0d02c5f9903469603232e3b0da4d21aece15ce0f206c81ba176ac49a6498d"
+        },
+        {
+          "path": "GUIA.md",
+          "sha256": "c75773836f29740af8fdff7a487d2d44740c8ebf10e8bee2305b3bb9e84ff92d"
+        },
+        {
+          "path": "APIS.md",
+          "sha256": "bea6d544f92a6af974bca0ffad061cc88029320194b471989329fb26d7fd41aa"
+        },
+        {
+          "path": "CUADERNO.md",
+          "sha256": "b135b87064ee2ba6bced00ce6ba65b2c92d2e69bf6630b55b305d60887395b77"
+        },
+        {
+          "path": "GLOSARIO.md",
+          "sha256": "8fd5ce2888f954fbcccc49642545d1372d05e3287968a919b825a1bcf89b673d"
+        },
+        {
+          "path": "FUENTES.md",
+          "sha256": "eb7f59de433795fcd5f0736d8557af32311d421958e7949db633039dde938192"
+        },
+        {
+          "path": "ERRATAS.md",
+          "sha256": "c861b4cc135a9ae65aeaa77e5d2b381d48d599c2b52804d51ced1fb9e50b6ce5"
+        },
+        {
+          "path": "PDFS.md",
+          "sha256": "e13ef592bb15f6cb9681ee6e4e4c92015ea31ccac9d207d76446da07fadce802"
+        }
+      ]
+    },
+    "camara_y_mapas": {
+      "html": "lectura/camara_y_mapas.html",
+      "pdf": "pdf/camara_y_mapas.pdf",
+      "language": "es",
+      "sources": [
+        {
+          "path": "ch21.md",
+          "sha256": "077c6b75e983bc3080cb3afb8d0c0e9f27b2a6facac9a7714be69d5b05f22d54"
+        },
+        {
+          "path": "ch22.md",
+          "sha256": "892dcfbe222c1d18c3422b39b505fd0cef398563a4b2ce48b2a00d69d848ff77"
+        },
+        {
+          "path": "ch23.md",
+          "sha256": "00e2a703c4649a50eaa5445b7d1a3c36d9fe1ba318fb4d4282c0b81ffa5894c8"
+        },
+        {
+          "path": "ch24.md",
+          "sha256": "3e1ef42dbb8e1f68b5aa301650cec2d13b93554796da5178f577e386b8772cc2"
+        },
+        {
+          "path": "ch25-paso-a-paso.md",
+          "sha256": "1a4a596adaec0d8a0ca6956a775d7b836724d347ff5d6c62b762c1030baa78a9"
+        },
+        {
+          "path": "ch25.md",
+          "sha256": "6812c23a89b6327511ccf5fc0759b517dcc55d780a04e5c95e07f8366f67d949"
+        },
+        {
+          "path": "ch26.md",
+          "sha256": "3dafa770c874bbac77f57fa254cf5b1fc530457ede09dbcbf8610f385f92c582"
+        },
+        {
+          "path": "ch27.md",
+          "sha256": "cf77be2db504afeb578ef03493026e330620c9e7c7d21d41046eb07f4d768364"
+        },
+        {
+          "path": "ch28.md",
+          "sha256": "535dfc740726f603f9d8fb4e15ffde5a6ac7c38030cef364737a05fb3ac13f2a"
+        },
+        {
+          "path": "LABS.md",
+          "sha256": "3ca0d02c5f9903469603232e3b0da4d21aece15ce0f206c81ba176ac49a6498d"
+        }
+      ]
+    },
+    "camara_paso_a_paso": {
+      "html": "lectura/camara_paso_a_paso.html",
+      "pdf": "pdf/camara_paso_a_paso.pdf",
+      "language": "es",
+      "sources": [
+        {
+          "path": "ch25-paso-a-paso.md",
+          "sha256": "1a4a596adaec0d8a0ca6956a775d7b836724d347ff5d6c62b762c1030baa78a9"
+        }
+      ]
+    },
+    "checksum_paso_a_paso": {
+      "html": "lectura/checksum_paso_a_paso.html",
+      "pdf": "pdf/checksum_paso_a_paso.pdf",
+      "language": "es",
+      "sources": [
+        {
+          "path": "ch20-paso-a-paso.md",
+          "sha256": "f3332cedf1b4bcfbd35491dbd1bf7a3bc7fcf15cf4efa62292c69a0a73473b2f"
+        }
+      ]
+    },
+    "demos": {
+      "html": "lectura/demos.html",
+      "pdf": "pdf/demos.pdf",
+      "language": "es",
+      "sources": [
+        {
+          "path": "demos/README.md",
+          "sha256": "5dded0b865d65c1ca621ecfa81efb8eb9f453c747b4137dd151708054c461792"
+        },
+        {
+          "path": "demos/BASES.md",
+          "sha256": "2208dec1317f45c876a4b6d25161e08dc6fe9091134a7d3c6960e1fc7bf07848"
+        },
+        {
+          "path": "demos/cycle/doc/README.md",
+          "sha256": "bd023aab5a84b9f6f190786af4729333481d12e215e96f6d25fe36d28fb800c4"
+        },
+        {
+          "path": "demos/scroll/doc/README.md",
+          "sha256": "fee54842b82c4900895141f7d0511157573dfe5ac4d8c7667229fcaed10e5feb"
+        },
+        {
+          "path": "demos/blinds/doc/README.md",
+          "sha256": "b666120e33a808cf8d9c21e3e85bccdcdbb8fd81eccf12d3d12730f0828044c9"
+        },
+        {
+          "path": "demos/stripes/doc/README.md",
+          "sha256": "d37f0bd9d8320c5c5e3f11d2f0931e1278c298a76dd93d2dbe0ec3f80a19ac71"
+        },
+        {
+          "path": "demos/wobble/doc/README.md",
+          "sha256": "d21680cc1cfc399936f36c132350c5ed7ac3bfc6d5268cba4ad2c56f6da80836"
+        },
+        {
+          "path": "demos/bounce/doc/README.md",
+          "sha256": "9976abe75545415eaf248d7612a5933d37474b535256f1d5c9e5ebf7d7da13d2"
+        },
+        {
+          "path": "demos/ripple/doc/README.md",
+          "sha256": "2d8be3dde5053f859d19b6bbb44f0263de42084821749dc66e59341823121410"
+        },
+        {
+          "path": "demos/mosaic/doc/README.md",
+          "sha256": "1e44944b4949a283c992a43cd6507c25a461413092ac716d8675d3e15ce1024d"
+        },
+        {
+          "path": "demos/zoom/doc/README.md",
+          "sha256": "921def83809917a86dd46ab5508ad9cb1a11dc2d4faed58b6ca208fb6dd1532e"
+        },
+        {
+          "path": "demos/rotozoom/doc/README.md",
+          "sha256": "3f0f8e9ae34f8e72c6a8ff6aabb678cf609cb6638923aeb461fa90ba029c4fb7"
+        }
+      ]
+    },
+    "demos_en": {
+      "html": "lectura/demos_en.html",
+      "pdf": "pdf/demos_en.pdf",
+      "language": "en",
+      "sources": [
+        {
+          "path": "demos/README-EN.md",
+          "sha256": "e2d5f24e0c618a10d0176db798f05773dc21b0a112708e724159f4b5cba4f988"
+        },
+        {
+          "path": "demos/BASES-EN.md",
+          "sha256": "7f2934787cbb97b5243508bc669dec41b5b6fab3ce7d9815977eaf54b6dfdbb4"
+        },
+        {
+          "path": "demos/cycle/doc/README-EN.md",
+          "sha256": "7cc1938a9f0b2996b6e7fda490a1868359bd5adaebf756af540313f6dd06b1d4"
+        },
+        {
+          "path": "demos/scroll/doc/README-EN.md",
+          "sha256": "09d3290294227ddfecd8eb6d2f9f03017dbe046a53aaba4a9147d8199e8f7627"
+        },
+        {
+          "path": "demos/blinds/doc/README-EN.md",
+          "sha256": "fbc4fe526365fcf9e81957f5f158fa86f76f7ca580d3ef2121c77cb62edae55b"
+        },
+        {
+          "path": "demos/stripes/doc/README-EN.md",
+          "sha256": "e80505d8041a15b06be99c9c229f574346d010003ae392254f954c446b3935ae"
+        },
+        {
+          "path": "demos/wobble/doc/README-EN.md",
+          "sha256": "af3501e62595e8221f5ddddae1976ba9d685a19747b000eaa5df54db59586455"
+        },
+        {
+          "path": "demos/bounce/doc/README-EN.md",
+          "sha256": "ff99d930e0150f97c2490c3b663f89036d9167f10e7b5f24e7142c98e5ce7ffd"
+        },
+        {
+          "path": "demos/ripple/doc/README-EN.md",
+          "sha256": "4471bf47941609d3bbd4ab3090f8c685c211a778a8b81e7e4c522f6d511e2001"
+        },
+        {
+          "path": "demos/mosaic/doc/README-EN.md",
+          "sha256": "9c58c5ff6f861e0d46b123892d10722260c1ac51579f1519aecbc93d1dd9fabd"
+        },
+        {
+          "path": "demos/zoom/doc/README-EN.md",
+          "sha256": "d57649c045c47a106e29bd0807d528e5632f97f93f2f429a3f989d3c86b5bae5"
+        },
+        {
+          "path": "demos/rotozoom/doc/README-EN.md",
+          "sha256": "5196bc7d326e3c7c339ab7791dac69f20d18c92784195fffb1e3a21e5f9c0486"
+        }
+      ]
+    }
+  },
+  "markdown_coverage": {
+    "total": 67,
+    "included": 67,
+    "missing": []
+  }
+}

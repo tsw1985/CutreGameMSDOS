@@ -1,0 +1,128 @@
+{
+  "verified_on": "2026-09-14",
+  "source_commit": "2bc401ed00e9bd3ce8c1cb297ca63836e1520988",
+  "markdown_documents": 67,
+  "markdown_in_pdf": 67,
+  "svg_figures": 58,
+  "links_examined": 1347,
+  "validation_errors": [],
+  "books": {
+    "curso_completo": {
+      "pages": 173,
+      "bytes": 3141879,
+      "sha256": "2b328b618d6abf995341d7c8fd687cfbf6ed7b57d331009b25ac955e6fcf4de4",
+      "markdown_sources": 55,
+      "empty_pages": [],
+      "short_pages": [],
+      "text_outside_page": 0,
+      "chapter_destinations": "passed"
+    },
+    "camara_y_mapas": {
+      "pages": 43,
+      "bytes": 847606,
+      "sha256": "fd086ed949358a890a0b5a071c1b20745e2fb081e1a4bcce2f229fc66f844122",
+      "markdown_sources": 10,
+      "empty_pages": [],
+      "short_pages": [],
+      "text_outside_page": 0,
+      "chapter_destinations": "passed"
+    },
+    "camara_paso_a_paso": {
+      "pages": 12,
+      "bytes": 242649,
+      "sha256": "15b6f08aab790f93ee89d54f03d1f66dfba8b7354cb975e3e7970fce33d9e763",
+      "markdown_sources": 1,
+      "empty_pages": [],
+      "short_pages": [],
+      "text_outside_page": 0,
+      "chapter_destinations": "passed"
+    },
+    "checksum_paso_a_paso": {
+      "pages": 10,
+      "bytes": 212092,
+      "sha256": "27c7ebd0df9b989e426f7b4347506c0b56e6c35e0603b632c11b01429ea7eee9",
+      "markdown_sources": 1,
+      "empty_pages": [],
+      "short_pages": [],
+      "text_outside_page": 0,
+      "chapter_destinations": "passed"
+    },
+    "demos": {
+      "pages": 39,
+      "bytes": 598092,
+      "sha256": "41d8ec50e44c868099221231c86a0ba49f9936b7773e72292f595bf58b2d6c16",
+      "markdown_sources": 12,
+      "empty_pages": [],
+      "short_pages": [],
+      "text_outside_page": 0,
+      "chapter_destinations": "passed"
+    },
+    "demos_en": {
+      "pages": 28,
+      "bytes": 515524,
+      "sha256": "7ff211a9e4107167b75ea9816419c394d3c6d83a9472442fcaf2e975dcf4ec13",
+      "markdown_sources": 12,
+      "empty_pages": [],
+      "short_pages": [],
+      "text_outside_page": 0,
+      "chapter_destinations": "passed"
+    }
+  },
+  "original_tracked_files_unchanged": true,
+  "game_compiled_or_run": false,
+  "scope": "Document coverage, hashes, local links, HTML anchors, PDF chapter destinations, page text bounds, SVG syntax and Git diff. External websites and DOS execution are outside this check.",
+  "supplement_checks": {
+    "ch25-paso-a-paso": "EFGHI@KLMN\nGHI@KLMNOP\n",
+    "ch25-paso-a-paso-follow": "FGHIJK@MNO\ncamera=5 screen=6\n",
+    "ch20-paso-a-paso": "A=47 B=50 C=47\nA and B differ.\nA and C match; their data may differ.\n",
+    "native_console_examples": "3 compiled with gcc -std=c89 -Wall -Wextra -Werror -pedantic and executed outside the project",
+    "source_checksum_terms": 22,
+    "source_checksum_sum": 90724,
+    "source_checksum_u16": 25188,
+    "source_checksum_one_pixel_change": 25191,
+    "camera_trace": [
+      [
+        9,
+        4,
+        5
+      ],
+      [
+        10,
+        4,
+        6
+      ],
+      [
+        11,
+        5,
+        6
+      ],
+      [
+        12,
+        6,
+        6
+      ],
+      [
+        11,
+        6,
+        5
+      ],
+      [
+        9,
+        6,
+        3
+      ],
+      [
+        8,
+        5,
+        3
+      ]
+    ],
+    "checksum_selected_frames": [
+      29,
+      59,
+      89
+    ],
+    "illustration_text_bounds": "4 new SVG figures checked with font metrics",
+    "game_compiled_or_run": false
+  }
+}

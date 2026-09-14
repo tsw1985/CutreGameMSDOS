@@ -1,0 +1,339 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="La guía extra de checksum en un documento independiente: inventarios, resúmenes, colisiones, frames e historial circular, antes de recorrer el juego."><title>Checksum, paso a paso · docgpt</title><style>
+@page {size:A4; margin:18mm 17mm 19mm;
+  @top-left {content:"CUTREGAME / MSDOS";font:7.1pt "DejaVu Sans";color:#65808a;letter-spacing:.9pt;vertical-align:bottom;padding-bottom:4mm}
+  @top-right {content:"DOCGPT · EDICIÓN DE ESTUDIO";font:7.1pt "DejaVu Sans";color:#65808a;vertical-align:bottom;padding-bottom:4mm}
+  @bottom-left {content:"C · VGA · SONIDO · IPX · MAPAS";font:6.9pt "DejaVu Sans";color:#65808a;padding-top:3mm}
+  @bottom-right {content:counter(page);font:8pt "DejaVu Sans";color:#173548;padding-top:3mm}
+}
+@page :first {margin:0;@top-left{content:none}@top-right{content:none}@bottom-left{content:none}@bottom-right{content:none}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:#243746;font:10pt/1.54 "DejaVu Sans",sans-serif;background:white;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+h1,h2,h3{font-family:"DejaVu Sans",sans-serif;color:#173548;line-height:1.22;break-after:avoid;page-break-after:avoid}h1{font-size:26pt;letter-spacing:-.8pt;margin:0 0 8mm;font-weight:700}h2{font-size:15pt;margin:8mm 0 3mm}h3{font-size:11.5pt;margin:6mm 0 2mm}p{margin:0 0 3.8mm;orphans:3;widows:3}a{color:#087f73;text-decoration:none}strong{color:#173548}em{font-style:italic}ul,ol{padding-left:6mm;margin:3mm 0 5mm}li{margin:0 0 1.8mm;orphans:2;widows:2}hr{border:0;border-top:1px solid #d4e2df;margin:6mm 0}
+code{font-family:"DejaVu Sans Mono",monospace;font-size:.88em;background:#edf3f2;padding:.1em .24em;border-radius:3px;overflow-wrap:anywhere}pre{font:8.1pt/1.48 "DejaVu Sans Mono",monospace;background:#eef4f3;color:#173548;border-left:3px solid #159884;padding:4mm;margin:4mm 0 5mm;white-space:pre-wrap;overflow-wrap:anywhere;tab-size:4;break-inside:avoid}pre code{font:inherit;background:none;padding:0;white-space:inherit}blockquote{margin:4mm 0;padding:3mm 5mm;border-left:3px solid #c9a051;background:#fbf5e8}
+table{border-collapse:collapse;width:100%;font-size:8.5pt;line-height:1.43;margin:4mm 0 6mm;table-layout:auto}thead{display:table-header-group;background:#173548;color:white}th{text-align:left;font-weight:600;padding:2.4mm 2.1mm;color:white}th strong{color:white}td{border-bottom:.3mm solid #dce6e4;padding:2.3mm 2.1mm;vertical-align:top;overflow-wrap:anywhere}tbody tr:nth-child(even){background:#f1f6f4}tr{break-inside:avoid}td code,th code{font-size:7.9pt;background:transparent;padding:0}thead a{color:white}img,svg{max-width:100%}
+.chapter{break-before:page;page-break-before:always;position:relative}.chapter .kicker{font-size:8pt;text-transform:uppercase;letter-spacing:1.2pt;color:#148f82;border-top:1mm solid #148f82;padding-top:4mm;margin-bottom:6mm}.chapter>h1{max-width:98%}.chapter>p:first-of-type{font-size:10.4pt}.source-ref{color:#4c646e}.figure{break-inside:avoid;margin:5mm 0 6mm}.figure svg{width:100%;height:auto;display:block}.figure figcaption{font-size:8pt;line-height:1.43;color:#537078;margin:2.4mm 2mm 0}.figure figcaption em{font-style:normal}
+.cover{height:297mm;position:relative;background:#173548;color:#eef9f3;padding:22mm 20mm;break-after:page;page-break-after:always;overflow:hidden}.cover .series{font-size:10pt;letter-spacing:2.8pt;text-transform:uppercase;color:#72d9c1;margin:0 0 20mm}.cover h1{font-size:42pt;line-height:1.06;letter-spacing:-1.5pt;color:white;margin:0 0 10mm;max-width:165mm}.cover .subtitle{font-size:17pt;line-height:1.4;color:#b6e7da;max-width:150mm}.cover-art{margin:12mm -1mm 10mm;width:170mm;height:79mm}.cover .strap{font-size:10pt;font-weight:600;color:#e9c887}.cover .description{font-size:10.4pt;line-height:1.65;max-width:157mm}.cover .edition{position:absolute;bottom:18mm;left:20mm;font-size:8pt;color:#9cbabf;letter-spacing:1pt}
+.contents{break-before:page;break-after:page}.contents h1{margin-top:4mm}.contents .intro{color:#55717a;font-size:10pt}.contents ul{list-style:none;margin:6mm 0;padding:0}.contents li{margin:0;border-bottom:1px solid #e1e9e7;padding:2.1mm 0;break-inside:avoid}.contents a{display:flex;gap:4mm;align-items:baseline;color:#173548;font-size:9.2pt}.contents .toc-num{color:#148f82;font:8pt "DejaVu Sans Mono";width:8mm;flex:none}.contents .group{font-size:9pt;color:#148f82;letter-spacing:.6pt;font-weight:700;margin:8mm 0 1mm;break-after:avoid}.screen-toolbar{display:none}.broken-reference{color:#ae4c39}.file-note{font-size:8pt;color:#61777f}
+@media screen {body{background:#e8efec}.cover{margin:24px auto;max-width:210mm;box-shadow:0 10px 40px #17354822}.contents,.chapter{background:white;width:min(100% - 32px,210mm);margin:24px auto;padding:18mm 17mm;box-shadow:0 10px 40px #17354810}.contents{min-height:240mm}.screen-toolbar{display:flex;position:sticky;top:0;z-index:10;padding:12px 24px;background:#173548;gap:24px;justify-content:center;flex-wrap:wrap}.screen-toolbar a{font:13px "DejaVu Sans";color:#daf4e9}.chapter{scroll-margin-top:70px}a:hover{text-decoration:underline}}
+@media(max-width:650px){.cover{height:auto;min-height:100vh;padding:26px}.cover h1{font-size:34px}.cover .series{margin-bottom:35px}.cover .edition{position:static;margin-top:25px}.cover-art{width:100%;height:auto}.contents,.chapter{padding:24px}pre{font-size:10px}table{font-size:10px}.screen-toolbar{gap:12px}}
+@media print{body{line-height:1.44}p{margin-bottom:2.8mm}h2{margin-top:6mm}.chapter>p:first-of-type{font-size:10pt}.figure svg{max-height:74mm}.chapter-nav,.chapter>hr:last-of-type{display:none}.figure{margin:4mm 0 5mm}.contents li{padding:1.2mm 0}.contents a{font-size:9pt;line-height:1.35}}
+@media print{.compact p{margin-bottom:2mm}.compact h2{margin-top:5mm}.compact .kicker{margin-bottom:4mm}.compact .figure{margin:3mm 0 4mm}.compact .figure svg{max-height:70mm}.compact td{padding-top:2mm;padding-bottom:2mm}}
+@media print{#doc-ch07-md>h1,#doc-ch17-md>h1{margin-bottom:4mm}#doc-ch07-md .figure svg,#doc-ch17-md .figure svg{max-height:64mm}}
+</style></head><body>
+<nav class="screen-toolbar"><a href="#contents">Índice navegable</a><a href="../pdf/checksum_paso_a_paso.pdf">PDF</a><a href="../camara.html">Laboratorio de cámara</a><a href="../README.md">Markdown</a></nav>
+<header class="cover"><p class="series">CutreGame MS-DOS / docgpt</p><h1>Checksum, paso a paso</h1><p class="subtitle">Dos cuadernos, una suma y el momento correcto para comparar</p><svg class="cover-art" viewBox="0 0 1000 460" xmlns="http://www.w3.org/2000/svg" aria-label="World map and a camera window">
+<defs><pattern id="cover-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#416274" stroke-width="1"/></pattern></defs>
+<rect x="10" y="10" width="650" height="420" rx="10" fill="#234758"/>
+<rect x="10" y="10" width="650" height="420" fill="url(#cover-grid)"/>
+<path d="M50 65H225V185H120V345H305V235H460V115H610" fill="none" stroke="#5b7882" stroke-width="22"/>
+<rect x="180" y="145" width="320" height="200" rx="3" fill="#66cdb1" fill-opacity=".16" stroke="#83e4c8" stroke-width="4"/>
+<path d="M500 145L735 100M500 345L735 285" stroke="#82ccb9" stroke-width="2" stroke-dasharray="8 7"/>
+<rect x="735" y="100" width="250" height="185" rx="6" fill="#58b69e"/>
+<rect x="758" y="130" width="205" height="135" fill="#1b574e"/>
+<g fill="#edc773"><rect x="304" y="229" width="8" height="36"/><rect x="332" y="229" width="8" height="36"/><rect x="312" y="237" width="20" height="24"/><rect x="320" y="225" width="4" height="23"/><rect x="835" y="180" width="8" height="36"/><rect x="863" y="180" width="8" height="36"/><rect x="843" y="188" width="20" height="24"/><rect x="851" y="176" width="4" height="23"/></g>
+<text x="745" y="345" fill="#bde9db" font-family="DejaVu Sans" font-size="31">320 × 200</text><text x="745" y="390" fill="#83b8b3" font-family="DejaVu Sans Mono" font-size="21">world − camera</text>
+</svg><p class="strap">Guía 20A · ejemplos de consola · ejercicios resueltos</p><p class="description">La guía extra de checksum en un documento independiente: inventarios, resúmenes, colisiones, frames e historial circular, antes de recorrer el juego.</p><p class="edition">EDICIÓN DE ESTUDIO · SEPTIEMBRE 2026</p></header>
+<nav class="contents" id="contents"><h1>Índice navegable</h1><p class="intro">Pulsa una lección para ir directamente a ella. Puedes buscar texto, ampliar los esquemas y volver a las explicaciones desde sus enlaces.</p><div class="group">Lecciones</div><ul><li><a href="#doc-ch20-paso-a-paso-md"><span class="toc-num">20A</span><span>20A. Entender un checksum con dos cuadernos</span></a></li></ul></nav><article class="chapter" id="doc-ch20-paso-a-paso-md" data-source="ch20-paso-a-paso.md"><div class="kicker">CURSO / LECCIONES</div><h1 id="doc-ch20-paso-a-paso-md-20a-entender-un-checksum-con-dos-cuadernos">20A. Entender un checksum con dos cuadernos</h1>
+<p><a href="../pdf/checksum_paso_a_paso.pdf">Abrir esta guía como PDF independiente</a>.</p>
+<p>Antes de hablar de IPX o de frames, vamos a comparar dos listas de fruta. Necesitamos aprender tres operaciones distintas: resumir unos datos, decidir qué datos son comparables y avisar si sus resúmenes difieren.</p>
+<p>Esta guía prepara la <a href="../pdf/curso_completo.pdf#nameddest=doc-ch20-md">lección 20</a>, donde recorreremos la fórmula y las funciones reales del juego. Puedes hacer todas las primeras cuentas con lápiz; la red aparecerá cuando ya sepamos qué queremos enviar.</p>
+<h2 id="doc-ch20-paso-a-paso-md-1-dos-personas-copian-el-mismo-inventario">1. Dos personas copian el mismo inventario</h2>
+<p>Ana y Bruno llevan, por separado, un cuaderno de una frutería. Al terminar un recuento deberían tener lo mismo:</p>
+<pre><code class="language-text">                 Manzanas   Peras
+Cuaderno de Ana:      4        7
+Cuaderno de Bruno:    4        7
+</code></pre>
+<p>La pareja <code>(4,7)</code> es el <strong>estado</strong> que queremos comparar: los datos que describen el inventario en ese momento.</p>
+<p>Podrían leerse toda la lista. Con dos números resulta muy fácil; con cientos de datos, hacerlo continuamente cuesta más. Imaginemos que acuerdan calcular un número corto y comunicarse primero ese número.</p>
+<p>Ese número calculado a partir de otros datos es un <strong>checksum</strong>, o suma de comprobación. Hay muchas maneras de construirlo. Vamos a empezar por una deliberadamente pequeña para poder seguir cada operación.</p>
+<h2 id="doc-ch20-paso-a-paso-md-2-una-suma-sencilla-pierde-informacion">2. Una suma sencilla pierde información</h2>
+<p>Una primera receta sería sumar las cantidades:</p>
+<pre><code class="language-text">4 manzanas + 7 peras = 11
+</code></pre>
+<p>Pero <code>5 manzanas + 6 peras</code> también da 11. El total ya no nos dice cuántas piezas hay de cada fruta. Al resumir hemos perdido información.</p>
+<p>Eso tiene dos consecuencias distintas:</p>
+<ul>
+<li>Si Ana obtiene 11 y Bruno obtiene 12 usando la misma receta, sus inventarios no pueden ser iguales.</li>
+<li>Si ambos obtienen 11, sus inventarios <strong>podrían</strong> ser iguales, pero también podrían ser <code>(4,7)</code> y <code>(5,6)</code>.</li>
+</ul>
+<p>No hay contradicción. Un resumen ayuda a descubrir diferencias, pero no permite reconstruir todos los datos originales.</p>
+<h2 id="doc-ch20-paso-a-paso-md-3-dar-un-peso-diferente-a-cada-dato">3. Dar un peso diferente a cada dato</h2>
+<p>Para distinguir mejor las columnas acordamos esta receta:</p>
+<pre><code class="language-text">checksum = manzanas * 3 + peras * 5
+</code></pre>
+<p>«Peso» significa aquí multiplicador. No se refiere a kilos. Las manzanas siempre usan 3 y las peras siempre usan 5, en ambos cuadernos.</p>
+<p>Para <code>(4,7)</code>, hacemos tres cuentas:</p>
+<pre><code class="language-text">Contribución de manzanas: 4 * 3 = 12
+Contribución de peras:   7 * 5 = 35
+Resumen:               12 + 35 = 47
+</code></pre>
+<p>Si Bruno anota por error cinco manzanas, obtiene <code>5*3 + 7*5 = 50</code>. Basta comparar 47 y 50 para saber que algo difiere, suponiendo que ambos aplicaron la misma receta al mismo recuento.</p>
+<figure class="figure"><svg xmlns="http://www.w3.org/2000/svg" width="1040" height="500" viewBox="0 0 1040 500" role="img" aria-labelledby="fig-checksum_cuadernos-title fig-checksum_cuadernos-desc">
+<title id="fig-checksum_cuadernos-title">Un resumen pequeño puede detectar diferencias</title><desc id="fig-checksum_cuadernos-desc">La receta multiplica manzanas por tres y peras por cinco; dos inventarios distintos pueden coincidir.</desc>
+<defs><marker id="fig-checksum_cuadernos-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#148f82"/></marker></defs>
+<rect width="1040" height="500" rx="16" fill="#f7faf9"/>
+<g font-family="DejaVu Sans, sans-serif"><text x="28" y="43" font-size="26" fill="#173548" text-anchor="start" font-weight="bold">Un resumen pequeño puede detectar diferencias</text><rect x="30" y="115" width="300" height="145" rx="9" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="180.0" y="151" font-size="23" fill="#243746" text-anchor="middle" font-weight="bold">A: (4,7)</text><text x="180.0" y="183" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">4 × 3 + 7 × 5</text><text x="180.0" y="209" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">12 + 35 = 47</text><rect x="370" y="115" width="300" height="145" rx="9" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="520.0" y="151" font-size="23" fill="#243746" text-anchor="middle" font-weight="bold">B: (5,7)</text><text x="520.0" y="183" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">5 × 3 + 7 × 5</text><text x="520.0" y="209" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">15 + 35 = 50</text><rect x="710" y="115" width="300" height="145" rx="9" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="860.0" y="151" font-size="23" fill="#243746" text-anchor="middle" font-weight="bold">C: (9,4)</text><text x="860.0" y="183" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">9 × 3 + 4 × 5</text><text x="860.0" y="209" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">27 + 20 = 47</text><text x="45" y="335" font-size="23" fill="#243746" text-anchor="start" font-weight="normal">A frente a B: 47 ≠ 50. La comprobación encuentra una diferencia.</text><text x="45" y="390" font-size="23" fill="#243746" text-anchor="start" font-weight="normal">A frente a C: 47 = 47. Los datos distintos producen una colisión.</text><text x="45" y="452" font-size="25" fill="#148f82" text-anchor="start" font-weight="bold">Mismos pesos y mismo recuento en ambos cuadernos.</text></g></svg><figcaption>Cambiar una manzana cambia el resumen en tres unidades. También existen cambios que se compensan: igualdad de checksum no demuestra igualdad de inventario.</figcaption></figure>
+<h2 id="doc-ch20-paso-a-paso-md-4-lo-que-sigue-pudiendo-coincidir">4. Lo que sigue pudiendo coincidir</h2>
+<p>Compara <code>(4,7)</code> y <code>(9,4)</code>:</p>
+<pre><code class="language-text">Primer inventario:  4*3 + 7*5 = 12 + 35 = 47
+Segundo inventario: 9*3 + 4*5 = 27 + 20 = 47
+</code></pre>
+<p>El segundo tiene cinco manzanas más y tres peras menos. Las manzanas añaden <code>5*3=15</code>; las peras restan <code>3*5=15</code>. Las variaciones se anulan.</p>
+<p>Dos datos distintos que producen el mismo resumen forman una <strong>colisión de checksum</strong>. Aquí «colisión» no tiene relación con un tanque chocando contra una pared.</p>
+<p>Usar pesos diferentes evita algunas coincidencias, como intercambiar simplemente las dos cantidades: <code>(7,4)</code> da <code>7*3+4*5=41</code>, distinto de 47. Pero ni usar números primos ni añadir más términos convierte esta suma en un identificador único.</p>
+<table>
+<thead>
+<tr>
+<th>Resultado de comparar</th>
+<th>Qué puedes concluir</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Resúmenes diferentes</td>
+<td>Hay una diferencia en los datos resumidos, si receta y momento coinciden</td>
+</tr>
+<tr>
+<td>Resúmenes iguales</td>
+<td>Esta comprobación no ha encontrado una diferencia</td>
+</tr>
+<tr>
+<td>No se pudo comparar</td>
+<td>No se ha obtenido ninguna conclusión</td>
+</tr>
+</tbody>
+</table>
+<p>La tercera fila será importante al llegar a la red. No recibir un resumen no equivale a recibir uno igual.</p>
+<h2 id="doc-ch20-paso-a-paso-md-5-como-cabe-el-resultado-en-un-numero-pequeno">5. Cómo cabe el resultado en un número pequeño</h2>
+<p>El juego guarda el checksum en un <code>unsigned int</code> de Turbo C, de 16 bits. Puede representar 65.536 valores: desde 0 hasta 65.535.</p>
+<p>Para imaginar el límite, piensa primero en un contador de dos cifras. Después de 99 vuelve a 00. Si parte de 94 y sumas 12, el total matemático es 106, pero el contador conserva 06.</p>
+<p>El checksum de 16 bits funciona con una vuelta de 65.536, no de 100:</p>
+<pre><code class="language-text">65530 + 12 = 65542
+65542 - 65536 = 6
+</code></pre>
+<p>Conservar el resto de dividir por 65.536 se llama trabajar <strong>módulo 65.536</strong>. Por ejemplo, 90.724 se convierte en 25.188. Aunque en un cálculo grande se den varias vueltas, ambas máquinas obtienen lo mismo si usan los mismos datos y las mismas operaciones.</p>
+<p>Esto es comportamiento de aritmética <strong>sin signo</strong>. No extiendas esta explicación al desbordamiento de un <code>int</code> con signo. Tampoco supongas que <code>unsigned int</code> mide 16 bits en cualquier compilador moderno.</p>
+<p>El número limitado introduce más coincidencias posibles: una diferencia de exactamente 65.536 en la suma tampoco cambia el resultado final.</p>
+<h2 id="doc-ch20-paso-a-paso-md-6-un-ejemplo-de-consola-completo">6. Un ejemplo de consola completo</h2>
+<p>Este programa independiente del juego resume las cantidades de fruta. Usa un intermedio <code>unsigned long</code> y expresa el módulo de forma explícita para conservar el resultado de 16 bits también al estudiarlo en un compilador con <code>int</code> más grande.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+
+unsigned int checksum_pair(unsigned int apples,
+                           unsigned int pears)
+{
+    unsigned long total;
+
+    total = (unsigned long)apples * 3UL;
+    total = total + (unsigned long)pears * 5UL;
+    return (unsigned int)(total % 65536UL);
+}
+
+int main(void)
+{
+    unsigned int a;
+    unsigned int b;
+    unsigned int c;
+
+    a = checksum_pair(4, 7);
+    b = checksum_pair(5, 7);
+    c = checksum_pair(9, 4);
+
+    printf(&quot;A=%u B=%u C=%u\n&quot;, a, b, c);
+    if (a != b) {
+        puts(&quot;A and B differ.&quot;);
+    }
+    if (a == c) {
+        puts(&quot;A and C match; their data may differ.&quot;);
+    }
+    return 0;
+}
+</code></pre>
+<p>Su salida es:</p>
+<pre><code class="language-text">A=47 B=50 C=47
+A and B differ.
+A and C match; their data may differ.
+</code></pre>
+<p><code>3UL</code> significa constante de tipo <code>unsigned long</code>. <code>%</code> obtiene el resto de la división. El molde <code>(unsigned int)</code> convierte el resultado final al tipo de retorno. No hace falta introducir un algoritmo distinto para entender el juego: su idea central sigue siendo multiplicar cada campo por su peso y sumar.</p>
+<h2 id="doc-ch20-paso-a-paso-md-7-el-momento-de-la-comparacion-tambien-es-un-dato">7. El momento de la comparación también es un dato</h2>
+<p>Supongamos ahora que la frutería hace recuentos numerados. En el recuento 7 hay <code>(4,7)</code>, y en el 8 llega una manzana y pasa a <code>(5,7)</code>.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Recuento</th>
+<th>Ana</th>
+<th style="text-align: right;">Su resumen</th>
+<th>Bruno</th>
+<th style="text-align: right;">Su resumen</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">7</td>
+<td><code>(4,7)</code></td>
+<td style="text-align: right;">47</td>
+<td><code>(4,7)</code></td>
+<td style="text-align: right;">47</td>
+</tr>
+<tr>
+<td style="text-align: right;">8</td>
+<td><code>(5,7)</code></td>
+<td style="text-align: right;">50</td>
+<td><code>(5,7)</code></td>
+<td style="text-align: right;">50</td>
+</tr>
+</tbody>
+</table>
+<p>Bruno termina antes el recuento 8. En ese momento le llega una nota de Ana diciendo «47». Si la compara con su 50 actual, parecerá que existe un error aunque ambos cuadernos están bien.</p>
+<p>La nota debe decir <strong>«recuento 7: checksum 47»</strong>. Bruno busca su resultado del recuento 7 y compara 47 con 47.</p>
+<p>Por tanto, lo que se comunica es una pareja:</p>
+<pre><code class="language-text">(número de recuento, resumen)
+</code></pre>
+<p>El número del recuento no es el checksum. Sirve para elegir con qué resultado local debe compararse. En el juego ese número es el <strong>frame de simulación</strong>.</p>
+<h2 id="doc-ch20-paso-a-paso-md-8-guardar-resultados-antiguos-en-pocas-casillas">8. Guardar resultados antiguos en pocas casillas</h2>
+<p>Para poder comparar una nota retrasada, Bruno conserva algunos resultados anteriores. Supongamos una libreta con solo cuatro casillas. Decide reutilizarlas dando vueltas:</p>
+<pre><code class="language-text">casilla = resto de dividir el número de recuento entre 4
+</code></pre>
+<p>Los recuentos 7 y 11 usan ambos la casilla 3. Necesita guardar en cada casilla tres datos:</p>
+<table>
+<thead>
+<tr>
+<th>Dato</th>
+<th>Pregunta que responde</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Válido</td>
+<td>¿Se ha escrito ya un resultado utilizable aquí?</td>
+</tr>
+<tr>
+<td>Número de recuento</td>
+<td>¿De qué recuento es el resultado guardado?</td>
+</tr>
+<tr>
+<td>Checksum</td>
+<td>¿Cuál fue su resumen?</td>
+</tr>
+</tbody>
+</table>
+<p>Después de guardar el recuento 11, la casilla 3 ya no contiene el del 7. Si llega una nota antigua del 7, no basta con ver que la casilla contiene un valor: hay que leer su etiqueta 11 y descartar esa comparación.</p>
+<p>Eso es un <strong>buffer circular</strong> o anillo. Evita reservar memoria para todos los recuentos de toda la vida. A cambio, solo conserva una historia limitada.</p>
+<p>En el juego hay 64 casillas. <code>frame &amp; 63</code> selecciona la casilla usando los seis bits inferiores; para un frame sin signo equivale a <code>frame % 64</code>. La equivalencia se debe a que 64 es una potencia de dos; no se puede sustituir cualquier módulo por un AND sin pensarlo.</p>
+<h2 id="doc-ch20-paso-a-paso-md-9-por-que-el-juego-necesita-este-mecanismo">9. Por qué el juego necesita este mecanismo</h2>
+<p>Cada ordenador simula la partida completa: tiene los datos de P1 <strong>y</strong> P2. Por red se mandan las órdenes de los jugadores. Con el mismo estado inicial, las mismas órdenes por frame y las mismas reglas, ambas copias deberían obtener el mismo estado siguiente.</p>
+<p>Imagina que una copia añade por error un píxel a la X de P1. La otra no lo hace. Ambas pueden seguir dibujando una batalla aparentemente normal, pero ya están contando historias diferentes. Esta separación se llama <strong>desincronización</strong>, o <em>desync</em>.</p>
+<p>El checksum permite descubrir algunas de esas diferencias sin enviar todos los campos del estado. Una diferencia puede nacer en las reglas, en una inicialización, en un error de memoria o en cómo se asignaron las entradas a frames. El aviso no acusa por sí solo al cable o a IPX.</p>
+<p>Este checksum resume <strong>el estado calculado de la partida</strong>. No está revisando cada byte del paquete recibido ni reconstruyendo un paquete dañado.</p>
+<h2 id="doc-ch20-paso-a-paso-md-10-del-inventario-a-los-datos-del-juego">10. Del inventario a los datos del juego</h2>
+<table>
+<thead>
+<tr>
+<th>Frutería</th>
+<th>Juego</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lista de cantidades</td>
+<td>Posiciones, direcciones, balas, puntos y otros campos seleccionados</td>
+</tr>
+<tr>
+<td>Dos cuadernos</td>
+<td>Dos copias de la simulación</td>
+</tr>
+<tr>
+<td>Misma receta para ambos</td>
+<td><code>compute_<wbr>state_<wbr>checksum</code></td>
+</tr>
+<tr>
+<td>Recuento numerado</td>
+<td>Frame de simulación</td>
+</tr>
+<tr>
+<td>Libreta circular</td>
+<td>Arrays <code>local_<wbr>checksum_<wbr>*</code> de <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/src/lockstep.c">src/lockstep.c</a></td>
+</tr>
+<tr>
+<td>Nota con número y resumen</td>
+<td><code>checksum_<wbr>frame</code> y <code>checksum_<wbr>value</code> en el mensaje</td>
+</tr>
+<tr>
+<td>Aviso de discrepancia</td>
+<td><code>NET DESYNC</code> en el log</td>
+</tr>
+</tbody>
+</table>
+<p>En la receta real, X de P1 lleva peso 3 e Y de P1 lleva peso 5. X de P2 lleva 31 e Y de P2 lleva 37. Cada máquina usa esos mismos nombres globales: no pone «mi tanque primero» si una controla a P2.</p>
+<p>Si únicamente X de P1 aumenta en uno, el resumen aumenta en tres, módulo 65.536. Si hubiera otros cambios al mismo tiempo, sus contribuciones también contarían. Por eso una diferencia numérica de tres orienta un experimento controlado, pero no identifica por sí sola la causa de cualquier desync.</p>
+<p>La <a href="../pdf/curso_completo.pdf#nameddest=doc-ch20-md">lección 20 ampliada</a> contiene todos los pesos y una cuenta completa que termina en <strong>25.188</strong>, desde un total matemático de 90.724.</p>
+<h2 id="doc-ch20-paso-a-paso-md-11-que-ocurre-durante-un-frame">11. Qué ocurre durante un frame</h2>
+<p>Lee primero esta secuencia sin preocuparte de los nombres de función:</p>
+<ol>
+<li>Las máquinas consiguen las órdenes necesarias para un frame N.</li>
+<li>Cada una calcula las consecuencias en su copia de la partida.</li>
+<li>Cada una calcula el resumen del estado resultante y lo guarda con etiqueta N.</li>
+<li>Cuando corresponde, prepara ese resumen para viajar en un mensaje posterior.</li>
+<li>La otra máquina lo compara con <strong>su resultado guardado de N</strong>, si todavía lo tiene.</li>
+</ol>
+<p>El cálculo es local. No hace falta consultar al otro ordenador para sumar. La comunicación sirve para <strong>comparar después</strong> los resultados calculados por separado.</p>
+<p>El juego calcula y guarda un checksum al final de <strong>cada frame</strong>, pero selecciona uno para enviar cada <strong>30 frames</strong>. Son frecuencias distintas. Con contador de frame iniciado en cero, la primera selección corresponde al frame 29, después al 59, luego al 89.</p>
+<p>El envío de entradas ocurre al comienzo del bucle y el cálculo del checksum al final. Por eso el resumen seleccionado al terminar el 29 puede viajar al comenzar el 30. La etiqueta del resumen sigue siendo 29.</p>
+<figure class="figure"><svg xmlns="http://www.w3.org/2000/svg" width="1040" height="500" viewBox="0 0 1040 500" role="img" aria-labelledby="fig-checksum_recorrido-title fig-checksum_recorrido-desc">
+<title id="fig-checksum_recorrido-title">Calcular ahora, comparar el mismo frame después</title><desc id="fig-checksum_recorrido-desc">El resultado se etiqueta con el frame calculado; la casilla y su etiqueta protegen la comparación tardía.</desc>
+<defs><marker id="fig-checksum_recorrido-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#148f82"/></marker></defs>
+<rect width="1040" height="500" rx="16" fill="#f7faf9"/>
+<g font-family="DejaVu Sans, sans-serif"><text x="28" y="43" font-size="26" fill="#173548" text-anchor="start" font-weight="bold">Calcular ahora, comparar el mismo frame después</text><rect x="30" y="115" width="285" height="150" rx="9" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="172.5" y="151" font-size="23" fill="#243746" text-anchor="middle" font-weight="bold">A termina frame 29</text><text x="172.5" y="183" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">Calcula 25188</text><text x="172.5" y="209" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">Guarda (29,25188)</text><line x1="325" y1="190" x2="365" y2="190" stroke="#148f82" stroke-width="3" marker-end="url(#fig-checksum_recorrido-arrow)"/><rect x="375" y="115" width="285" height="150" rx="9" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="517.5" y="151" font-size="23" fill="#243746" text-anchor="middle" font-weight="bold">A comienza frame 30</text><text x="517.5" y="183" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">Envía el pendiente</text><text x="517.5" y="209" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">(29,25188)</text><line x1="670" y1="190" x2="710" y2="190" stroke="#148f82" stroke-width="3" marker-end="url(#fig-checksum_recorrido-arrow)"/><rect x="720" y="115" width="290" height="150" rx="9" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="865.0" y="151" font-size="23" fill="#243746" text-anchor="middle" font-weight="bold">B recibe más tarde</text><text x="865.0" y="183" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">Busca su frame 29</text><text x="865.0" y="209" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">Compara los valores</text><text x="45" y="340" font-size="25" fill="#148f82" text-anchor="start" font-weight="bold">La etiqueta sigue siendo 29 aunque el paquete viaje después.</text><text x="45" y="405" font-size="23" fill="#243746" text-anchor="start" font-weight="normal">Casilla = frame &amp; 63: tanto 29 como 93 usan la casilla 29.</text><text x="45" y="453" font-size="22" fill="#243746" text-anchor="start" font-weight="normal">Si la etiqueta guardada ya es 93, no se compara con el recibido de 29.</text></g></svg><figcaption>La hora de llegada no cambia el frame al que pertenece el resultado. El historial permite comparar el mismo momento de simulación.</figcaption></figure>
+<h2 id="doc-ch20-paso-a-paso-md-12-cuando-puede-faltar-una-comparacion">12. Cuándo puede faltar una comparación</h2>
+<p>Para comparar, el receptor tiene que disponer del resultado local del frame indicado. Hay varias situaciones:</p>
+<table>
+<thead>
+<tr>
+<th>Situación al recibir</th>
+<th>Qué hace esta implementación</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Resultado local válido y del mismo frame</td>
+<td>Compara los valores</td>
+</tr>
+<tr>
+<td>Todavía no se calculó ese frame</td>
+<td>Descarta esa comparación; no conserva una cola completa de resúmenes adelantados</td>
+</tr>
+<tr>
+<td>La casilla ya pertenece a un frame posterior</td>
+<td>Descarta esa comparación antigua</td>
+</tr>
+<tr>
+<td>El paquete no llega</td>
+<td>No hay valor remoto que comparar</td>
+</tr>
+</tbody>
+</table>
+<p>Un envío aceptado por el controlador local tampoco demuestra que el otro ordenador lo haya recibido. No confundas la redundancia de las entradas con repetir indefinidamente un mismo checksum: en este código el checksum pendiente se borra cuando <code>net_<wbr>send</code> acepta el paquete.</p>
+<p>Con esto se entiende una limitación práctica: una partida sin avisos no demuestra que se hayan comparado todos sus frames, ni que el estado completo coincida.</p>
+<h2 id="doc-ch20-paso-a-paso-md-13-lo-que-un-aviso-hace-y-lo-que-necesitas-investigar">13. Lo que un aviso hace y lo que necesitas investigar</h2>
+<p>Si los dos valores comparables difieren, se marca una desincronización. El juego registra el primer aviso y puede continuar. El checksum no elige quién tiene razón ni envía un estado corregido para reparar la partida.</p>
+<p>Para investigar una diferencia hacen falta datos más detallados: frame, entradas aplicadas y valores de los campos en ambas máquinas. Empieza por un frame comparado donde ya difieren y busca hacia atrás hasta localizar cuándo comenzó la separación.</p>
+<p>No compares capturas como si fueran estados. Dos cuadernos pueden llevar las mismas cantidades con distinta letra; dos copias del juego pueden llevar los mismos tanques y usar cámaras diferentes. La vista es una elección local.</p>
+<h2 id="doc-ch20-paso-a-paso-md-14-ejercicios-con-respuestas">14. Ejercicios con respuestas</h2>
+<p>Usa la receta <code>manzanas*3 + peras*5</code> para los tres primeros:</p>
+<ol>
+<li>Compara <code>(6,2)</code> y <code>(6,3)</code>. ¿Qué detecta el checksum?</li>
+<li>Encuentra una pareja distinta de <code>(4,7)</code> que también produzca 47.</li>
+<li>Llega «recuento 7: 47», y tu recuento actual 8 vale 50. ¿Qué resultado buscas?</li>
+<li>En un anillo de 64, ¿qué casillas usan los frames 29 y 93? ¿Pueden distinguirse?</li>
+<li>Ambas cámaras difieren, pero todos los campos seleccionados por la receta del juego coinciden. ¿Debe cambiar su checksum?</li>
+<li>No apareció <code>NET DESYNC</code>. ¿Qué dos motivos impiden concluir que absolutamente todo fue igual?</li>
+</ol>
+<h3 id="doc-ch20-paso-a-paso-md-soluciones">Soluciones</h3>
+<ol>
+<li>Los resultados son <code>18+10=28</code> y <code>18+15=33</code>: detecta la diferencia.</li>
+<li><code>(9,4)</code> da <code>27+20=47</code>. Es la compensación de +5 manzanas y −3 peras.</li>
+<li>Buscas tu resultado del recuento 7. El resultado actual del 8 no corresponde a esa nota.</li>
+<li>Ambos usan casilla 29. Se distinguen por la etiqueta de frame guardada, siempre que el resultado antiguo no se haya reemplazado ya.</li>
+<li>No. La cámara no forma parte de la receta de estado compartido.</li>
+<li>Pueden existir diferencias que no cambien el resumen y pueden faltar comparaciones. Además, la receta real no cubre todos los campos de las estructuras.</li>
+</ol>
+<p>Ahora abre <a href="../pdf/curso_completo.pdf#nameddest=doc-ch20-md">la lección 20 ampliada</a>. Sigue por orden la tabla de pesos, la cuenta completa y el recorrido desde <code>net_<wbr>set_<wbr>local_<wbr>checksum</code> hasta <code>net_<wbr>check_<wbr>remote_<wbr>checksum</code>.</p>
+<p class="chapter-nav"><a href="../pdf/curso_completo.pdf#nameddest=doc-readme-md">Índice</a> · <a href="../pdf/curso_completo.pdf#nameddest=doc-ch20-md">Continuar: checksum en el juego</a> · <a href="../pdf/curso_completo.pdf#nameddest=doc-ch25-paso-a-paso-md">Cámara desde cero</a></p></article></body></html>

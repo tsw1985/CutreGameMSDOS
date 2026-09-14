@@ -1,0 +1,350 @@
+{
+  "sistema": {
+    "file": "figuras/sistema.svg",
+    "title": "Una partida: datos, reglas y presentación",
+    "caption": "Las entradas cambian el estado compartido; imagen y sonido se derivan de ese estado.",
+    "chapter": "ch00.md"
+  },
+  "construccion": {
+    "file": "figuras/construccion.svg",
+    "title": "Del archivo C al juego que lee recursos",
+    "caption": "Los recursos se leen en ejecución; no se convierten en objetos durante el enlace.",
+    "chapter": "ch01.md"
+  },
+  "variable": {
+    "file": "figuras/variable.svg",
+    "title": "Un bucle transforma estado paso a paso",
+    "caption": "El estado siguiente se calcula usando el estado actual, no la posición que imaginas en pantalla.",
+    "chapter": "ch02.md"
+  },
+  "array": {
+    "file": "figuras/array.svg",
+    "title": "Dos coordenadas, un índice lineal",
+    "caption": "La fila multiplica la anchura; la columna desplaza dentro de esa fila.",
+    "chapter": "ch03.md"
+  },
+  "paleta": {
+    "file": "figuras/paleta.svg",
+    "title": "Un índice no es un color RGB",
+    "caption": "En modo 13h, imagen y paleta son recursos distintos.",
+    "chapter": "ch04.md"
+  },
+  "bmp": {
+    "file": "figuras/bmp.svg",
+    "title": "Qué hay antes del primer píxel",
+    "caption": "La paleta del archivo ocupa 1024 bytes; la paleta convertida para el DAC ocupa 768.",
+    "chapter": "ch05.md"
+  },
+  "buffer": {
+    "file": "figuras/buffer.svg",
+    "title": "Construir en RAM, presentar en VGA",
+    "caption": "El buffer de composición permanece de 320 × 200 incluso al ampliar el mundo.",
+    "chapter": "ch06.md"
+  },
+  "sprite": {
+    "file": "figuras/sprite.svg",
+    "title": "Componer un sprite transparente",
+    "caption": "Ejemplo esquemático de transparencia; el tanque real mide 18 × 18.",
+    "chapter": "ch07.md"
+  },
+  "entrada": {
+    "file": "figuras/entrada.svg",
+    "title": "De teclas mantenidas a una máscara de órdenes",
+    "caption": "El mismo byte de entrada puede obtenerse del teclado o recibirse por red.",
+    "chapter": "ch08.md"
+  },
+  "estado": {
+    "file": "figuras/estado.svg",
+    "title": "Estado persistente y cambios de orientación",
+    "caption": "Una pose visual no sustituye la posición ni la orientación lógica del tanque.",
+    "chapter": "ch09.md"
+  },
+  "sondas": {
+    "file": "figuras/sondas.svg",
+    "title": "Consultar paredes en coordenadas de mundo",
+    "caption": "Ejemplo de movimiento desde (100,100) a (100,98), con los puntos que comprueba el tanque.",
+    "chapter": "ch10.md"
+  },
+  "dos": {
+    "file": "figuras/dos.svg",
+    "title": "Unas reglas, dos fuentes de entrada",
+    "caption": "Las entradas se normalizan para aplicar las mismas reglas a ambos jugadores.",
+    "chapter": "ch11.md"
+  },
+  "disparo": {
+    "file": "figuras/disparo.svg",
+    "title": "Detectar la transición de libre a pulsada",
+    "caption": "La secuencia tiene dos flancos de subida, pero solo uno se acepta si la primera bala sigue activa.",
+    "chapter": "ch12.md"
+  },
+  "ronda": {
+    "file": "figuras/ronda.svg",
+    "title": "Una ronda también tiene estado",
+    "caption": "El reinicio debe distinguir datos de ronda de la puntuación acumulada.",
+    "chapter": "ch13.md"
+  },
+  "dma": {
+    "file": "figuras/dma.svg",
+    "title": "Dos mitades para producir y consumir audio",
+    "caption": "A 44100 muestras por segundo, una mitad de 2048 muestras dura aproximadamente 46,44 ms.",
+    "chapter": "ch14.md"
+  },
+  "mezcla": {
+    "file": "figuras/mezcla.svg",
+    "title": "Mezclar amplitudes y volver a unsigned",
+    "caption": "Primero se centra y escala cada voz; después se suma, satura y devuelve el desplazamiento de 128.",
+    "chapter": "ch15.md"
+  },
+  "stream": {
+    "file": "figuras/stream.svg",
+    "title": "Dos buffers, dos plazos diferentes",
+    "caption": "Tener datos leídos por adelantado no autoriza a bloquear el bucle hasta agotar ese buffer.",
+    "chapter": "ch16.md"
+  },
+  "capas": {
+    "file": "figuras/capas.svg",
+    "title": "No confundir el socket IPX con el puerto UDP",
+    "caption": "El encapsulado del emulador no cambia la API IPX que utiliza el juego DOS.",
+    "chapter": "ch17.md"
+  },
+  "datagrama": {
+    "file": "figuras/datagrama.svg",
+    "title": "Descubrir una pareja y enviar mensajes",
+    "caption": "El descubrimiento establece una identidad y una dirección; los datagramas siguen necesitando reglas de uso.",
+    "chapter": "ch18.md"
+  },
+  "lockstep": {
+    "file": "figuras/lockstep.svg",
+    "title": "Enviar entradas futuras, simular entradas disponibles",
+    "caption": "El retardo inicial permite que los mensajes lleguen antes del frame donde se necesitan.",
+    "chapter": "ch19.md"
+  },
+  "checksum": {
+    "file": "figuras/checksum.svg",
+    "title": "Comparar el mismo frame, aunque llegue más tarde",
+    "caption": "La etiqueta evita comparar un checksum nuevo con otro antiguo que ocupa la misma casilla del anillo.",
+    "chapter": "ch20.md"
+  },
+  "mundo": {
+    "file": "figuras/mundo.svg",
+    "title": "La cámara es la esquina de una ventana",
+    "caption": "Los objetos conservan sus coordenadas de mundo. La resta de cámara solo calcula dónde dibujarlos.",
+    "chapter": "ch21.md"
+  },
+  "stride": {
+    "file": "figuras/stride.svg",
+    "title": "Una ventana no es una copia continua",
+    "caption": "La siguiente fila visible empieza después del stride del mapa, no después de la anchura copiada.",
+    "chapter": "ch22.md"
+  },
+  "huge": {
+    "file": "figuras/huge.svg",
+    "title": "Memoria segmentada: dirección y tamaño son problemas distintos",
+    "caption": "Ampliar un resultado después de una multiplicación de 16 bits desbordada no la repara.",
+    "chapter": "ch23.md"
+  },
+  "clipping": {
+    "file": "figuras/clipping.svg",
+    "title": "Un origen negativo todavía puede dejar píxeles visibles",
+    "caption": "La intersección conserva 126 píxeles geométricos, antes de descartar los transparentes.",
+    "chapter": "ch24.md"
+  },
+  "zona": {
+    "file": "figuras/zona.svg",
+    "title": "Zona muerta: el tanque entero debe caber",
+    "caption": "El borde físico derecho está en 220, pero la esquina del tanque solo puede llegar a 202.",
+    "chapter": "ch25.md"
+  },
+  "traza": {
+    "file": "figuras/traza.svg",
+    "title": "La cámara conserva historia",
+    "caption": "Traza numérica de la lección 25: la cámara no retrocede inmediatamente al invertir la marcha.",
+    "chapter": "ch25.md"
+  },
+  "limites": {
+    "file": "figuras/limites.svg",
+    "title": "Cuatro extremos válidos de la ventana",
+    "caption": "Restar el tamaño de pantalla al tamaño de mapa deja espacio para la ventana completa.",
+    "chapter": "ch25.md"
+  },
+  "mascara": {
+    "file": "figuras/mascara.svg",
+    "title": "Ocho preguntas de pared en un solo byte",
+    "caption": "El píxel inicial usa el bit menos significativo; la escritura binaria habitual se muestra en orden inverso.",
+    "chapter": "ch26.md"
+  },
+  "temas": {
+    "file": "figuras/temas.svg",
+    "title": "La geometría compartida no depende del tema",
+    "caption": "Esquema didáctico de tres aspectos sobre una misma distribución; no es una captura de un nivel del juego.",
+    "chapter": "ch27.md"
+  },
+  "radar": {
+    "file": "figuras/radar.svg",
+    "title": "Cercanía: una cifra, no una ruta",
+    "caption": "La distancia ignora las paredes; indica separación geométrica aproximada.",
+    "chapter": "ch28.md"
+  },
+  "integracion": {
+    "file": "figuras/integracion.svg",
+    "title": "La música comienza después de las cargas",
+    "caption": "La barrera reduce diferencias de arranque debidas a carga, pero no constituye un reloj de audio compartido.",
+    "chapter": "ch29.md"
+  },
+  "familias": {
+    "file": "figuras/familias.svg",
+    "title": "Tres familias de trucos gráficos",
+    "caption": "Elegir el trabajo por paleta, tramo o píxel permite entender el coste de cada efecto.",
+    "chapter": "ch30.md"
+  },
+  "entregas": {
+    "file": "figuras/entregas.svg",
+    "title": "Del primer píxel a una partida completa",
+    "caption": "La reconstrucción se organiza por comportamientos verificables, no por cantidad de archivos copiados.",
+    "chapter": "ch31.md"
+  },
+  "fx_cycle": {
+    "file": "figuras/fx_cycle.svg",
+    "title": "Cycle · la imagen quieta, la paleta en movimiento",
+    "caption": "Una permutación cambia el aspecto de todos los píxeles con cada índice.",
+    "chapter": "demos/cycle/doc/README.md"
+  },
+  "fx_scroll": {
+    "file": "figuras/fx_scroll.svg",
+    "title": "Scroll · partir la fila en dos",
+    "caption": "FGH se envuelve al principio; ABCDE se copia desplazado tres posiciones.",
+    "chapter": "demos/scroll/doc/README.md"
+  },
+  "fx_blinds": {
+    "file": "figuras/fx_blinds.svg",
+    "title": "Blinds · la anchura visible crece desde el centro",
+    "caption": "El cálculo necesita ampliar a long antes de multiplicar por 160 en Turbo C.",
+    "chapter": "demos/blinds/doc/README.md"
+  },
+  "fx_stripes": {
+    "file": "figuras/fx_stripes.svg",
+    "title": "Stripes · posiciones separadas por velocidades distintas",
+    "caption": "Esquema de desplazamientos tras varios pasos, mostrando las primeras cinco bandas.",
+    "chapter": "demos/stripes/doc/README.md"
+  },
+  "fx_wobble": {
+    "file": "figuras/fx_wobble.svg",
+    "title": "Wobble · deformar líneas verticales por filas",
+    "caption": "Esquema continuo para leer la forma de la onda; la implementación usa la tabla entera.",
+    "chapter": "demos/wobble/doc/README.md"
+  },
+  "fx_ripple": {
+    "file": "figuras/fx_ripple.svg",
+    "title": "Ripple · deformar líneas verticales por filas",
+    "caption": "Esquema continuo para leer la forma de la onda; la implementación usa la tabla entera.",
+    "chapter": "demos/ripple/doc/README.md"
+  },
+  "fx_bounce": {
+    "file": "figuras/fx_bounce.svg",
+    "title": "Bounce · el borde deja espacio negro",
+    "caption": "Ejemplo proporcional de una imagen desplazada hacia derecha y abajo, con recorte.",
+    "chapter": "demos/bounce/doc/README.md"
+  },
+  "fx_mosaic": {
+    "file": "figuras/fx_mosaic.svg",
+    "title": "Mosaic · una muestra por bloque",
+    "caption": "Patrón didáctico de 16 × 16: cada bloque conserva la muestra de su esquina superior izquierda.",
+    "chapter": "demos/mosaic/doc/README.md"
+  },
+  "fx_zoom": {
+    "file": "figuras/fx_zoom.svg",
+    "title": "Zoom · el paso es inverso a la ampliación",
+    "caption": "El paso se expresa con ocho bits fraccionarios: 256 significa una muestra por píxel.",
+    "chapter": "demos/zoom/doc/README.md"
+  },
+  "fx_rotozoom": {
+    "file": "figuras/fx_rotozoom.svg",
+    "title": "Rotozoom · intersectar dos intervalos",
+    "caption": "El tramo visible necesita cumplir simultáneamente los límites de U y de V.",
+    "chapter": "demos/rotozoom/doc/README.md"
+  },
+  "fx_cycle_en": {
+    "file": "figuras/fx_cycle_en.svg",
+    "title": "Cycle · still indices, moving palette",
+    "caption": "A permutation changes the colour assigned to each index.",
+    "chapter": "demos/cycle/doc/README-EN.md"
+  },
+  "fx_scroll_en": {
+    "file": "figuras/fx_scroll_en.svg",
+    "title": "Scroll · split a row into two spans",
+    "caption": "FGH wraps to the beginning while ABCDE moves three positions right.",
+    "chapter": "demos/scroll/doc/README-EN.md"
+  },
+  "fx_blinds_en": {
+    "file": "figuras/fx_blinds_en.svg",
+    "title": "Blinds · an opening grows from the centre",
+    "caption": "Widen the product to long before multiplying by 160 on Turbo C.",
+    "chapter": "demos/blinds/doc/README-EN.md"
+  },
+  "fx_stripes_en": {
+    "file": "figuras/fx_stripes_en.svg",
+    "title": "Stripes · positions accumulate different velocities",
+    "caption": "The first five bands, shown schematically after several updates.",
+    "chapter": "demos/stripes/doc/README-EN.md"
+  },
+  "fx_wobble_en": {
+    "file": "figuras/fx_wobble_en.svg",
+    "title": "Wobble · deform vertical lines one row at a time",
+    "caption": "A continuous illustration of the shape; the source samples an integer table.",
+    "chapter": "demos/wobble/doc/README-EN.md"
+  },
+  "fx_ripple_en": {
+    "file": "figuras/fx_ripple_en.svg",
+    "title": "Ripple · reduce amplitude towards the edges",
+    "caption": "A continuous illustration; rows at equal distance share displacement.",
+    "chapter": "demos/ripple/doc/README-EN.md"
+  },
+  "fx_bounce_en": {
+    "file": "figuras/fx_bounce_en.svg",
+    "title": "Bounce · translation leaves black borders",
+    "caption": "A schematic image moves right and down and is clipped to the viewport.",
+    "chapter": "demos/bounce/doc/README-EN.md"
+  },
+  "fx_mosaic_en": {
+    "file": "figuras/fx_mosaic_en.svg",
+    "title": "Mosaic · one sample per block",
+    "caption": "A 16 × 16 teaching pattern sampled at each block’s top-left corner.",
+    "chapter": "demos/mosaic/doc/README-EN.md"
+  },
+  "fx_zoom_en": {
+    "file": "figuras/fx_zoom_en.svg",
+    "title": "Zoom · sampling step is inverse to magnification",
+    "caption": "The sampling step has eight fractional bits; 256 represents one.",
+    "chapter": "demos/zoom/doc/README-EN.md"
+  },
+  "fx_rotozoom_en": {
+    "file": "figuras/fx_rotozoom_en.svg",
+    "title": "Rotozoom · intersect two valid intervals",
+    "caption": "A source pixel must satisfy both the U and V bounds.",
+    "chapter": "demos/rotozoom/doc/README-EN.md"
+  },
+  "camara_tira": {
+    "file": "figuras/camara_tira.svg",
+    "title": "Mover la ventana cambia la dirección visible",
+    "caption": "La marca sigue en mundo 9. Las ventanas de 4 y 6 la muestran en pantalla 5 y 3.",
+    "chapter": "ch25-paso-a-paso.md"
+  },
+  "camara_zona_simple": {
+    "file": "figuras/camara_zona_simple.svg",
+    "title": "Una casilla de exceso, una casilla de corrección",
+    "caption": "Con pantalla de diez y márgenes de tres, la marca de una casilla puede ocupar 3 a 6.",
+    "chapter": "ch25-paso-a-paso.md"
+  },
+  "checksum_cuadernos": {
+    "file": "figuras/checksum_cuadernos.svg",
+    "title": "Un resumen pequeño puede detectar diferencias",
+    "caption": "La receta multiplica manzanas por tres y peras por cinco; dos inventarios distintos pueden coincidir.",
+    "chapter": "ch20-paso-a-paso.md"
+  },
+  "checksum_recorrido": {
+    "file": "figuras/checksum_recorrido.svg",
+    "title": "Calcular ahora, comparar el mismo frame después",
+    "caption": "El resultado se etiqueta con el frame calculado; la casilla y su etiqueta protegen la comparación tardía.",
+    "chapter": "ch20-paso-a-paso.md"
+  }
+}

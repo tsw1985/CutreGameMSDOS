@@ -1,0 +1,387 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="La guía extra de cámara en un documento independiente: coordenadas, seguimiento y límites, desde un ejemplo pequeño hasta su aplicación al juego."><title>La cámara, paso a paso · docgpt</title><style>
+@page {size:A4; margin:18mm 17mm 19mm;
+  @top-left {content:"CUTREGAME / MSDOS";font:7.1pt "DejaVu Sans";color:#65808a;letter-spacing:.9pt;vertical-align:bottom;padding-bottom:4mm}
+  @top-right {content:"DOCGPT · EDICIÓN DE ESTUDIO";font:7.1pt "DejaVu Sans";color:#65808a;vertical-align:bottom;padding-bottom:4mm}
+  @bottom-left {content:"C · VGA · SONIDO · IPX · MAPAS";font:6.9pt "DejaVu Sans";color:#65808a;padding-top:3mm}
+  @bottom-right {content:counter(page);font:8pt "DejaVu Sans";color:#173548;padding-top:3mm}
+}
+@page :first {margin:0;@top-left{content:none}@top-right{content:none}@bottom-left{content:none}@bottom-right{content:none}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:#243746;font:10pt/1.54 "DejaVu Sans",sans-serif;background:white;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+h1,h2,h3{font-family:"DejaVu Sans",sans-serif;color:#173548;line-height:1.22;break-after:avoid;page-break-after:avoid}h1{font-size:26pt;letter-spacing:-.8pt;margin:0 0 8mm;font-weight:700}h2{font-size:15pt;margin:8mm 0 3mm}h3{font-size:11.5pt;margin:6mm 0 2mm}p{margin:0 0 3.8mm;orphans:3;widows:3}a{color:#087f73;text-decoration:none}strong{color:#173548}em{font-style:italic}ul,ol{padding-left:6mm;margin:3mm 0 5mm}li{margin:0 0 1.8mm;orphans:2;widows:2}hr{border:0;border-top:1px solid #d4e2df;margin:6mm 0}
+code{font-family:"DejaVu Sans Mono",monospace;font-size:.88em;background:#edf3f2;padding:.1em .24em;border-radius:3px;overflow-wrap:anywhere}pre{font:8.1pt/1.48 "DejaVu Sans Mono",monospace;background:#eef4f3;color:#173548;border-left:3px solid #159884;padding:4mm;margin:4mm 0 5mm;white-space:pre-wrap;overflow-wrap:anywhere;tab-size:4;break-inside:avoid}pre code{font:inherit;background:none;padding:0;white-space:inherit}blockquote{margin:4mm 0;padding:3mm 5mm;border-left:3px solid #c9a051;background:#fbf5e8}
+table{border-collapse:collapse;width:100%;font-size:8.5pt;line-height:1.43;margin:4mm 0 6mm;table-layout:auto}thead{display:table-header-group;background:#173548;color:white}th{text-align:left;font-weight:600;padding:2.4mm 2.1mm;color:white}th strong{color:white}td{border-bottom:.3mm solid #dce6e4;padding:2.3mm 2.1mm;vertical-align:top;overflow-wrap:anywhere}tbody tr:nth-child(even){background:#f1f6f4}tr{break-inside:avoid}td code,th code{font-size:7.9pt;background:transparent;padding:0}thead a{color:white}img,svg{max-width:100%}
+.chapter{break-before:page;page-break-before:always;position:relative}.chapter .kicker{font-size:8pt;text-transform:uppercase;letter-spacing:1.2pt;color:#148f82;border-top:1mm solid #148f82;padding-top:4mm;margin-bottom:6mm}.chapter>h1{max-width:98%}.chapter>p:first-of-type{font-size:10.4pt}.source-ref{color:#4c646e}.figure{break-inside:avoid;margin:5mm 0 6mm}.figure svg{width:100%;height:auto;display:block}.figure figcaption{font-size:8pt;line-height:1.43;color:#537078;margin:2.4mm 2mm 0}.figure figcaption em{font-style:normal}
+.cover{height:297mm;position:relative;background:#173548;color:#eef9f3;padding:22mm 20mm;break-after:page;page-break-after:always;overflow:hidden}.cover .series{font-size:10pt;letter-spacing:2.8pt;text-transform:uppercase;color:#72d9c1;margin:0 0 20mm}.cover h1{font-size:42pt;line-height:1.06;letter-spacing:-1.5pt;color:white;margin:0 0 10mm;max-width:165mm}.cover .subtitle{font-size:17pt;line-height:1.4;color:#b6e7da;max-width:150mm}.cover-art{margin:12mm -1mm 10mm;width:170mm;height:79mm}.cover .strap{font-size:10pt;font-weight:600;color:#e9c887}.cover .description{font-size:10.4pt;line-height:1.65;max-width:157mm}.cover .edition{position:absolute;bottom:18mm;left:20mm;font-size:8pt;color:#9cbabf;letter-spacing:1pt}
+.contents{break-before:page;break-after:page}.contents h1{margin-top:4mm}.contents .intro{color:#55717a;font-size:10pt}.contents ul{list-style:none;margin:6mm 0;padding:0}.contents li{margin:0;border-bottom:1px solid #e1e9e7;padding:2.1mm 0;break-inside:avoid}.contents a{display:flex;gap:4mm;align-items:baseline;color:#173548;font-size:9.2pt}.contents .toc-num{color:#148f82;font:8pt "DejaVu Sans Mono";width:8mm;flex:none}.contents .group{font-size:9pt;color:#148f82;letter-spacing:.6pt;font-weight:700;margin:8mm 0 1mm;break-after:avoid}.screen-toolbar{display:none}.broken-reference{color:#ae4c39}.file-note{font-size:8pt;color:#61777f}
+@media screen {body{background:#e8efec}.cover{margin:24px auto;max-width:210mm;box-shadow:0 10px 40px #17354822}.contents,.chapter{background:white;width:min(100% - 32px,210mm);margin:24px auto;padding:18mm 17mm;box-shadow:0 10px 40px #17354810}.contents{min-height:240mm}.screen-toolbar{display:flex;position:sticky;top:0;z-index:10;padding:12px 24px;background:#173548;gap:24px;justify-content:center;flex-wrap:wrap}.screen-toolbar a{font:13px "DejaVu Sans";color:#daf4e9}.chapter{scroll-margin-top:70px}a:hover{text-decoration:underline}}
+@media(max-width:650px){.cover{height:auto;min-height:100vh;padding:26px}.cover h1{font-size:34px}.cover .series{margin-bottom:35px}.cover .edition{position:static;margin-top:25px}.cover-art{width:100%;height:auto}.contents,.chapter{padding:24px}pre{font-size:10px}table{font-size:10px}.screen-toolbar{gap:12px}}
+@media print{body{line-height:1.44}p{margin-bottom:2.8mm}h2{margin-top:6mm}.chapter>p:first-of-type{font-size:10pt}.figure svg{max-height:74mm}.chapter-nav,.chapter>hr:last-of-type{display:none}.figure{margin:4mm 0 5mm}.contents li{padding:1.2mm 0}.contents a{font-size:9pt;line-height:1.35}}
+@media print{.compact p{margin-bottom:2mm}.compact h2{margin-top:5mm}.compact .kicker{margin-bottom:4mm}.compact .figure{margin:3mm 0 4mm}.compact .figure svg{max-height:70mm}.compact td{padding-top:2mm;padding-bottom:2mm}}
+@media print{#doc-ch07-md>h1,#doc-ch17-md>h1{margin-bottom:4mm}#doc-ch07-md .figure svg,#doc-ch17-md .figure svg{max-height:64mm}}
+</style></head><body>
+<nav class="screen-toolbar"><a href="#contents">Índice navegable</a><a href="../pdf/camara_paso_a_paso.pdf">PDF</a><a href="../camara.html">Laboratorio de cámara</a><a href="../README.md">Markdown</a></nav>
+<header class="cover"><p class="series">CutreGame MS-DOS / docgpt</p><h1>La cámara, paso a paso</h1><p class="subtitle">Una tira de papel, una ventana y una idea que se puede ver</p><svg class="cover-art" viewBox="0 0 1000 460" xmlns="http://www.w3.org/2000/svg" aria-label="World map and a camera window">
+<defs><pattern id="cover-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#416274" stroke-width="1"/></pattern></defs>
+<rect x="10" y="10" width="650" height="420" rx="10" fill="#234758"/>
+<rect x="10" y="10" width="650" height="420" fill="url(#cover-grid)"/>
+<path d="M50 65H225V185H120V345H305V235H460V115H610" fill="none" stroke="#5b7882" stroke-width="22"/>
+<rect x="180" y="145" width="320" height="200" rx="3" fill="#66cdb1" fill-opacity=".16" stroke="#83e4c8" stroke-width="4"/>
+<path d="M500 145L735 100M500 345L735 285" stroke="#82ccb9" stroke-width="2" stroke-dasharray="8 7"/>
+<rect x="735" y="100" width="250" height="185" rx="6" fill="#58b69e"/>
+<rect x="758" y="130" width="205" height="135" fill="#1b574e"/>
+<g fill="#edc773"><rect x="304" y="229" width="8" height="36"/><rect x="332" y="229" width="8" height="36"/><rect x="312" y="237" width="20" height="24"/><rect x="320" y="225" width="4" height="23"/><rect x="835" y="180" width="8" height="36"/><rect x="863" y="180" width="8" height="36"/><rect x="843" y="188" width="20" height="24"/><rect x="851" y="176" width="4" height="23"/></g>
+<text x="745" y="345" fill="#bde9db" font-family="DejaVu Sans" font-size="31">320 × 200</text><text x="745" y="390" fill="#83b8b3" font-family="DejaVu Sans Mono" font-size="21">world − camera</text>
+</svg><p class="strap">Guía 25A · ejemplos de consola · ejercicios resueltos</p><p class="description">La guía extra de cámara en un documento independiente: coordenadas, seguimiento y límites, desde un ejemplo pequeño hasta su aplicación al juego.</p><p class="edition">EDICIÓN DE ESTUDIO · SEPTIEMBRE 2026</p></header>
+<nav class="contents" id="contents"><h1>Índice navegable</h1><p class="intro">Pulsa una lección para ir directamente a ella. Puedes buscar texto, ampliar los esquemas y volver a las explicaciones desde sus enlaces.</p><div class="group">Lecciones</div><ul><li><a href="#doc-ch25-paso-a-paso-md"><span class="toc-num">25A</span><span>25A. Entender la cámara con una tira de papel</span></a></li></ul></nav><article class="chapter" id="doc-ch25-paso-a-paso-md" data-source="ch25-paso-a-paso.md"><div class="kicker">CURSO / LECCIONES</div><h1 id="doc-ch25-paso-a-paso-md-25a-entender-la-camara-con-una-tira-de-papel">25A. Entender la cámara con una tira de papel</h1>
+<p><a href="../pdf/camara_paso_a_paso.pdf">Abrir esta guía como PDF independiente</a>.</p>
+<p>Esta guía es una entrada más pausada a la <a href="../pdf/curso_completo.pdf#nameddest=doc-ch25-md">lección 25</a>. Empieza sin tanques, sin VGA y sin redes: una fila de letras y una ventana de cartón bastan para entender el algoritmo. Después cambiaremos los tamaños y los nombres hasta reconocer el juego.</p>
+<p>Trabaja en tres sesiones si lo necesitas: primero la ventana y la resta; después el seguimiento; finalmente la conexión con el código. No necesitas memorizar las fórmulas antes de entender qué cuenta cada una.</p>
+<h2 id="doc-ch25-paso-a-paso-md-1-un-mundo-de-veinte-casillas">1. Un mundo de veinte casillas</h2>
+<p>Escribe veinte letras en una tira. Numera las casillas <strong>desde cero</strong>:</p>
+<pre><code class="language-text">Coordenada:  0  1  2  3  4  5  6  7  8  9
+Letra:      A  B  C  D  E  F  G  H  I  J
+
+Coordenada: 10 11 12 13 14 15 16 17 18 19
+Letra:      K  L  M  N  O  P  Q  R  S  T
+</code></pre>
+<p>Es una sola fila; la hemos partido aquí para que quepa. La anchura es 20, pero la última coordenada es 19. La anchura cuenta <strong>cuántas casillas hay</strong>; la coordenada identifica <strong>una de ellas</strong>.</p>
+<p>Ahora recorta una ventana que deje ver exactamente diez casillas seguidas. Si la apoyas al principio, verás <code>ABCDEFGHIJ</code>. Si la desplazas cuatro casillas a la derecha, verás <code>EFGHIJKLMN</code>.</p>
+<p>La tira es el <strong>mundo</strong>. El agujero del cartón es la <strong>pantalla</strong>. La <strong>cámara</strong> guarda dónde empieza la ventana dentro del mundo. Con la segunda colocación, <code>camera_<wbr>x = 4</code>, porque E ocupa la casilla 4.</p>
+<p>La cámara no necesita almacenar otras diez letras. Con un número y la anchura de ventana ya sabemos qué parte de la tira mostrar.</p>
+<h2 id="doc-ch25-paso-a-paso-md-2-la-misma-casilla-tiene-dos-direcciones">2. La misma casilla tiene dos direcciones</h2>
+<p>Pon una marca <code>@</code> encima de la J. Su posición en el mundo es 9. No muevas esa marca durante este apartado.</p>
+<p>Con la ventana empezando en 4, ves:</p>
+<pre><code class="language-text">Casilla de pantalla:  0 1 2 3 4 5 6 7 8 9
+Contenido visible:   E F G H I @ K L M N
+</code></pre>
+<p>La marca está en el mundo en 9 y en la pantalla en 5. No son dos marcas ni dos posiciones físicas distintas: son dos maneras de indicar dónde está la misma marca.</p>
+<p>La pantalla empieza a contar desde la primera casilla del agujero. Para saber cuántas casillas separan el comienzo de la ventana y la marca, restamos:</p>
+<pre><code class="language-text">posición en pantalla = posición en mundo - comienzo de ventana
+                     = 9 - 4
+                     = 5
+</code></pre>
+<p>En el código, esos nombres suelen ser <code>screen_<wbr>x</code>, <code>world_<wbr>x</code> y <code>camera_<wbr>x</code>:</p>
+<pre><code class="language-c">screen_x = world_x - camera_x;
+</code></pre>
+<figure class="figure"><svg xmlns="http://www.w3.org/2000/svg" width="1040" height="500" viewBox="0 0 1040 500" role="img" aria-labelledby="fig-camara_tira-title fig-camara_tira-desc">
+<title id="fig-camara_tira-title">Mover la ventana cambia la dirección visible</title><desc id="fig-camara_tira-desc">La marca sigue en mundo 9. Las ventanas de 4 y 6 la muestran en pantalla 5 y 3.</desc>
+<defs><marker id="fig-camara_tira-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#148f82"/></marker></defs>
+<rect width="1040" height="500" rx="16" fill="#f7faf9"/>
+<g font-family="DejaVu Sans, sans-serif"><text x="28" y="43" font-size="26" fill="#173548" text-anchor="start" font-weight="bold">Mover la ventana cambia la dirección visible</text><text x="40" y="82" font-size="22" fill="#243746" text-anchor="start" font-weight="normal">Mundo: veinte casillas; la marca permanece en 9</text><rect x="45" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="67" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">A</text><text x="67" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">0</text><rect x="93" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="115" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">B</text><text x="115" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">1</text><rect x="141" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="163" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">C</text><text x="163" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">2</text><rect x="189" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="211" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">D</text><text x="211" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">3</text><rect x="237" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="259" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">E</text><text x="259" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">4</text><rect x="285" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="307" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">F</text><text x="307" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">5</text><rect x="333" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="355" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">G</text><text x="355" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">6</text><rect x="381" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="403" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">H</text><text x="403" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">7</text><rect x="429" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="451" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">I</text><text x="451" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">8</text><rect x="477" y="105" width="44" height="45" rx="3" fill="#f4d4cb" stroke="none" stroke-width="2" /><text x="499" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">@</text><text x="499" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">9</text><rect x="525" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="547" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">K</text><text x="547" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">10</text><rect x="573" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="595" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">L</text><text x="595" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">11</text><rect x="621" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="643" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">M</text><text x="643" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">12</text><rect x="669" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="691" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">N</text><text x="691" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">13</text><rect x="717" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="739" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">O</text><text x="739" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">14</text><rect x="765" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="787" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">P</text><text x="787" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">15</text><rect x="813" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="835" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">Q</text><text x="835" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">16</text><rect x="861" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="883" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">R</text><text x="883" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">17</text><rect x="909" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="931" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">S</text><text x="931" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">18</text><rect x="957" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="979" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">T</text><text x="979" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">19</text><text x="45" y="260" font-size="23" fill="#243746" text-anchor="start" font-weight="bold">Cámara = 4</text><text x="45" y="296" font-size="21" fill="#148f82" text-anchor="start" font-weight="normal">Pantalla = 5</text><rect x="320" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="350" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">E</text><text x="350" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">0</text><rect x="385" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="415" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">F</text><text x="415" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">1</text><rect x="450" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="480" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">G</text><text x="480" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">2</text><rect x="515" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="545" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">H</text><text x="545" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">3</text><rect x="580" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="610" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">I</text><text x="610" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">4</text><rect x="645" y="230" width="60" height="48" rx="3" fill="#f4d4cb" stroke="none" stroke-width="2" /><text x="675" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">@</text><text x="675" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">5</text><rect x="710" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="740" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">K</text><text x="740" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">6</text><rect x="775" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="805" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">L</text><text x="805" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">7</text><rect x="840" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="870" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">M</text><text x="870" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">8</text><rect x="905" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="935" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">N</text><text x="935" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">9</text><text x="45" y="395" font-size="23" fill="#243746" text-anchor="start" font-weight="bold">Cámara = 6</text><text x="45" y="431" font-size="21" fill="#148f82" text-anchor="start" font-weight="normal">Pantalla = 3</text><rect x="320" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="350" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">G</text><text x="350" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">0</text><rect x="385" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="415" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">H</text><text x="415" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">1</text><rect x="450" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="480" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">I</text><text x="480" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">2</text><rect x="515" y="365" width="60" height="48" rx="3" fill="#f4d4cb" stroke="none" stroke-width="2" /><text x="545" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">@</text><text x="545" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">3</text><rect x="580" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="610" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">K</text><text x="610" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">4</text><rect x="645" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="675" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">L</text><text x="675" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">5</text><rect x="710" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="740" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">M</text><text x="740" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">6</text><rect x="775" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="805" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">N</text><text x="805" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">7</text><rect x="840" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="870" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">O</text><text x="870" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">8</text><rect x="905" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="935" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">P</text><text x="935" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">9</text></g></svg><figcaption>La marca sigue en la casilla 9 del mundo. Cambiar la ventana de 4 a 6 cambia su posición visible de 5 a 3.</figcaption></figure>
+<h2 id="doc-ch25-paso-a-paso-md-3-por-que-el-paisaje-parece-moverse-al-reves">3. Por qué el paisaje parece moverse al revés</h2>
+<p>Desplaza solamente el cartón: ahora empieza en la casilla 6. Se ve <code>GHI@KLMNOP</code> y la marca aparece en <code>9 - 6 = 3</code>.</p>
+<p>La cámara avanzó dos casillas a la derecha. La marca se desplazó dos casillas <strong>hacia la izquierda en la imagen</strong>, aunque permaneció en el mismo lugar del papel. Eso explica el desplazamiento aparente del paisaje cuando una cámara sigue a un personaje.</p>
+<p>Compara tres experimentos independientes. Todos parten de marca 9, cámara 4 y posición visible 5:</p>
+<table>
+<thead>
+<tr>
+<th>Qué cambias</th>
+<th style="text-align: right;">Mundo de la marca</th>
+<th style="text-align: right;">Cámara</th>
+<th style="text-align: right;">Pantalla de la marca</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Solo mueves la marca dos casillas</td>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">7</td>
+</tr>
+<tr>
+<td>Solo mueves la ventana dos casillas</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr>
+<td>Mueves ambas dos casillas</td>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">5</td>
+</tr>
+</tbody>
+</table>
+<p>En la tercera fila la marca parece quieta en pantalla, pero sí se ha movido por el mundo. La ventana la ha acompañado exactamente lo mismo.</p>
+<p><strong>Detente y predice:</strong> marca en 13 y cámara en 6. ¿Qué casilla ocupa en pantalla? Es 7. Si te sale 19, has sumado las coordenadas en el sentido equivocado.</p>
+<h2 id="doc-ch25-paso-a-paso-md-4-cuando-algo-queda-fuera">4. Cuándo algo queda fuera</h2>
+<p>Una pantalla de diez casillas tiene coordenadas válidas de 0 a 9. Para esta marca, que ocupa una sola casilla, basta comprobar:</p>
+<pre><code class="language-text">0 &lt;= screen_x &lt; 10
+</code></pre>
+<p>Si el mundo de la marca es 3 y la cámara es 6, su posición visible sería −3. El resultado tiene sentido: la marca está tres casillas antes del comienzo de la ventana. No se dibuja.</p>
+<p>Con mundo 16 y cámara 6, da 10: está justo después de la última casilla visible. Tampoco se dibuja. El signo negativo aporta información; no lo sustituyas por un entero sin signo.</p>
+<p>La operación inversa también sirve. Si señalas la casilla 7 de una pantalla cuya cámara vale 6, estás señalando la casilla <code>7 + 6 = 13</code> del mundo:</p>
+<pre><code class="language-text">Mundo → pantalla: restar cámara.
+Pantalla → mundo: sumar cámara.
+</code></pre>
+<h2 id="doc-ch25-paso-a-paso-md-5-un-programa-de-consola-que-solo-ensena-la-ventana">5. Un programa de consola que solo enseña la ventana</h2>
+<p>Este ejemplo completo utiliza C sencillo y no depende del proyecto. <code>world</code> es la tira de letras. <code>show_<wbr>window</code> imprime diez posiciones y sustituye la letra por <code>@</code> cuando corresponde a la marca.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+
+void show_window(int camera_x, int point_x)
+{
+    char world[] = &quot;ABCDEFGHIJKLMNOPQRST&quot;;
+    int screen_x;
+    int world_x;
+
+    for (screen_x = 0; screen_x &lt; 10; screen_x++) {
+        world_x = camera_x + screen_x;
+        if (world_x == point_x) {
+            putchar('@');
+        } else {
+            putchar(world[world_x]);
+        }
+    }
+    putchar('\n');
+}
+
+int main(void)
+{
+    show_window(4, 9);
+    show_window(6, 9);
+    return 0;
+}
+</code></pre>
+<p>Su salida es:</p>
+<pre><code class="language-text">EFGHI@KLMN
+GHI@KLMNOP
+</code></pre>
+<p>Aquí recorremos la pantalla para preguntar qué casilla del mundo necesita cada posición. Por eso usamos <strong>suma</strong> dentro del bucle. Al colocar un objeto conocido en el mundo usamos <strong>resta</strong>. Son las dos direcciones de la misma transformación.</p>
+<p>El ejemplo supone cámara entre 0 y 10. Si le pasas 15, intentará consultar posiciones que no pertenecen a la tira. El siguiente apartado impone el límite que falta.</p>
+<h2 id="doc-ch25-paso-a-paso-md-6-la-ventana-debe-caber-entera">6. La ventana debe caber entera</h2>
+<p>Con cámara 10, la ventana muestra casillas del mundo 10 a 19: todavía cabe. Con cámara 11 necesitaría mostrar hasta la 20, que no existe.</p>
+<pre><code class="language-text">mayor cámara posible = anchura del mundo - anchura de pantalla
+                     = 20 - 10
+                     = 10
+</code></pre>
+<p>También hay un límite izquierdo: cero. Una cámara de −1 mostraría una casilla anterior al comienzo de la tira.</p>
+<p><strong>Limitar</strong>, o hacer <em>clamp</em>, significa corregir una propuesta que se sale del intervalo. La propuesta −2 se convierte en 0; la propuesta 7 conserva 7; la propuesta 14 se convierte en 10.</p>
+<pre><code class="language-c">if (camera_x &lt; 0) {
+    camera_x = 0;
+}
+if (camera_x &gt; 10) {
+    camera_x = 10;
+}
+</code></pre>
+<p>No confundir el límite de cámara, 10, con la última casilla del mundo, 19. El primer número deja sitio para que quepa <strong>toda la ventana</strong>.</p>
+<h2 id="doc-ch25-paso-a-paso-md-7-elegir-cuando-la-ventana-sigue-a-la-marca">7. Elegir cuándo la ventana sigue a la marca</h2>
+<p>Hasta ahora alguien elegía la cámara a mano. Añadamos una regla automática: mientras la marca esté en las casillas de pantalla 3, 4, 5 o 6, la ventana se queda quieta.</p>
+<p>Es una zona de libertad en el centro. Su nombre habitual es <strong>zona muerta</strong>: el movimiento dentro de ella no provoca movimiento de cámara. La marca sí puede moverse ahí.</p>
+<pre><code class="language-text">Pantalla:        0 1 2 | 3 4 5 6 | 7 8 9
+Respuesta:       seguir|  quieta |seguir
+Margen:          3 casillas     3 casillas
+</code></pre>
+<p>La marca mide una casilla. Por tanto, la última posición donde cabe sin entrar en el margen derecho es <code>10 - 3 - 1 = 6</code>.</p>
+<figure class="figure"><svg xmlns="http://www.w3.org/2000/svg" width="1040" height="500" viewBox="0 0 1040 500" role="img" aria-labelledby="fig-camara_zona_simple-title fig-camara_zona_simple-desc">
+<title id="fig-camara_zona_simple-title">Una casilla de exceso, una casilla de corrección</title><desc id="fig-camara_zona_simple-desc">Con pantalla de diez y márgenes de tres, la marca de una casilla puede ocupar 3 a 6.</desc>
+<defs><marker id="fig-camara_zona_simple-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#148f82"/></marker></defs>
+<rect width="1040" height="500" rx="16" fill="#f7faf9"/>
+<g font-family="DejaVu Sans, sans-serif"><text x="28" y="43" font-size="26" fill="#173548" text-anchor="start" font-weight="bold">Una casilla de exceso, una casilla de corrección</text><text x="80" y="112" font-size="22" fill="#243746" text-anchor="start" font-weight="normal">Margen: 3</text><text x="505" y="112" font-size="25" fill="#148f82" text-anchor="middle" font-weight="bold">Zona libre: 3..6</text><text x="965" y="112" font-size="22" fill="#243746" text-anchor="end" font-weight="normal">Margen: 3</text><rect x="80" y="145" width="81" height="80" rx="4" fill="#e3e9eb" stroke="none" stroke-width="2" /><text x="120" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">0</text><rect x="167" y="145" width="81" height="80" rx="4" fill="#e3e9eb" stroke="none" stroke-width="2" /><text x="207" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">1</text><rect x="254" y="145" width="81" height="80" rx="4" fill="#e3e9eb" stroke="none" stroke-width="2" /><text x="294" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">2</text><rect x="341" y="145" width="81" height="80" rx="4" fill="#c9e9df" stroke="none" stroke-width="2" /><text x="381" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">3</text><rect x="428" y="145" width="81" height="80" rx="4" fill="#c9e9df" stroke="none" stroke-width="2" /><text x="468" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">4</text><rect x="515" y="145" width="81" height="80" rx="4" fill="#c9e9df" stroke="none" stroke-width="2" /><text x="555" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">5</text><rect x="602" y="145" width="81" height="80" rx="4" fill="#c9e9df" stroke="none" stroke-width="2" /><text x="642" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">6</text><rect x="689" y="145" width="81" height="80" rx="4" fill="#e3e9eb" stroke="none" stroke-width="2" /><text x="729" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">7</text><rect x="776" y="145" width="81" height="80" rx="4" fill="#e3e9eb" stroke="none" stroke-width="2" /><text x="816" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">8</text><rect x="863" y="145" width="81" height="80" rx="4" fill="#e3e9eb" stroke="none" stroke-width="2" /><text x="903" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">9</text><rect x="50" y="300" width="360" height="100" rx="9" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="230.0" y="336" font-size="23" fill="#243746" text-anchor="middle" font-weight="bold">Antes: mundo 11, cámara 4</text><text x="230.0" y="368" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">Pantalla 7: sobra una casilla</text><line x1="420" y1="350" x2="600" y2="350" stroke="#148f82" stroke-width="3" marker-end="url(#fig-camara_zona_simple-arrow)"/><rect x="615" y="300" width="375" height="100" rx="9" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="802.5" y="336" font-size="23" fill="#243746" text-anchor="middle" font-weight="bold">Después: cámara 5</text><text x="802.5" y="368" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">Mundo 11 → pantalla 6</text><text x="80" y="460" font-size="23" fill="#243746" text-anchor="start" font-weight="normal">Solo cambia la cámara. El objetivo conserva su coordenada de mundo.</text></g></svg><figcaption>Una marca situada en 7 sobresale una casilla de la zona. Avanzar la cámara una casilla hace que aparezca en 6.</figcaption></figure>
+<h3 id="doc-ch25-paso-a-paso-md-si-la-marca-se-sale-por-la-derecha">Si la marca se sale por la derecha</h3>
+<p>Con cámara 4 y marca en mundo 11, la marca aparece en <code>11 - 4 = 7</code>. Queremos que vuelva al límite permitido 6. Sobra una casilla.</p>
+<p>Sumamos esa casilla a la cámara: <code>4 + (7 - 6) = 5</code>. La marca conserva mundo 11 y ahora aparece en <code>11 - 5 = 6</code>.</p>
+<p>No estamos devolviendo la marca hacia atrás. Estamos desplazando la ventana hacia ella.</p>
+<h3 id="doc-ch25-paso-a-paso-md-si-se-sale-por-la-izquierda">Si se sale por la izquierda</h3>
+<p>Con cámara 6 y marca en mundo 8, aparece en 2. Falta una casilla para llegar al límite permitido 3.</p>
+<p>Restamos esa casilla a la cámara: <code>6 - (3 - 2) = 5</code>. La marca ahora aparece en <code>8 - 5 = 3</code>.</p>
+<h3 id="doc-ch25-paso-a-paso-md-si-sigue-dentro">Si sigue dentro</h3>
+<p>Con cámara 6 y marca en mundo 11, aparece en 5. No necesitamos corregir nada. Conservar la cámara anterior forma parte del algoritmo; no hay que centrarla otra vez en cada vuelta.</p>
+<h2 id="doc-ch25-paso-a-paso-md-8-la-funcion-pequena-linea-por-linea">8. La función pequeña, línea por línea</h2>
+<p>Esta función se puede añadir al ejemplo de consola, antes de <code>main</code>. Recibe la cámara anterior y devuelve la nueva. Sigue suponiendo mundo de 20, pantalla de 10 y marca de una casilla.</p>
+<pre><code class="language-c">int follow_point(int camera_x, int point_x)
+{
+    int screen_x;
+
+    screen_x = point_x - camera_x;
+
+    if (screen_x &lt; 3) {
+        camera_x = camera_x - (3 - screen_x);
+    } else if (screen_x &gt; 6) {
+        camera_x = camera_x + (screen_x - 6);
+    }
+
+    if (camera_x &lt; 0) {
+        camera_x = 0;
+    }
+    if (camera_x &gt; 10) {
+        camera_x = 10;
+    }
+
+    return camera_x;
+}
+</code></pre>
+<p>La primera resta <strong>observa</strong> dónde aparece la marca con la cámara anterior. Los dos primeros casos <strong>proponen</strong> una corrección. Los dos últimos <code>if</code> aseguran que la ventana cabe. El valor devuelto se <strong>conserva</strong> para el próximo movimiento.</p>
+<p>Para usarla, puedes sustituir el <code>main</code> anterior por este:</p>
+<pre><code class="language-c">int main(void)
+{
+    int camera_x;
+    int point_x;
+
+    camera_x = 4;
+    point_x = 11;
+    camera_x = follow_point(camera_x, point_x);
+    show_window(camera_x, point_x);
+    printf(&quot;camera=%d screen=%d\n&quot;, camera_x,
+           point_x - camera_x);
+    return 0;
+}
+</code></pre>
+<p>Resultado: <code>FGHIJK@MNO</code> y, debajo, <code>camera=5 screen=6</code>. Mantén también <code>#include &lt;stdio.h&gt;</code> y la función <code>show_<wbr>window</code> del primer bloque. No debes dejar dos funciones <code>main</code> en el mismo archivo.</p>
+<h2 id="doc-ch25-paso-a-paso-md-9-seguir-y-luego-dar-la-vuelta">9. Seguir y luego dar la vuelta</h2>
+<p>Cada fila de esta tabla parte de la cámara <strong>que dejó la anterior</strong>. Las posiciones de la marca son una secuencia de prueba; puedes colocarlas con el dedo sobre la tira.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Marca en mundo</th>
+<th style="text-align: right;">Cámara anterior</th>
+<th style="text-align: right;">Pantalla antes</th>
+<th style="text-align: right;">Cámara nueva</th>
+<th style="text-align: right;">Pantalla después</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">5</td>
+</tr>
+<tr>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">5</td>
+</tr>
+<tr>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">3</td>
+</tr>
+</tbody>
+</table>
+<p>Al pasar de mundo 12 a mundo 11, la marca retrocede pero la ventana se queda en 6. La marca debe atravesar la zona central antes de empujar la ventana hacia la izquierda. Por eso el seguimiento depende de la cámara anterior, además de la posición del objetivo.</p>
+<h3 id="doc-ch25-paso-a-paso-md-un-caso-donde-no-puede-cumplir-la-zona">Un caso donde no puede cumplir la zona</h3>
+<p>Marca en mundo 19, cámara 10. La posición visible es 9. La regla propondría cámara <code>10 + (9 - 6) = 13</code>, pero la ventana saldría del papel. El límite vuelve a dejarla en 10.</p>
+<p>La marca permanece visible en 9, fuera de la zona central. Es el resultado correcto. La condición obligatoria es que la ventana quepa; la zona central se mantiene cuando queda mundo suficiente hacia ese lado.</p>
+<h2 id="doc-ch25-paso-a-paso-md-10-anadir-altura-no-cambia-la-idea">10. Añadir altura no cambia la idea</h2>
+<p>Imagina ahora una hoja de 20 columnas y 12 filas, con una ventana de 10 × 6. Su cámara es una pareja <code>(camera_<wbr>x, camera_<wbr>y)</code>.</p>
+<p>El origen está arriba a la izquierda. X aumenta hacia la derecha y Y <strong>hacia abajo</strong>, como las filas de una página.</p>
+<pre><code class="language-text">Marca en mundo: (9,7)
+Cámara:         (4,3)
+Pantalla:       (9-4, 7-3) = (5,4)
+</code></pre>
+<p>Cada eje hace su propia resta y su propio seguimiento. Los límites son X entre 0 y <code>20-10=10</code>; Y entre 0 y <code>12-6=6</code>. Mover la cámara vertical no altera la coordenada horizontal de la marca.</p>
+<h2 id="doc-ch25-paso-a-paso-md-11-de-la-tira-al-juego-cambiar-nombres-y-tamanos">11. De la tira al juego: cambiar nombres y tamaños</h2>
+<table>
+<thead>
+<tr>
+<th>En el ejemplo</th>
+<th>En el juego</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tira de 20 casillas</td>
+<td>Mapa de 640 × 400 píxeles</td>
+</tr>
+<tr>
+<td>Ventana de 10 casillas</td>
+<td>Pantalla de 320 × 200 píxeles</td>
+</tr>
+<tr>
+<td>Marca de una casilla</td>
+<td>Sprite de tanque de 18 × 18</td>
+</tr>
+<tr>
+<td><code>point_<wbr>x</code></td>
+<td><code>target_<wbr>x</code>, normalmente <code>player1.position_<wbr>x</code> o <code>player2.position_<wbr>x</code></td>
+</tr>
+<tr>
+<td>Cámara entre 0 y 10</td>
+<td>X entre 0 y 320; Y entre 0 y 200</td>
+</tr>
+<tr>
+<td>Margen horizontal de 3</td>
+<td>Márgenes X=100 e Y=70</td>
+</tr>
+<tr>
+<td><code>follow_<wbr>point</code></td>
+<td><code>bmp_<wbr>camera_<wbr>follow</code> en <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/src/bmp.c">src/bmp.c</a></td>
+</tr>
+<tr>
+<td><code>show_<wbr>window</code></td>
+<td>Fondo con <code>bmp_<wbr>draw_<wbr>world_<wbr>window</code>, luego sprites</td>
+</tr>
+</tbody>
+</table>
+<p>La diferencia importante es el tamaño del objetivo. En el juego su posición guarda la <strong>esquina superior izquierda</strong>, no el centro. Hay que reservar sitio para los dieciocho píxeles del tanque.</p>
+<p>Por eso el límite derecho de su esquina es <code>320 - 100 - 18 = 202</code>. Si la esquina está en 202, sus columnas son 202 a 219. El margen derecho empieza en 220: el tanque todavía cabe entero.</p>
+<p>La misma cuenta en Y da <code>200 - 70 - 18 = 112</code>. Su esquina puede circular por X=100..202 e Y=70..112 sin empujar la cámara.</p>
+<h2 id="doc-ch25-paso-a-paso-md-12-una-vuelta-real-explicada-con-las-mismas-cuatro-preguntas">12. Una vuelta real, explicada con las mismas cuatro preguntas</h2>
+<p>Supón mapa grande, cámara <code>(90,40)</code> y tanque objetivo <code>(188,155)</code>. Es un ejemplo de la función de cámara; aquí no estamos comprobando si un movimiento del tanque atraviesa una pared.</p>
+<p><strong>¿Dónde aparece antes?</strong> Restamos: <code>(188-90,155-40) = (98,115)</code>.</p>
+<p><strong>¿Cuánto sobresale?</strong> En X, 98 está dos píxeles antes de 100. En Y, 115 está tres píxeles después de 112.</p>
+<p><strong>¿Qué ventana lo recoloca?</strong> X necesita cámara <code>90-2=88</code>; Y necesita <code>40+3=43</code>. Ambas coordenadas caben en sus límites.</p>
+<p><strong>¿Dónde lo dibujamos al final?</strong> Con la cámara nueva: <code>(188-88,155-43) = (100,112)</code>.</p>
+<p>Observa lo que conserva su valor: el tanque sigue en mundo <code>(188,155)</code>. El dibujo del fondo también debe usar cámara <code>(88,43)</code>. Usar la cámara vieja para el suelo y la nueva para el tanque haría que parecieran deslizarse uno respecto del otro.</p>
+<h2 id="doc-ch25-paso-a-paso-md-13-seguir-no-es-lo-mismo-que-colocar-de-golpe">13. Seguir no es lo mismo que colocar de golpe</h2>
+<p><code>bmp_<wbr>camera_<wbr>follow</code> deja que el objetivo se desplace por la zona central. <code>bmp_<wbr>camera_<wbr>snap</code> calcula directamente una cámara centrada, sin utilizar la cámara anterior para decidir cuánto desplazarse.</p>
+<p>Para centrar un tanque de 18 × 18 hay que centrar su <strong>centro</strong>, que está nueve píxeles después de su esquina:</p>
+<pre><code class="language-text">camera_x = target_x + 9 - 160
+camera_y = target_y + 9 - 100
+</code></pre>
+<p>Con la salida P1 del mapa grande, <code>(166,299)</code>, sale <code>(15,208)</code>. El máximo Y es 200, así que la cámara definitiva es <code>(15,200)</code>. El tanque aparece en <code>(151,99)</code>; no puede quedar perfectamente centrado en Y sin mostrar ocho filas fuera del mapa.</p>
+<p>En una reaparición interesa colocar la ventana de golpe cerca del nuevo objetivo. Durante el movimiento normal interesa conservar la zona de libertad. La <a href="../pdf/curso_completo.pdf#nameddest=doc-ch25-md">lección 25</a> sigue las llamadas exactas que toman esa decisión.</p>
+<h2 id="doc-ch25-paso-a-paso-md-14-prueba-tu-comprension-antes-de-continuar">14. Prueba tu comprensión antes de continuar</h2>
+<p>Resuelve estos casos sin consultar las tablas. En los cuatro primeros usamos la tira de 20, ventana de 10, marca de una casilla y zona 3..6.</p>
+<ol>
+<li>Cámara 5, marca 12. ¿Dónde aparece sin actualizar la cámara?</li>
+<li>Aplica seguimiento al caso anterior. ¿Qué números cambian?</li>
+<li>Ahora la marca retrocede a 10. ¿Retrocede también la cámara?</li>
+<li>Cámara 0, marca 1. ¿Por qué no termina la marca en pantalla 3?</li>
+<li>En el juego, ¿por qué se resta 18 al calcular 202?</li>
+<li>Si ambas máquinas guardan el tanque en el mismo lugar del mundo pero usan cámaras distintas, ¿deben verse capturas iguales?</li>
+</ol>
+<h3 id="doc-ch25-paso-a-paso-md-respuestas-razonadas">Respuestas razonadas</h3>
+<ol>
+<li>Aparece en 7, porque <code>12-5=7</code>.</li>
+<li>Sobra una casilla: cámara nueva 6, pantalla nueva 6. Mundo conserva 12.</li>
+<li>Con cámara 6 aparece en 4, dentro de la zona. La cámara conserva 6.</li>
+<li>Haría falta cámara −2. El límite la devuelve a 0 y la marca permanece en pantalla 1.</li>
+<li>Porque la esquina necesita dejar espacio a toda la anchura del tanque. El borde 220 marca dónde empieza el margen, no dónde puede comenzar un tanque de 18.</li>
+<li>No. Las reglas usan el mundo; la cámara decide la vista. Este es también el motivo por el que la cámara no entra en el checksum del estado compartido.</li>
+</ol>
+<p>Continúa con <a href="../pdf/curso_completo.pdf#nameddest=doc-ch25-md">la lección 25 ampliada</a>. Después abre el <a href="../camara.html">laboratorio interactivo</a>: prueba primero «Manual: mover la ventana», cambiando solo la cámara; después «Zona muerta: seguir», cambiando la posición del tanque. Esos dos experimentos corresponden a los apartados 3 y 7 de esta guía.</p>
+<p class="chapter-nav"><a href="../pdf/curso_completo.pdf#nameddest=doc-readme-md">Índice</a> · <a href="../pdf/curso_completo.pdf#nameddest=doc-ch25-md">Continuar: cámara en el juego</a> · <a href="../pdf/curso_completo.pdf#nameddest=doc-ch20-paso-a-paso-md">Checksum desde cero</a></p></article></body></html>

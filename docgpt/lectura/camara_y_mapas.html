@@ -1,0 +1,1484 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Coordenadas, stride, memoria huge, clipping, zona muerta, máscara, niveles y radar. Un recorrido completo por las lecciones 21–28."><title>Cámara y mapas, por dentro · docgpt</title><style>
+@page {size:A4; margin:18mm 17mm 19mm;
+  @top-left {content:"CUTREGAME / MSDOS";font:7.1pt "DejaVu Sans";color:#65808a;letter-spacing:.9pt;vertical-align:bottom;padding-bottom:4mm}
+  @top-right {content:"DOCGPT · EDICIÓN DE ESTUDIO";font:7.1pt "DejaVu Sans";color:#65808a;vertical-align:bottom;padding-bottom:4mm}
+  @bottom-left {content:"C · VGA · SONIDO · IPX · MAPAS";font:6.9pt "DejaVu Sans";color:#65808a;padding-top:3mm}
+  @bottom-right {content:counter(page);font:8pt "DejaVu Sans";color:#173548;padding-top:3mm}
+}
+@page :first {margin:0;@top-left{content:none}@top-right{content:none}@bottom-left{content:none}@bottom-right{content:none}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:#243746;font:10pt/1.54 "DejaVu Sans",sans-serif;background:white;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+h1,h2,h3{font-family:"DejaVu Sans",sans-serif;color:#173548;line-height:1.22;break-after:avoid;page-break-after:avoid}h1{font-size:26pt;letter-spacing:-.8pt;margin:0 0 8mm;font-weight:700}h2{font-size:15pt;margin:8mm 0 3mm}h3{font-size:11.5pt;margin:6mm 0 2mm}p{margin:0 0 3.8mm;orphans:3;widows:3}a{color:#087f73;text-decoration:none}strong{color:#173548}em{font-style:italic}ul,ol{padding-left:6mm;margin:3mm 0 5mm}li{margin:0 0 1.8mm;orphans:2;widows:2}hr{border:0;border-top:1px solid #d4e2df;margin:6mm 0}
+code{font-family:"DejaVu Sans Mono",monospace;font-size:.88em;background:#edf3f2;padding:.1em .24em;border-radius:3px;overflow-wrap:anywhere}pre{font:8.1pt/1.48 "DejaVu Sans Mono",monospace;background:#eef4f3;color:#173548;border-left:3px solid #159884;padding:4mm;margin:4mm 0 5mm;white-space:pre-wrap;overflow-wrap:anywhere;tab-size:4;break-inside:avoid}pre code{font:inherit;background:none;padding:0;white-space:inherit}blockquote{margin:4mm 0;padding:3mm 5mm;border-left:3px solid #c9a051;background:#fbf5e8}
+table{border-collapse:collapse;width:100%;font-size:8.5pt;line-height:1.43;margin:4mm 0 6mm;table-layout:auto}thead{display:table-header-group;background:#173548;color:white}th{text-align:left;font-weight:600;padding:2.4mm 2.1mm;color:white}th strong{color:white}td{border-bottom:.3mm solid #dce6e4;padding:2.3mm 2.1mm;vertical-align:top;overflow-wrap:anywhere}tbody tr:nth-child(even){background:#f1f6f4}tr{break-inside:avoid}td code,th code{font-size:7.9pt;background:transparent;padding:0}thead a{color:white}img,svg{max-width:100%}
+.chapter{break-before:page;page-break-before:always;position:relative}.chapter .kicker{font-size:8pt;text-transform:uppercase;letter-spacing:1.2pt;color:#148f82;border-top:1mm solid #148f82;padding-top:4mm;margin-bottom:6mm}.chapter>h1{max-width:98%}.chapter>p:first-of-type{font-size:10.4pt}.source-ref{color:#4c646e}.figure{break-inside:avoid;margin:5mm 0 6mm}.figure svg{width:100%;height:auto;display:block}.figure figcaption{font-size:8pt;line-height:1.43;color:#537078;margin:2.4mm 2mm 0}.figure figcaption em{font-style:normal}
+.cover{height:297mm;position:relative;background:#173548;color:#eef9f3;padding:22mm 20mm;break-after:page;page-break-after:always;overflow:hidden}.cover .series{font-size:10pt;letter-spacing:2.8pt;text-transform:uppercase;color:#72d9c1;margin:0 0 20mm}.cover h1{font-size:42pt;line-height:1.06;letter-spacing:-1.5pt;color:white;margin:0 0 10mm;max-width:165mm}.cover .subtitle{font-size:17pt;line-height:1.4;color:#b6e7da;max-width:150mm}.cover-art{margin:12mm -1mm 10mm;width:170mm;height:79mm}.cover .strap{font-size:10pt;font-weight:600;color:#e9c887}.cover .description{font-size:10.4pt;line-height:1.65;max-width:157mm}.cover .edition{position:absolute;bottom:18mm;left:20mm;font-size:8pt;color:#9cbabf;letter-spacing:1pt}
+.contents{break-before:page;break-after:page}.contents h1{margin-top:4mm}.contents .intro{color:#55717a;font-size:10pt}.contents ul{list-style:none;margin:6mm 0;padding:0}.contents li{margin:0;border-bottom:1px solid #e1e9e7;padding:2.1mm 0;break-inside:avoid}.contents a{display:flex;gap:4mm;align-items:baseline;color:#173548;font-size:9.2pt}.contents .toc-num{color:#148f82;font:8pt "DejaVu Sans Mono";width:8mm;flex:none}.contents .group{font-size:9pt;color:#148f82;letter-spacing:.6pt;font-weight:700;margin:8mm 0 1mm;break-after:avoid}.screen-toolbar{display:none}.broken-reference{color:#ae4c39}.file-note{font-size:8pt;color:#61777f}
+@media screen {body{background:#e8efec}.cover{margin:24px auto;max-width:210mm;box-shadow:0 10px 40px #17354822}.contents,.chapter{background:white;width:min(100% - 32px,210mm);margin:24px auto;padding:18mm 17mm;box-shadow:0 10px 40px #17354810}.contents{min-height:240mm}.screen-toolbar{display:flex;position:sticky;top:0;z-index:10;padding:12px 24px;background:#173548;gap:24px;justify-content:center;flex-wrap:wrap}.screen-toolbar a{font:13px "DejaVu Sans";color:#daf4e9}.chapter{scroll-margin-top:70px}a:hover{text-decoration:underline}}
+@media(max-width:650px){.cover{height:auto;min-height:100vh;padding:26px}.cover h1{font-size:34px}.cover .series{margin-bottom:35px}.cover .edition{position:static;margin-top:25px}.cover-art{width:100%;height:auto}.contents,.chapter{padding:24px}pre{font-size:10px}table{font-size:10px}.screen-toolbar{gap:12px}}
+@media print{body{line-height:1.44}p{margin-bottom:2.8mm}h2{margin-top:6mm}.chapter>p:first-of-type{font-size:10pt}.figure svg{max-height:74mm}.chapter-nav,.chapter>hr:last-of-type{display:none}.figure{margin:4mm 0 5mm}.contents li{padding:1.2mm 0}.contents a{font-size:9pt;line-height:1.35}}
+@media print{.compact p{margin-bottom:2mm}.compact h2{margin-top:5mm}.compact .kicker{margin-bottom:4mm}.compact .figure{margin:3mm 0 4mm}.compact .figure svg{max-height:70mm}.compact td{padding-top:2mm;padding-bottom:2mm}}
+@media print{#doc-ch07-md>h1,#doc-ch17-md>h1{margin-bottom:4mm}#doc-ch07-md .figure svg,#doc-ch17-md .figure svg{max-height:64mm}}
+</style></head><body>
+<nav class="screen-toolbar"><a href="#contents">Índice navegable</a><a href="../pdf/camara_y_mapas.pdf">PDF</a><a href="../camara.html">Laboratorio de cámara</a><a href="../README.md">Markdown</a></nav>
+<header class="cover"><p class="series">CutreGame MS-DOS / docgpt</p><h1>Cámara y mapas, por dentro</h1><p class="subtitle">Del mundo completo al píxel que aparece en pantalla</p><svg class="cover-art" viewBox="0 0 1000 460" xmlns="http://www.w3.org/2000/svg" aria-label="World map and a camera window">
+<defs><pattern id="cover-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#416274" stroke-width="1"/></pattern></defs>
+<rect x="10" y="10" width="650" height="420" rx="10" fill="#234758"/>
+<rect x="10" y="10" width="650" height="420" fill="url(#cover-grid)"/>
+<path d="M50 65H225V185H120V345H305V235H460V115H610" fill="none" stroke="#5b7882" stroke-width="22"/>
+<rect x="180" y="145" width="320" height="200" rx="3" fill="#66cdb1" fill-opacity=".16" stroke="#83e4c8" stroke-width="4"/>
+<path d="M500 145L735 100M500 345L735 285" stroke="#82ccb9" stroke-width="2" stroke-dasharray="8 7"/>
+<rect x="735" y="100" width="250" height="185" rx="6" fill="#58b69e"/>
+<rect x="758" y="130" width="205" height="135" fill="#1b574e"/>
+<g fill="#edc773"><rect x="304" y="229" width="8" height="36"/><rect x="332" y="229" width="8" height="36"/><rect x="312" y="237" width="20" height="24"/><rect x="320" y="225" width="4" height="23"/><rect x="835" y="180" width="8" height="36"/><rect x="863" y="180" width="8" height="36"/><rect x="843" y="188" width="20" height="24"/><rect x="851" y="176" width="4" height="23"/></g>
+<text x="745" y="345" fill="#bde9db" font-family="DejaVu Sans" font-size="31">320 × 200</text><text x="745" y="390" fill="#83b8b3" font-family="DejaVu Sans Mono" font-size="21">world − camera</text>
+</svg><p class="strap">8 lecciones · guía desde cero · laboratorio resuelto</p><p class="description">Coordenadas, stride, memoria huge, clipping, zona muerta, máscara, niveles y radar. Un recorrido completo por las lecciones 21–28.</p><p class="edition">EDICIÓN DE ESTUDIO · SEPTIEMBRE 2026</p></header>
+<nav class="contents" id="contents"><h1>Índice navegable</h1><p class="intro">Pulsa una lección para ir directamente a ella. Puedes buscar texto, ampliar los esquemas y volver a las explicaciones desde sus enlaces.</p><div class="group">Lecciones</div><ul><li><a href="#doc-ch21-md"><span class="toc-num">21</span><span>21. Un mundo que no cabe en la pantalla</span></a></li><li><a href="#doc-ch22-md"><span class="toc-num">22</span><span>22. Copiar una ventana: el secreto es el salto de fila</span></a></li><li><a href="#doc-ch23-md"><span class="toc-num">23</span><span>23. Guardar un mapa mayor de 64 KB</span></a></li><li><a href="#doc-ch24-md"><span class="toc-num">24</span><span>24. Dibujar medio tanque sin escribir fuera de la pantalla</span></a></li><li><a href="#doc-ch25-paso-a-paso-md"><span class="toc-num">25A</span><span>25A. Entender la cámara con una tira de papel</span></a></li><li><a href="#doc-ch25-md"><span class="toc-num">25</span><span>25. Construir y ajustar la cámara</span></a></li><li><a href="#doc-ch26-md"><span class="toc-num">26</span><span>26. Un bit para cada pared</span></a></li><li><a href="#doc-ch27-md"><span class="toc-num">27</span><span>27. Diseñar mapas que se puedan jugar</span></a></li><li><a href="#doc-ch28-md"><span class="toc-num">28</span><span>28. Un radar que orienta sin enseñar el mapa entero</span></a></li></ul><div class="group">Orientación y apéndices</div><ul><li><a href="#doc-labs-md"><span class="toc-num">A1</span><span>Laboratorio de cámara y mapas, con respuestas</span></a></li></ul></nav><article class="chapter" id="doc-ch21-md" data-source="ch21.md"><div class="kicker">CURSO / LECCIONES</div><h1 id="doc-ch21-md-21-un-mundo-que-no-cabe-en-la-pantalla">21. Un mundo que no cabe en la pantalla</h1>
+<p><strong>Vas a construir:</strong> una separación clara entre dónde están las cosas y desde dónde las miras. <strong>Laboratorio:</strong> <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/tutorial/ch20/chap20.c">chap20.c</a>, que usa un mapa grande y una ventana fija; su tanque empieza en <code>(128,90)</code>.</p>
+<figure class="figure"><svg xmlns="http://www.w3.org/2000/svg" width="1040" height="520" viewBox="0 0 1040 520" role="img" aria-labelledby="fig-mundo-title fig-mundo-desc">
+<title id="fig-mundo-title">La cámara es la esquina de una ventana</title><desc id="fig-mundo-desc">Los objetos conservan sus coordenadas de mundo. La resta de cámara solo calcula dónde dibujarlos.</desc>
+<defs><marker id="fig-mundo-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#148f82"/></marker></defs>
+<rect width="1040" height="520" rx="16" fill="#f7faf9"/>
+<g font-family="DejaVu Sans, sans-serif"><text x="28" y="43" font-size="26" fill="#173548" text-anchor="start" font-weight="bold">La cámara es la esquina de una ventana</text><rect x="30" y="80" width="640" height="400" rx="9" fill="#dceae5" stroke="#173548" stroke-width="2" /><text x="45" y="110" font-size="21" fill="#173548" text-anchor="start" font-weight="bold">MUNDO · 640 × 400</text><line x1="30" y1="80" x2="30" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="70" y1="80" x2="70" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="110" y1="80" x2="110" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="150" y1="80" x2="150" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="190" y1="80" x2="190" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="230" y1="80" x2="230" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="270" y1="80" x2="270" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="310" y1="80" x2="310" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="350" y1="80" x2="350" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="390" y1="80" x2="390" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="430" y1="80" x2="430" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="470" y1="80" x2="470" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="510" y1="80" x2="510" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="550" y1="80" x2="550" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="590" y1="80" x2="590" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="630" y1="80" x2="630" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="670" y1="80" x2="670" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="30" y1="80" x2="670" y2="80" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="30" y1="120" x2="670" y2="120" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="30" y1="160" x2="670" y2="160" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="30" y1="200" x2="670" y2="200" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="30" y1="240" x2="670" y2="240" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="30" y1="280" x2="670" y2="280" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="30" y1="320" x2="670" y2="320" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="30" y1="360" x2="670" y2="360" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="30" y1="400" x2="670" y2="400" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="30" y1="440" x2="670" y2="440" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><line x1="30" y1="480" x2="670" y2="480" stroke="#c5d6dc" stroke-width="1" stroke-dasharray=""/><rect x="150" y="160" width="320" height="200" rx="0" fill="#c9eae3" stroke="#148f82" stroke-width="2" /><rect x="200" y="190" width="5.6" height="25.2" rx="1.4" fill="#173548" stroke="none" stroke-width="2" /><rect x="219.6" y="190" width="5.6" height="25.2" rx="1.4" fill="#173548" stroke="none" stroke-width="2" /><rect x="205.6" y="194.2" width="14.0" height="18.2" rx="1.4" fill="#148f82" stroke="none" stroke-width="2" /><rect x="211.2" y="190" width="2.8" height="14.0" rx="0" fill="#148f82" stroke="none" stroke-width="2" /><text x="158" y="190" font-size="18" fill="#243746" text-anchor="start" font-weight="normal">cámara (120,80)</text><text x="225" y="230" font-size="18" fill="#243746" text-anchor="start" font-weight="normal">tanque (170,110)</text><rect x="730" y="140" width="280" height="175" rx="0" fill="#c9eae3" stroke="#148f82" stroke-width="2" /><rect x="773.75" y="166.25" width="5.6" height="25.2" rx="1.4" fill="#173548" stroke="none" stroke-width="2" /><rect x="793.35" y="166.25" width="5.6" height="25.2" rx="1.4" fill="#173548" stroke="none" stroke-width="2" /><rect x="779.35" y="170.45" width="14.0" height="18.2" rx="1.4" fill="#148f82" stroke="none" stroke-width="2" /><rect x="784.95" y="166.25" width="2.8" height="14.0" rx="0" fill="#148f82" stroke="none" stroke-width="2" /><text x="740" y="340" font-size="23" fill="#148f82" text-anchor="start" font-weight="bold">Pantalla: (50,30)</text><line x1="485" y1="250" x2="715" y2="230" stroke="#148f82" stroke-width="3" marker-end="url(#fig-mundo-arrow)"/><text x="725" y="405" font-size="21" fill="#243746" text-anchor="start" font-weight="normal">170 − 120 = 50</text><text x="725" y="445" font-size="21" fill="#243746" text-anchor="start" font-weight="normal">110 − 80 = 30</text></g></svg><figcaption>Los objetos conservan sus coordenadas de mundo. La resta de cámara solo calcula dónde dibujarlos.</figcaption></figure>
+<h2 id="doc-ch21-md-la-camara-es-una-esquina">La cámara es una esquina</h2>
+<p>Imagina un dibujo de 640 × 400 sobre una mesa. Colocas encima un cartón con un agujero de 320 × 200. Mover el cartón cambia lo que ves, pero no mueve los objetos del dibujo.</p>
+<p>En este motor, la cámara guarda la coordenada <strong>del píxel del mundo que aparece en la esquina superior izquierda de la pantalla</strong>. No guarda el centro, ni la posición del tanque.</p>
+<pre><code class="language-text">Mundo: 640 columnas, 400 filas
+(0,0) +---------------------------------------+
+      |                                       |
+      |         cámara (120,80)                |
+      |         +-------------------+         |
+      |         | tanque (170,110)  |         |
+      |         |                   |         |
+      |         +-------------------+         |
+      |             ventana 320x200           |
+      +---------------------------------------+ (639,399)
+</code></pre>
+<p>Las coordenadas empiezan en cero. X crece hacia la derecha, Y hacia abajo. El mundo contiene X de 0 a 639; decir «anchura 640» no convierte 640 en una columna válida.</p>
+<h2 id="doc-ch21-md-dos-operaciones-inversas">Dos operaciones inversas</h2>
+<pre><code class="language-text">screen_x = world_x - camera_x
+screen_y = world_y - camera_y
+
+world_x = screen_x + camera_x
+world_y = screen_y + camera_y
+</code></pre>
+<p>Con cámara <code>(120,80)</code> y tanque <code>(170,110)</code>, dibujas el tanque en <code>(50,30)</code>. Si avanzas la cámara a <code>(122,80)</code> y dejas quieto el tanque, aparece en <code>(48,30)</code>: el paisaje se desplaza hacia la izquierda.</p>
+<table>
+<thead>
+<tr>
+<th>Objeto del mundo</th>
+<th>Posición con cámara <code>(120,80)</code></th>
+<th>Consecuencia</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tanque <code>(170,110)</code></td>
+<td><code>(50,30)</code></td>
+<td>Se ve entero si mide 18 × 18</td>
+</tr>
+<tr>
+<td>Bala <code>(118,100)</code></td>
+<td><code>(-2,20)</code></td>
+<td>Puede verse una parte; necesita recorte</td>
+</tr>
+<tr>
+<td>Enemigo <code>(500,300)</code></td>
+<td><code>(380,220)</code></td>
+<td>No se dibuja, pero sigue simulándose</td>
+</tr>
+<tr>
+<td>Píxel <code>(439,279)</code></td>
+<td><code>(319,199)</code></td>
+<td>Último píxel de la ventana</td>
+</tr>
+<tr>
+<td>Píxel <code>(440,279)</code></td>
+<td><code>(320,199)</code></td>
+<td>Ya está fuera</td>
+</tr>
+</tbody>
+</table>
+<p>Los resultados negativos son información útil. No los conviertas a <code>unsigned int</code>: <code>-2</code> pasaría a 65534 en este entorno.</p>
+<h2 id="doc-ch21-md-que-datos-pertenecen-a-cada-espacio">Qué datos pertenecen a cada espacio</h2>
+<p>Posiciones de tanques, balas, explosiones y consultas de paredes usan <strong>mundo</strong>. La cámara se resta únicamente al dibujar esos objetos. Un radar o marcador fijo usa <strong>pantalla</strong> y conserva sus coordenadas cuando miras otra zona.</p>
+<p>No mantengas dos posiciones independientes para cada tanque. Conserva la de mundo como verdad y calcula la de pantalla cuando la necesites. Dos copias editables terminarían contradiciéndose.</p>
+<pre><code class="language-text">entrada → movimiento en mundo → colisiones en mundo
+                             ↓
+                    actualizar cámara
+                             ↓
+              fondo visible + objetos transformados
+                             ↓
+                    HUD en pantalla
+</code></pre>
+<p>Una bala fuera de la ventana puede impactar en un enemigo. Si dejas de actualizar lo que no ves, cada ordenador resolvería una partida distinta al usar cámaras diferentes.</p>
+<h2 id="doc-ch21-md-del-mapa-pequeno-al-grande">Del mapa pequeño al grande</h2>
+<p>Para un mundo 320 × 200, la cámara solo puede ser <code>(0,0)</code>. Las fórmulas siguen funcionando: pantalla y mundo coinciden. Ese es un caso útil de la solución general.</p>
+<p>Para 640 × 400, el límite de la esquina es <code>(320,200)</code>: al llegar ahí, la ventana acaba exactamente en <code>(639,399)</code>. No puedes colocar la cámara en <code>(639,399)</code>, porque todavía necesitas espacio para las otras 319 columnas y 199 filas.</p>
+<h2 id="doc-ch21-md-practica-y-solucion">Práctica y solución</h2>
+<p>En una hoja, coloca cámara <code>(300,190)</code>, P1 <code>(310,210)</code> y P2 <code>(290,180)</code>, ambos de 18 × 18. Dibuja sus rectángulos con los límites finales excluidos.</p>
+<p><strong>Solución:</strong> P1 empieza en <code>(10,20)</code> y ocupa <code>[10,28) × [20,38)</code>. P2 empieza en <code>(-10,-10)</code> y solo quedan visibles sus últimas 8 columnas y 8 filas: <code>[0,8) × [0,8)</code>. La posición de P2 continúa siendo <code>(290,180)</code>.</p>
+<p><strong>Comprueba que lo entendiste:</strong> mueve la cámara 4 píxeles a la derecha sin tocar los tanques. Ambos dibujos deben moverse 4 a la izquierda y todas las consultas de colisión deben devolver lo mismo.</p>
+<p class="chapter-nav"><a href="../pdf/curso_completo.pdf#nameddest=doc-ch20-md">Anterior</a> · <a href="../pdf/curso_completo.pdf#nameddest=doc-readme-md">Índice</a> · <a href="#doc-ch22-md">Siguiente: la ventana en memoria</a></p></article>
+<article class="chapter" id="doc-ch22-md" data-source="ch22.md"><div class="kicker">CURSO / LECCIONES</div><h1 id="doc-ch22-md-22-copiar-una-ventana-el-secreto-es-el-salto-de-fila">22. Copiar una ventana: el secreto es el salto de fila</h1>
+<p><strong>Vas a construir:</strong> <code>bmp_<wbr>draw_<wbr>world_<wbr>window</code>, entendiendo cada dirección que utiliza. <strong>Laboratorio:</strong> <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/tutorial/ch21/chap21.c">chap21.c</a>. Las flechas desplazan la cámara; Shift acelera el paso de 4 a 32. El tanque del ejercicio está fijo en <code>(228,140)</code>.</p>
+<figure class="figure"><svg xmlns="http://www.w3.org/2000/svg" width="1040" height="500" viewBox="0 0 1040 500" role="img" aria-labelledby="fig-stride-title fig-stride-desc">
+<title id="fig-stride-title">Una ventana no es una copia continua</title><desc id="fig-stride-desc">La siguiente fila visible empieza después del stride del mapa, no después de la anchura copiada.</desc>
+<defs><marker id="fig-stride-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#148f82"/></marker></defs>
+<rect width="1040" height="500" rx="16" fill="#f7faf9"/>
+<g font-family="DejaVu Sans, sans-serif"><text x="28" y="43" font-size="26" fill="#173548" text-anchor="start" font-weight="bold">Una ventana no es una copia continua</text><rect x="30" y="100" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="58" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">A</text><rect x="91" y="100" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="119" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">B</text><rect x="152" y="100" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="180" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">C</text><rect x="213" y="100" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="241" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">D</text><rect x="274" y="100" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="302" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">E</text><rect x="335" y="100" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="363" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">F</text><rect x="396" y="100" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="424" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">G</text><rect x="457" y="100" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="485" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">H</text><rect x="30" y="166" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="58" y="201" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">I</text><rect x="91" y="166" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="119" y="201" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">J</text><rect x="152" y="166" width="56" height="55" rx="3" fill="#148f82" stroke="none" stroke-width="2" /><text x="180" y="201" font-size="23" fill="#ffffff" text-anchor="middle" font-weight="normal">K</text><rect x="213" y="166" width="56" height="55" rx="3" fill="#148f82" stroke="none" stroke-width="2" /><text x="241" y="201" font-size="23" fill="#ffffff" text-anchor="middle" font-weight="normal">L</text><rect x="274" y="166" width="56" height="55" rx="3" fill="#148f82" stroke="none" stroke-width="2" /><text x="302" y="201" font-size="23" fill="#ffffff" text-anchor="middle" font-weight="normal">M</text><rect x="335" y="166" width="56" height="55" rx="3" fill="#148f82" stroke="none" stroke-width="2" /><text x="363" y="201" font-size="23" fill="#ffffff" text-anchor="middle" font-weight="normal">N</text><rect x="396" y="166" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="424" y="201" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">O</text><rect x="457" y="166" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="485" y="201" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">P</text><rect x="30" y="232" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="58" y="267" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">Q</text><rect x="91" y="232" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="119" y="267" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">R</text><rect x="152" y="232" width="56" height="55" rx="3" fill="#148f82" stroke="none" stroke-width="2" /><text x="180" y="267" font-size="23" fill="#ffffff" text-anchor="middle" font-weight="normal">S</text><rect x="213" y="232" width="56" height="55" rx="3" fill="#148f82" stroke="none" stroke-width="2" /><text x="241" y="267" font-size="23" fill="#ffffff" text-anchor="middle" font-weight="normal">T</text><rect x="274" y="232" width="56" height="55" rx="3" fill="#148f82" stroke="none" stroke-width="2" /><text x="302" y="267" font-size="23" fill="#ffffff" text-anchor="middle" font-weight="normal">U</text><rect x="335" y="232" width="56" height="55" rx="3" fill="#148f82" stroke="none" stroke-width="2" /><text x="363" y="267" font-size="23" fill="#ffffff" text-anchor="middle" font-weight="normal">V</text><rect x="396" y="232" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="424" y="267" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">W</text><rect x="457" y="232" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="485" y="267" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">X</text><rect x="30" y="298" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="58" y="333" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">Y</text><rect x="91" y="298" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="119" y="333" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">Z</text><rect x="152" y="298" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="180" y="333" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">a</text><rect x="213" y="298" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="241" y="333" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">b</text><rect x="274" y="298" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="302" y="333" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">c</text><rect x="335" y="298" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="363" y="333" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">d</text><rect x="396" y="298" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="424" y="333" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">e</text><rect x="457" y="298" width="56" height="55" rx="3" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="485" y="333" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">f</text><rect x="690" y="145" width="66" height="70" rx="4" fill="#148f82" stroke="none" stroke-width="2" /><text x="723" y="190" font-size="27" fill="#ffffff" text-anchor="middle" font-weight="normal">K</text><rect x="766" y="145" width="66" height="70" rx="4" fill="#148f82" stroke="none" stroke-width="2" /><text x="799" y="190" font-size="27" fill="#ffffff" text-anchor="middle" font-weight="normal">L</text><rect x="842" y="145" width="66" height="70" rx="4" fill="#148f82" stroke="none" stroke-width="2" /><text x="875" y="190" font-size="27" fill="#ffffff" text-anchor="middle" font-weight="normal">M</text><rect x="918" y="145" width="66" height="70" rx="4" fill="#148f82" stroke="none" stroke-width="2" /><text x="951" y="190" font-size="27" fill="#ffffff" text-anchor="middle" font-weight="normal">N</text><rect x="690" y="235" width="66" height="70" rx="4" fill="#148f82" stroke="none" stroke-width="2" /><text x="723" y="280" font-size="27" fill="#ffffff" text-anchor="middle" font-weight="normal">S</text><rect x="766" y="235" width="66" height="70" rx="4" fill="#148f82" stroke="none" stroke-width="2" /><text x="799" y="280" font-size="27" fill="#ffffff" text-anchor="middle" font-weight="normal">T</text><rect x="842" y="235" width="66" height="70" rx="4" fill="#148f82" stroke="none" stroke-width="2" /><text x="875" y="280" font-size="27" fill="#ffffff" text-anchor="middle" font-weight="normal">U</text><rect x="918" y="235" width="66" height="70" rx="4" fill="#148f82" stroke="none" stroke-width="2" /><text x="951" y="280" font-size="27" fill="#ffffff" text-anchor="middle" font-weight="normal">V</text><line x1="535" y1="230" x2="670" y2="230" stroke="#148f82" stroke-width="3" marker-end="url(#fig-stride-arrow)"/><text x="40" y="415" font-size="23" fill="#243746" text-anchor="start" font-weight="normal">Origen: fila 1 → byte 10; fila 2 → byte 18.</text><text x="40" y="455" font-size="24" fill="#148f82" text-anchor="start" font-weight="bold">Avance de origen: 8. Avance de destino: 4.</text></g></svg><figcaption>La siguiente fila visible empieza después del stride del mapa, no después de la anchura copiada.</figcaption></figure>
+<h2 id="doc-ch22-md-stride-significa-cuanto-avanzas-para-bajar-una-fila">Stride significa cuánto avanzas para bajar una fila</h2>
+<p>Una imagen es un array lineal. En un mapa de anchura 640:</p>
+<pre><code class="language-text">offset(x,y) = y * 640 + x
+</code></pre>
+<p>En el buffer de pantalla:</p>
+<pre><code class="language-text">offset(x,y) = y * 320 + x
+</code></pre>
+<p>Los dos contienen píxeles de un byte, pero bajar una fila cuesta un número de bytes distinto. Ese salto se llama <strong>stride</strong>. Aquí coincide con la anchura porque los arrays internos no tienen relleno entre filas.</p>
+<h2 id="doc-ch22-md-primero-con-un-mundo-diminuto">Primero con un mundo diminuto</h2>
+<p>Supón un mapa de 8 × 4 y una ventana de 4 × 2 situada en <code>(2,1)</code>:</p>
+<pre><code class="language-text">Mapa almacenado:                 Ventana deseada:
+A B C D E F G H                  K L M N
+I J K L M N O P                  S T U V
+Q R S T U V W X
+Y Z a b c d e f
+
+fila 0: origen 1*8+2 = 10 → destino 0
+fila 1: origen 2*8+2 = 18 → destino 4
+</code></pre>
+<p>Una copia continua de 8 bytes desde K daría <code>K L M N O P Q R</code>. Tras N necesitas saltarte O, P, Q y R para alcanzar S. La solución es copiar por filas.</p>
+<h2 id="doc-ch22-md-deducir-el-bucle-real">Deducir el bucle real</h2>
+<p>Fragmento equivalente a la operación central de <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/src/bmp.c">bmp.c</a>; utiliza sus variables globales y no es un programa independiente:</p>
+<pre><code class="language-c">int row;
+unsigned int destination_offset;
+unsigned char huge *source;
+
+destination_offset = 0;
+for (row = 0; row &lt; HEIGHT; row++) {
+    source = buffer_original_background_bmp
+           + (unsigned long)(camera_y + row) * (unsigned long)map_width
+           + (unsigned long)camera_x;
+    memcpy(destination + destination_offset, source, WIDTH);
+    destination_offset = destination_offset + WIDTH;
+}
+</code></pre>
+<p>La fila de mundo es <code>camera_<wbr>y + row</code>. La columna inicial es <code>camera_<wbr>x</code>. El destino empieza cada vez 320 bytes después; el origen, 640 en el mapa grande.</p>
+<p>Se copian siempre <code>200 * 320 = 64000</code> bytes de píxeles. Tener cuatro veces más mundo aumenta el almacenamiento, pero no cuadruplica los píxeles presentados. Sí añade 200 llamadas y sus cálculos; no equivale a afirmar que tarda lo mismo que un único <code>memcpy</code>.</p>
+<h2 id="doc-ch22-md-un-recorrido-que-puedes-auditar">Un recorrido que puedes auditar</h2>
+<p>Para cámara <code>(120,80)</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Fila de pantalla</th>
+<th>Fila del mundo</th>
+<th>Primer byte origen</th>
+<th>Último byte origen</th>
+<th>Primer byte destino</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>80</td>
+<td>51320</td>
+<td>51639</td>
+<td>0</td>
+</tr>
+<tr>
+<td>1</td>
+<td>81</td>
+<td>51960</td>
+<td>52279</td>
+<td>320</td>
+</tr>
+<tr>
+<td>199</td>
+<td>279</td>
+<td>178680</td>
+<td>178999</td>
+<td>63680</td>
+</tr>
+</tbody>
+</table>
+<p>La última escritura es <code>63680 + 319 = 63999</code>. La última fila no empieza en 64000: ese es el tamaño total y la primera dirección fuera del buffer.</p>
+<p>En la esquina inferior derecha, cámara <code>(320,200)</code>, el último origen es:</p>
+<pre><code class="language-text">(200+199)*640 + 320 + 319 = 255999
+</code></pre>
+<p>Es exactamente <code>640*400-1</code>. Este cálculo demuestra el límite para esas dimensiones sin depender de que una captura «parezca correcta».</p>
+<h2 id="doc-ch22-md-el-contrato-que-el-bucle-necesita">El contrato que el bucle necesita</h2>
+<ul>
+<li>Mapa cargado y destino con al menos 64000 bytes.</li>
+<li>Anchura del mapa de al menos 320 y altura de al menos 200.</li>
+<li><code>0 &lt;= camera_<wbr>x &lt;= map_<wbr>width-320</code> y lo mismo para Y con 200.</li>
+<li>Cálculo del offset en 32 bits antes de multiplicar.</li>
+</ul>
+<p>La función real comprueba que exista el mapa, pero no valida todo este contrato en cada llamada. El resto de la inicialización debe cumplirlo.</p>
+<p>Un mapa de 200 × 100 no queda soportado por poner la cámara a cero. Habría que copiar solo la intersección y rellenar el resto de la pantalla. Distingue un mapa exactamente del tamaño de pantalla de otro menor.</p>
+<h2 id="doc-ch22-md-practica">Práctica</h2>
+<p>Haz en tu copia un patrón donde cada fila tenga un color distinto y cada 16 columnas haya una línea. Desplaza X y después Y. Si al mover X aparecen diagonales, inspecciona stride y offset BMP; si falla al bajar a determinadas filas, inspecciona el tamaño del cálculo y el tipo de puntero.</p>
+<p><strong>Ejercicio:</strong> cámara <code>(320,200)</code>, píxel de pantalla <code>(17,9)</code>. Calcula el offset de origen y el de destino.</p>
+<p><strong>Solución:</strong> mundo <code>(337,209)</code>, origen <code>209*640+337 = 134097</code>; destino <code>9*320+17 = 2897</code>.</p>
+<p class="chapter-nav"><a href="#doc-ch21-md">Anterior</a> · <a href="../pdf/curso_completo.pdf#nameddest=doc-readme-md">Índice</a> · <a href="#doc-ch23-md">Siguiente: memoria segmentada</a></p></article>
+<article class="chapter" id="doc-ch23-md" data-source="ch23.md"><div class="kicker">CURSO / LECCIONES</div><h1 id="doc-ch23-md-23-guardar-un-mapa-mayor-de-64-kb">23. Guardar un mapa mayor de 64 KB</h1>
+<p><strong>Vas a comprender:</strong> por qué una fórmula correcta puede fallar por el tipo numérico o por el puntero. <strong>Fuentes:</strong> <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/src/bmp.c">bmp_init_buffers y cargadores</a>, <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/header/bmp.h">tipos públicos</a> y <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/tutorial/ch23/chap23.c">chap23.c</a>.</p>
+<figure class="figure"><svg xmlns="http://www.w3.org/2000/svg" width="1040" height="500" viewBox="0 0 1040 500" role="img" aria-labelledby="fig-huge-title fig-huge-desc">
+<title id="fig-huge-title">Memoria segmentada: dirección y tamaño son problemas distintos</title><desc id="fig-huge-desc">Ampliar un resultado después de una multiplicación de 16 bits desbordada no la repara.</desc>
+<defs><marker id="fig-huge-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#148f82"/></marker></defs>
+<rect width="1040" height="500" rx="16" fill="#f7faf9"/>
+<g font-family="DejaVu Sans, sans-serif"><text x="28" y="43" font-size="26" fill="#173548" text-anchor="start" font-weight="bold">Memoria segmentada: dirección y tamaño son problemas distintos</text><text x="45" y="110" font-size="24" fill="#243746" text-anchor="start" font-weight="normal">Una misma dirección física admite varias parejas:</text><rect x="55" y="145" width="340" height="110" rx="9" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="225.0" y="181" font-size="23" fill="#243746" text-anchor="middle" font-weight="bold">1000:0020</text><text x="225.0" y="213" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">0x1000 × 16 + 0x20</text><rect x="645" y="145" width="340" height="110" rx="9" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="815.0" y="181" font-size="23" fill="#243746" text-anchor="middle" font-weight="bold">1002:0000</text><text x="815.0" y="213" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">0x1002 × 16 + 0x00</text><text x="520" y="212" font-size="42" fill="#148f82" text-anchor="middle" font-weight="normal">=</text><text x="520" y="325" font-size="36" fill="#148f82" text-anchor="middle" font-weight="bold">0x10020</text><text x="55" y="405" font-size="23" fill="#243746" text-anchor="start" font-weight="normal">El puntero huge normaliza. El offset de mapa se calcula en 32 bits.</text><text x="55" y="455" font-size="22" fill="#243746" text-anchor="start" font-weight="normal">Reserva grande + producto amplio + puntero adecuado: necesitas los tres.</text></g></svg><figcaption>Ampliar un resultado después de una multiplicación de 16 bits desbordada no la repara.</figcaption></figure>
+<h2 id="doc-ch23-md-tres-problemas-distintos">Tres problemas distintos</h2>
+<ol>
+<li><strong>Cuánto reservar:</strong> el mapa necesita 256000 bytes.</li>
+<li><strong>Cómo calcular una posición:</strong> <code>399*640+639</code> necesita representar 255999.</li>
+<li><strong>Cómo llegar a esa posición:</strong> el puntero debe atravesar segmentos correctamente.</li>
+</ol>
+<p>Resolver solo uno deja los otros dos pendientes. Una variable <code>long</code> no convierte un puntero <code>far</code> en <code>huge</code>; un puntero <code>huge</code> no arregla una multiplicación que ya se desbordó.</p>
+<h2 id="doc-ch23-md-el-tipo-del-resultado-no-salva-la-operacion-anterior">El tipo del resultado no salva la operación anterior</h2>
+<p>En Turbo C, <code>int</code> tiene 16 bits y <code>long</code> tiene 32. Este fragmento explica el fallo; no lo copies como solución:</p>
+<pre><code class="language-c">int width;
+int height;
+unsigned long bytes;
+
+width = 640;
+height = 400;
+bytes = width * height;
+</code></pre>
+<p>La multiplicación se evalúa con operandos <code>int</code>. Su resultado matemático excede 32767; el desbordamiento con signo no tiene un resultado válido garantizado por C. Asignarlo después a <code>unsigned long</code> llega tarde.</p>
+<p>La operación que necesitas es:</p>
+<pre><code class="language-c">bytes = (unsigned long)width * (unsigned long)height;
+</code></pre>
+<p>El mismo principio se aplica al offset de cada fila. Convertir el resultado de <code>y*width</code> es demasiado tarde; convierte antes uno o ambos operandos.</p>
+<h2 id="doc-ch23-md-segmento-y-desplazamiento">Segmento y desplazamiento</h2>
+<p>En modo real, una dirección física se obtiene como:</p>
+<pre><code class="language-text">dirección física = segmento * 16 + desplazamiento
+</code></pre>
+<p><code>1000:0020</code> y <code>1002:0000</code> señalan el mismo byte físico, <code>0x10020</code>. El segmento es una base en unidades de 16 bytes y el desplazamiento tiene 16 bits.</p>
+<table>
+<thead>
+<tr>
+<th>Tipo de puntero</th>
+<th>Idea relevante para este proyecto</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>near</code></td>
+<td>Desplazamiento dentro de un segmento implícito</td>
+</tr>
+<tr>
+<td><code>far</code></td>
+<td>Segmento y desplazamiento; su aritmética no ofrece recorrido general de arrays mayores de 64 KB</td>
+</tr>
+<tr>
+<td><code>huge</code></td>
+<td>Aritmética normalizada para recorrer objetos grandes atravesando segmentos</td>
+</tr>
+</tbody>
+</table>
+<p>El modelo <code>-mh</code> y las extensiones de Borland forman parte del entorno: este código no es C portable a cualquier compilador sin adaptaciones.</p>
+<p>En una dirección huge normalizada, el desplazamiento queda pequeño. La rutina de ventana reconstruye el origen desde la base en cada fila y copia 320 bytes. Así evita empezar una copia cerca del final del segmento. <strong>También la aritmética de un auténtico puntero <code>huge</code> normaliza al incrementarlo</strong>; no es cierto que todo <code>source += map_<wbr>width</code> vaya a fallar inevitablemente. El tipo y las conversiones importan.</p>
+<h2 id="doc-ch23-md-reservar-y-liberar-con-la-pareja-correcta">Reservar y liberar con la pareja correcta</h2>
+<p>Fragmento didáctico de reserva, usando <code>&lt;alloc.h&gt;</code>:</p>
+<pre><code class="language-c">unsigned char huge *world;
+unsigned long bytes;
+
+bytes = 640UL * 400UL;
+world = (unsigned char huge *)farmalloc(bytes);
+if (world == NULL) {
+    /* Report the error and leave before drawing. */
+    return;
+}
+/* Use the world here. */
+farfree(world);
+world = NULL;
+</code></pre>
+<p><code>malloc</code> recibe un <code>size_<wbr>t</code> de 16 bits en este entorno: no puedes pedirle 256000 bytes en una llamada. <code>farmalloc</code> permite expresar esa petición. Ambos compiten por memoria disponible; no son dos reservas infinitas e independientes.</p>
+<h2 id="doc-ch23-md-presupuesto-suma-y-tambien-contiguidad">Presupuesto: suma y también contigüidad</h2>
+<table>
+<thead>
+<tr>
+<th>Recurso</th>
+<th style="text-align: right;">Mapa 320 × 200</th>
+<th style="text-align: right;">Mapa 640 × 400</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Imagen del mundo</td>
+<td style="text-align: right;">64000</td>
+<td style="text-align: right;">256000</td>
+</tr>
+<tr>
+<td>Máscara de un bit</td>
+<td style="text-align: right;">8000</td>
+<td style="text-align: right;">32000</td>
+</tr>
+<tr>
+<td>Buffer de pantalla</td>
+<td style="text-align: right;">64000</td>
+<td style="text-align: right;">64000</td>
+</tr>
+<tr>
+<td>Subtotal</td>
+<td style="text-align: right;">136000</td>
+<td style="text-align: right;">352000</td>
+</tr>
+</tbody>
+</table>
+<p>Faltan paletas, sprites, código, pila, estructuras de red, DMA y audio. Los cuatro efectos WAV actuales suman <strong>180731 bytes de datos</strong> a su frecuencia actual. La música principal ocupa 2719744 bytes de datos en disco y se lee con un buffer de 16384 bytes; no se reserva entera.</p>
+<p>Tener 270000 bytes libres repartidos en dos huecos de 135000 no permite reservar un bloque continuo de 256000. Por eso importa la vida útil de los recursos. La intro libera sus buffers antes de que empiece la carga del juego, y la hoja de sprites se lee por filas en lugar de conservar otra imagen completa.</p>
+<p>No confundas una recomendación de reservar primero lo grande con una descripción exacta de <code>main.c</code>: el juego llama a <code>init_<wbr>players()</code> antes de <code>init_<wbr>graphics()</code>. Para estudiar el orden real sigue la <a href="../pdf/curso_completo.pdf#nameddest=doc-ch29-md">lección 29</a>.</p>
+<h2 id="doc-ch23-md-practica-y-solucion">Práctica y solución</h2>
+<p><strong>Ejercicio:</strong> ¿qué falla en <code>farmalloc((unsigned long)(640 * 400))</code> si esos literales se operan como <code>int</code> de 16 bits? ¿Cuánto ahorra la máscara respecto a una imagen de colisión de un byte por píxel?</p>
+<p><strong>Solución:</strong> el cast llega después del producto; escribe <code>640UL * 400UL</code>. La máscara ocupa 32000 frente a 256000, ahorro de 224000 bytes: 87,5 %. En la siguiente parte aprenderás a recuperar cada uno de esos bits.</p>
+<p class="chapter-nav"><a href="#doc-ch22-md">Anterior</a> · <a href="../pdf/curso_completo.pdf#nameddest=doc-readme-md">Índice</a> · <a href="#doc-ch24-md">Siguiente: recorte</a></p></article>
+<article class="chapter" id="doc-ch24-md" data-source="ch24.md"><div class="kicker">CURSO / LECCIONES</div><h1 id="doc-ch24-md-24-dibujar-medio-tanque-sin-escribir-fuera-de-la-pantalla">24. Dibujar medio tanque sin escribir fuera de la pantalla</h1>
+<p><strong>Vas a construir:</strong> un recorte rectangular con coordenadas con signo. <strong>Fuente:</strong> las rutinas de sprites de <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/src/bmp.c">bmp.c</a>. Repasa antes <a href="../pdf/curso_completo.pdf#nameddest=doc-ch07-md">transparencia</a> y <a href="#doc-ch21-md">coordenadas</a>.</p>
+<figure class="figure"><svg xmlns="http://www.w3.org/2000/svg" width="1040" height="500" viewBox="0 0 1040 500" role="img" aria-labelledby="fig-clipping-title fig-clipping-desc">
+<title id="fig-clipping-title">Un origen negativo todavía puede dejar píxeles visibles</title><desc id="fig-clipping-desc">La intersección conserva 126 píxeles geométricos, antes de descartar los transparentes.</desc>
+<defs><marker id="fig-clipping-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#148f82"/></marker></defs>
+<rect width="1040" height="500" rx="16" fill="#f7faf9"/>
+<g font-family="DejaVu Sans, sans-serif"><text x="28" y="43" font-size="26" fill="#173548" text-anchor="start" font-weight="bold">Un origen negativo todavía puede dejar píxeles visibles</text><rect x="100" y="110" width="360" height="300" rx="0" fill="#dce8e9" stroke="#173548" stroke-width="2" /><rect x="28" y="78" width="144" height="144" rx="0" fill="#f5d2c8" stroke="#d45d46" stroke-width="2" /><rect x="100" y="110" width="72" height="112" rx="0" fill="#148f82" stroke="none" stroke-width="2" /><text x="220" y="150" font-size="23" fill="#243746" text-anchor="start" font-weight="normal">PANTALLA</text><text x="25" y="65" font-size="21" fill="#d45d46" text-anchor="start" font-weight="normal">sprite (−9,−4)</text><text x="520" y="140" font-size="24" fill="#243746" text-anchor="start" font-weight="bold">Sprite original: 18 × 18</text><text x="520" y="205" font-size="23" fill="#243746" text-anchor="start" font-weight="normal">Columnas visibles: 9..17</text><text x="520" y="260" font-size="23" fill="#243746" text-anchor="start" font-weight="normal">Filas visibles: 4..17</text><text x="520" y="320" font-size="29" fill="#148f82" text-anchor="start" font-weight="bold">Resultado: 9 × 14</text><text x="60" y="465" font-size="22" fill="#243746" text-anchor="start" font-weight="normal">Se recorta el dibujo. No se cambia la posición del objeto en el mundo.</text></g></svg><figcaption>La intersección conserva 126 píxeles geométricos, antes de descartar los transparentes.</figcaption></figure>
+<h2 id="doc-ch24-md-rechazar-y-recortar-son-decisiones-diferentes">Rechazar y recortar son decisiones diferentes</h2>
+<p>Un tanque de 18 × 18 con esquina X=-9 sigue teniendo 9 columnas visibles. Rechazar cualquier posición negativa lo haría desaparecer de golpe al llegar al borde. Dibujarlo entero escribiría antes del buffer.</p>
+<p>El dibujo debe hallar la intersección de dos rectángulos: sprite y pantalla. Usaremos límites finales <strong>excluidos</strong>: <code>[0,320)</code> contiene 320 columnas, de 0 a 319. Esta convención hace que <code>fin-inicio</code> sea directamente la cantidad de píxeles.</p>
+<h2 id="doc-ch24-md-calcular-que-parte-del-sprite-se-conserva">Calcular qué parte del sprite se conserva</h2>
+<p>Llama <code>dx,dy</code> a la esquina de destino y <code>w,h</code> a sus dimensiones. Las coordenadas locales dentro del sprite empiezan en cero.</p>
+<pre><code class="language-text">start_x = max(0, -dx)
+start_y = max(0, -dy)
+end_x   = min(w, 320-dx)
+end_y   = min(h, 200-dy)
+</code></pre>
+<p>Si <code>start_<wbr>x &gt;= end_<wbr>x</code> o <code>start_<wbr>y &gt;= end_<wbr>y</code>, no hay píxeles visibles. Antes puedes rechazar casos completamente exteriores: <code>dx &gt;= 320</code>, <code>dy &gt;= 200</code>, <code>dx+w &lt;= 0</code> o <code>dy+h &lt;= 0</code>.</p>
+<p>Las dimensiones y posiciones del juego caben holgadamente en <code>int</code>; una biblioteca para entradas arbitrariamente grandes tendría que evitar también el desbordamiento de <code>dx+w</code>.</p>
+<h2 id="doc-ch24-md-un-ejemplo-en-la-esquina-superior-izquierda">Un ejemplo en la esquina superior izquierda</h2>
+<p>Sprite 18 × 18, destino <code>(-9,-4)</code>:</p>
+<pre><code class="language-text">start_x = 9     end_x = 18     ancho visible = 9
+start_y = 4     end_y = 18     alto visible = 14
+primer origen  = 4*18 + 9 = 81
+primer destino = (−4+4)*320 + (−9+9) = 0
+</code></pre>
+<p>El primer píxel visible no es el primero del sprite. Es su columna 9 y su fila 4. Ese detalle distingue recortar de mover el sprite hasta que quepa.</p>
+<p>En la esquina contraria, destino <code>(315,198)</code>, sobreviven 5 columnas y 2 filas. El primer destino es 63675 y el último es 63999.</p>
+<h2 id="doc-ch24-md-del-calculo-al-bucle">Del cálculo al bucle</h2>
+<p>Fragmento para un sprite pequeño como los del juego; <code>start_<wbr>*</code> y <code>end_<wbr>*</code> ya se calcularon y validaron:</p>
+<pre><code class="language-c">int x;
+int y;
+unsigned int source_offset;
+unsigned int destination_offset;
+unsigned char color;
+
+for (y = start_y; y &lt; end_y; y++) {
+    source_offset = (unsigned int)(y * sprite_width + start_x);
+    destination_offset = (unsigned int)(dy + y) * WIDTH
+                       + (unsigned int)(dx + start_x);
+    for (x = start_x; x &lt; end_x; x++) {
+        color = sprite[source_offset];
+        if (color != 0) {
+            destination[destination_offset] = color;
+        }
+        source_offset++;
+        destination_offset++;
+    }
+}
+</code></pre>
+<p>La conversión del destino a unsigned ocurre <strong>después de demostrar que las coordenadas son válidas y antes del producto que puede superar 32767</strong>. Así representa hasta 63999 sin un producto con signo de 16 bits.</p>
+<p>El ejemplo supone sprites pequeños; el cálculo de origen debe ampliarse si rediseñas la rutina para imágenes mayores.</p>
+<h2 id="doc-ch24-md-transparencia-y-silueta">Transparencia y silueta</h2>
+<p>El índice 0 del <strong>origen</strong> significa «no escribir». Para dibujar el contorno del radar, la variante de silueta escribe un color fijo —también puede ser 0— donde el origen no es transparente. Son dos decisiones distintas: que 0 no dibuje como origen no impide escribir negro en el destino.</p>
+<h2 id="doc-ch24-md-tabla-minima-de-comprobacion">Tabla mínima de comprobación</h2>
+<table>
+<thead>
+<tr>
+<th>Esquina, sprite 18 × 18</th>
+<th>Resultado geométrico antes de transparencia</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>(0,0)</code></td>
+<td>18 × 18</td>
+</tr>
+<tr>
+<td><code>(-17,0)</code></td>
+<td>1 × 18</td>
+</tr>
+<tr>
+<td><code>(-18,0)</code></td>
+<td>Nada</td>
+</tr>
+<tr>
+<td><code>(319,199)</code></td>
+<td>1 × 1</td>
+</tr>
+<tr>
+<td><code>(320,0)</code></td>
+<td>Nada</td>
+</tr>
+<tr>
+<td><code>(0,200)</code></td>
+<td>Nada</td>
+</tr>
+<tr>
+<td><code>(-9,-4)</code></td>
+<td>9 × 14</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ejercicio:</strong> un sprite de 4 × 3 en <code>(-2,199)</code>. Calcula región local y primera dirección de destino.</p>
+<p><strong>Solución:</strong> columnas locales <code>[2,4)</code>, filas <code>[0,1)</code>, dos píxeles posibles. Destino <code>199*320 = 63680</code>. El último es 63681; no se llega a una fila 200.</p>
+<p class="chapter-nav"><a href="#doc-ch23-md">Anterior</a> · <a href="../pdf/curso_completo.pdf#nameddest=doc-readme-md">Índice</a> · <a href="#doc-ch25-md">Siguiente: cámara con zona muerta</a></p></article>
+<article class="chapter" id="doc-ch25-paso-a-paso-md" data-source="ch25-paso-a-paso.md"><div class="kicker">CURSO / LECCIONES</div><h1 id="doc-ch25-paso-a-paso-md-25a-entender-la-camara-con-una-tira-de-papel">25A. Entender la cámara con una tira de papel</h1>
+<p><a href="../pdf/camara_paso_a_paso.pdf">Abrir esta guía como PDF independiente</a>.</p>
+<p>Esta guía es una entrada más pausada a la <a href="#doc-ch25-md">lección 25</a>. Empieza sin tanques, sin VGA y sin redes: una fila de letras y una ventana de cartón bastan para entender el algoritmo. Después cambiaremos los tamaños y los nombres hasta reconocer el juego.</p>
+<p>Trabaja en tres sesiones si lo necesitas: primero la ventana y la resta; después el seguimiento; finalmente la conexión con el código. No necesitas memorizar las fórmulas antes de entender qué cuenta cada una.</p>
+<h2 id="doc-ch25-paso-a-paso-md-1-un-mundo-de-veinte-casillas">1. Un mundo de veinte casillas</h2>
+<p>Escribe veinte letras en una tira. Numera las casillas <strong>desde cero</strong>:</p>
+<pre><code class="language-text">Coordenada:  0  1  2  3  4  5  6  7  8  9
+Letra:      A  B  C  D  E  F  G  H  I  J
+
+Coordenada: 10 11 12 13 14 15 16 17 18 19
+Letra:      K  L  M  N  O  P  Q  R  S  T
+</code></pre>
+<p>Es una sola fila; la hemos partido aquí para que quepa. La anchura es 20, pero la última coordenada es 19. La anchura cuenta <strong>cuántas casillas hay</strong>; la coordenada identifica <strong>una de ellas</strong>.</p>
+<p>Ahora recorta una ventana que deje ver exactamente diez casillas seguidas. Si la apoyas al principio, verás <code>ABCDEFGHIJ</code>. Si la desplazas cuatro casillas a la derecha, verás <code>EFGHIJKLMN</code>.</p>
+<p>La tira es el <strong>mundo</strong>. El agujero del cartón es la <strong>pantalla</strong>. La <strong>cámara</strong> guarda dónde empieza la ventana dentro del mundo. Con la segunda colocación, <code>camera_<wbr>x = 4</code>, porque E ocupa la casilla 4.</p>
+<p>La cámara no necesita almacenar otras diez letras. Con un número y la anchura de ventana ya sabemos qué parte de la tira mostrar.</p>
+<h2 id="doc-ch25-paso-a-paso-md-2-la-misma-casilla-tiene-dos-direcciones">2. La misma casilla tiene dos direcciones</h2>
+<p>Pon una marca <code>@</code> encima de la J. Su posición en el mundo es 9. No muevas esa marca durante este apartado.</p>
+<p>Con la ventana empezando en 4, ves:</p>
+<pre><code class="language-text">Casilla de pantalla:  0 1 2 3 4 5 6 7 8 9
+Contenido visible:   E F G H I @ K L M N
+</code></pre>
+<p>La marca está en el mundo en 9 y en la pantalla en 5. No son dos marcas ni dos posiciones físicas distintas: son dos maneras de indicar dónde está la misma marca.</p>
+<p>La pantalla empieza a contar desde la primera casilla del agujero. Para saber cuántas casillas separan el comienzo de la ventana y la marca, restamos:</p>
+<pre><code class="language-text">posición en pantalla = posición en mundo - comienzo de ventana
+                     = 9 - 4
+                     = 5
+</code></pre>
+<p>En el código, esos nombres suelen ser <code>screen_<wbr>x</code>, <code>world_<wbr>x</code> y <code>camera_<wbr>x</code>:</p>
+<pre><code class="language-c">screen_x = world_x - camera_x;
+</code></pre>
+<figure class="figure"><svg xmlns="http://www.w3.org/2000/svg" width="1040" height="500" viewBox="0 0 1040 500" role="img" aria-labelledby="fig-camara_tira-title fig-camara_tira-desc">
+<title id="fig-camara_tira-title">Mover la ventana cambia la dirección visible</title><desc id="fig-camara_tira-desc">La marca sigue en mundo 9. Las ventanas de 4 y 6 la muestran en pantalla 5 y 3.</desc>
+<defs><marker id="fig-camara_tira-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#148f82"/></marker></defs>
+<rect width="1040" height="500" rx="16" fill="#f7faf9"/>
+<g font-family="DejaVu Sans, sans-serif"><text x="28" y="43" font-size="26" fill="#173548" text-anchor="start" font-weight="bold">Mover la ventana cambia la dirección visible</text><text x="40" y="82" font-size="22" fill="#243746" text-anchor="start" font-weight="normal">Mundo: veinte casillas; la marca permanece en 9</text><rect x="45" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="67" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">A</text><text x="67" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">0</text><rect x="93" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="115" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">B</text><text x="115" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">1</text><rect x="141" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="163" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">C</text><text x="163" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">2</text><rect x="189" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="211" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">D</text><text x="211" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">3</text><rect x="237" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="259" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">E</text><text x="259" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">4</text><rect x="285" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="307" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">F</text><text x="307" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">5</text><rect x="333" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="355" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">G</text><text x="355" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">6</text><rect x="381" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="403" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">H</text><text x="403" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">7</text><rect x="429" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="451" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">I</text><text x="451" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">8</text><rect x="477" y="105" width="44" height="45" rx="3" fill="#f4d4cb" stroke="none" stroke-width="2" /><text x="499" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">@</text><text x="499" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">9</text><rect x="525" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="547" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">K</text><text x="547" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">10</text><rect x="573" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="595" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">L</text><text x="595" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">11</text><rect x="621" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="643" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">M</text><text x="643" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">12</text><rect x="669" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="691" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">N</text><text x="691" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">13</text><rect x="717" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="739" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">O</text><text x="739" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">14</text><rect x="765" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="787" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">P</text><text x="787" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">15</text><rect x="813" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="835" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">Q</text><text x="835" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">16</text><rect x="861" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="883" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">R</text><text x="883" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">17</text><rect x="909" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="931" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">S</text><text x="931" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">18</text><rect x="957" y="105" width="44" height="45" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="979" y="135" font-size="23" fill="#243746" text-anchor="middle" font-weight="normal">T</text><text x="979" y="174" font-size="17" fill="#243746" text-anchor="middle" font-weight="normal">19</text><text x="45" y="260" font-size="23" fill="#243746" text-anchor="start" font-weight="bold">Cámara = 4</text><text x="45" y="296" font-size="21" fill="#148f82" text-anchor="start" font-weight="normal">Pantalla = 5</text><rect x="320" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="350" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">E</text><text x="350" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">0</text><rect x="385" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="415" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">F</text><text x="415" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">1</text><rect x="450" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="480" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">G</text><text x="480" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">2</text><rect x="515" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="545" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">H</text><text x="545" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">3</text><rect x="580" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="610" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">I</text><text x="610" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">4</text><rect x="645" y="230" width="60" height="48" rx="3" fill="#f4d4cb" stroke="none" stroke-width="2" /><text x="675" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">@</text><text x="675" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">5</text><rect x="710" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="740" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">K</text><text x="740" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">6</text><rect x="775" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="805" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">L</text><text x="805" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">7</text><rect x="840" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="870" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">M</text><text x="870" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">8</text><rect x="905" y="230" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="935" y="262" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">N</text><text x="935" y="305" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">9</text><text x="45" y="395" font-size="23" fill="#243746" text-anchor="start" font-weight="bold">Cámara = 6</text><text x="45" y="431" font-size="21" fill="#148f82" text-anchor="start" font-weight="normal">Pantalla = 3</text><rect x="320" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="350" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">G</text><text x="350" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">0</text><rect x="385" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="415" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">H</text><text x="415" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">1</text><rect x="450" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="480" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">I</text><text x="480" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">2</text><rect x="515" y="365" width="60" height="48" rx="3" fill="#f4d4cb" stroke="none" stroke-width="2" /><text x="545" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">@</text><text x="545" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">3</text><rect x="580" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="610" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">K</text><text x="610" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">4</text><rect x="645" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="675" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">L</text><text x="675" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">5</text><rect x="710" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="740" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">M</text><text x="740" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">6</text><rect x="775" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="805" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">N</text><text x="805" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">7</text><rect x="840" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="870" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">O</text><text x="870" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">8</text><rect x="905" y="365" width="60" height="48" rx="3" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="935" y="397" font-size="25" fill="#243746" text-anchor="middle" font-weight="normal">P</text><text x="935" y="440" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">9</text></g></svg><figcaption>La marca sigue en la casilla 9 del mundo. Cambiar la ventana de 4 a 6 cambia su posición visible de 5 a 3.</figcaption></figure>
+<h2 id="doc-ch25-paso-a-paso-md-3-por-que-el-paisaje-parece-moverse-al-reves">3. Por qué el paisaje parece moverse al revés</h2>
+<p>Desplaza solamente el cartón: ahora empieza en la casilla 6. Se ve <code>GHI@KLMNOP</code> y la marca aparece en <code>9 - 6 = 3</code>.</p>
+<p>La cámara avanzó dos casillas a la derecha. La marca se desplazó dos casillas <strong>hacia la izquierda en la imagen</strong>, aunque permaneció en el mismo lugar del papel. Eso explica el desplazamiento aparente del paisaje cuando una cámara sigue a un personaje.</p>
+<p>Compara tres experimentos independientes. Todos parten de marca 9, cámara 4 y posición visible 5:</p>
+<table>
+<thead>
+<tr>
+<th>Qué cambias</th>
+<th style="text-align: right;">Mundo de la marca</th>
+<th style="text-align: right;">Cámara</th>
+<th style="text-align: right;">Pantalla de la marca</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Solo mueves la marca dos casillas</td>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">7</td>
+</tr>
+<tr>
+<td>Solo mueves la ventana dos casillas</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr>
+<td>Mueves ambas dos casillas</td>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">5</td>
+</tr>
+</tbody>
+</table>
+<p>En la tercera fila la marca parece quieta en pantalla, pero sí se ha movido por el mundo. La ventana la ha acompañado exactamente lo mismo.</p>
+<p><strong>Detente y predice:</strong> marca en 13 y cámara en 6. ¿Qué casilla ocupa en pantalla? Es 7. Si te sale 19, has sumado las coordenadas en el sentido equivocado.</p>
+<h2 id="doc-ch25-paso-a-paso-md-4-cuando-algo-queda-fuera">4. Cuándo algo queda fuera</h2>
+<p>Una pantalla de diez casillas tiene coordenadas válidas de 0 a 9. Para esta marca, que ocupa una sola casilla, basta comprobar:</p>
+<pre><code class="language-text">0 &lt;= screen_x &lt; 10
+</code></pre>
+<p>Si el mundo de la marca es 3 y la cámara es 6, su posición visible sería −3. El resultado tiene sentido: la marca está tres casillas antes del comienzo de la ventana. No se dibuja.</p>
+<p>Con mundo 16 y cámara 6, da 10: está justo después de la última casilla visible. Tampoco se dibuja. El signo negativo aporta información; no lo sustituyas por un entero sin signo.</p>
+<p>La operación inversa también sirve. Si señalas la casilla 7 de una pantalla cuya cámara vale 6, estás señalando la casilla <code>7 + 6 = 13</code> del mundo:</p>
+<pre><code class="language-text">Mundo → pantalla: restar cámara.
+Pantalla → mundo: sumar cámara.
+</code></pre>
+<h2 id="doc-ch25-paso-a-paso-md-5-un-programa-de-consola-que-solo-ensena-la-ventana">5. Un programa de consola que solo enseña la ventana</h2>
+<p>Este ejemplo completo utiliza C sencillo y no depende del proyecto. <code>world</code> es la tira de letras. <code>show_<wbr>window</code> imprime diez posiciones y sustituye la letra por <code>@</code> cuando corresponde a la marca.</p>
+<pre><code class="language-c">#include &lt;stdio.h&gt;
+
+void show_window(int camera_x, int point_x)
+{
+    char world[] = &quot;ABCDEFGHIJKLMNOPQRST&quot;;
+    int screen_x;
+    int world_x;
+
+    for (screen_x = 0; screen_x &lt; 10; screen_x++) {
+        world_x = camera_x + screen_x;
+        if (world_x == point_x) {
+            putchar('@');
+        } else {
+            putchar(world[world_x]);
+        }
+    }
+    putchar('\n');
+}
+
+int main(void)
+{
+    show_window(4, 9);
+    show_window(6, 9);
+    return 0;
+}
+</code></pre>
+<p>Su salida es:</p>
+<pre><code class="language-text">EFGHI@KLMN
+GHI@KLMNOP
+</code></pre>
+<p>Aquí recorremos la pantalla para preguntar qué casilla del mundo necesita cada posición. Por eso usamos <strong>suma</strong> dentro del bucle. Al colocar un objeto conocido en el mundo usamos <strong>resta</strong>. Son las dos direcciones de la misma transformación.</p>
+<p>El ejemplo supone cámara entre 0 y 10. Si le pasas 15, intentará consultar posiciones que no pertenecen a la tira. El siguiente apartado impone el límite que falta.</p>
+<h2 id="doc-ch25-paso-a-paso-md-6-la-ventana-debe-caber-entera">6. La ventana debe caber entera</h2>
+<p>Con cámara 10, la ventana muestra casillas del mundo 10 a 19: todavía cabe. Con cámara 11 necesitaría mostrar hasta la 20, que no existe.</p>
+<pre><code class="language-text">mayor cámara posible = anchura del mundo - anchura de pantalla
+                     = 20 - 10
+                     = 10
+</code></pre>
+<p>También hay un límite izquierdo: cero. Una cámara de −1 mostraría una casilla anterior al comienzo de la tira.</p>
+<p><strong>Limitar</strong>, o hacer <em>clamp</em>, significa corregir una propuesta que se sale del intervalo. La propuesta −2 se convierte en 0; la propuesta 7 conserva 7; la propuesta 14 se convierte en 10.</p>
+<pre><code class="language-c">if (camera_x &lt; 0) {
+    camera_x = 0;
+}
+if (camera_x &gt; 10) {
+    camera_x = 10;
+}
+</code></pre>
+<p>No confundir el límite de cámara, 10, con la última casilla del mundo, 19. El primer número deja sitio para que quepa <strong>toda la ventana</strong>.</p>
+<h2 id="doc-ch25-paso-a-paso-md-7-elegir-cuando-la-ventana-sigue-a-la-marca">7. Elegir cuándo la ventana sigue a la marca</h2>
+<p>Hasta ahora alguien elegía la cámara a mano. Añadamos una regla automática: mientras la marca esté en las casillas de pantalla 3, 4, 5 o 6, la ventana se queda quieta.</p>
+<p>Es una zona de libertad en el centro. Su nombre habitual es <strong>zona muerta</strong>: el movimiento dentro de ella no provoca movimiento de cámara. La marca sí puede moverse ahí.</p>
+<pre><code class="language-text">Pantalla:        0 1 2 | 3 4 5 6 | 7 8 9
+Respuesta:       seguir|  quieta |seguir
+Margen:          3 casillas     3 casillas
+</code></pre>
+<p>La marca mide una casilla. Por tanto, la última posición donde cabe sin entrar en el margen derecho es <code>10 - 3 - 1 = 6</code>.</p>
+<figure class="figure"><svg xmlns="http://www.w3.org/2000/svg" width="1040" height="500" viewBox="0 0 1040 500" role="img" aria-labelledby="fig-camara_zona_simple-title fig-camara_zona_simple-desc">
+<title id="fig-camara_zona_simple-title">Una casilla de exceso, una casilla de corrección</title><desc id="fig-camara_zona_simple-desc">Con pantalla de diez y márgenes de tres, la marca de una casilla puede ocupar 3 a 6.</desc>
+<defs><marker id="fig-camara_zona_simple-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#148f82"/></marker></defs>
+<rect width="1040" height="500" rx="16" fill="#f7faf9"/>
+<g font-family="DejaVu Sans, sans-serif"><text x="28" y="43" font-size="26" fill="#173548" text-anchor="start" font-weight="bold">Una casilla de exceso, una casilla de corrección</text><text x="80" y="112" font-size="22" fill="#243746" text-anchor="start" font-weight="normal">Margen: 3</text><text x="505" y="112" font-size="25" fill="#148f82" text-anchor="middle" font-weight="bold">Zona libre: 3..6</text><text x="965" y="112" font-size="22" fill="#243746" text-anchor="end" font-weight="normal">Margen: 3</text><rect x="80" y="145" width="81" height="80" rx="4" fill="#e3e9eb" stroke="none" stroke-width="2" /><text x="120" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">0</text><rect x="167" y="145" width="81" height="80" rx="4" fill="#e3e9eb" stroke="none" stroke-width="2" /><text x="207" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">1</text><rect x="254" y="145" width="81" height="80" rx="4" fill="#e3e9eb" stroke="none" stroke-width="2" /><text x="294" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">2</text><rect x="341" y="145" width="81" height="80" rx="4" fill="#c9e9df" stroke="none" stroke-width="2" /><text x="381" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">3</text><rect x="428" y="145" width="81" height="80" rx="4" fill="#c9e9df" stroke="none" stroke-width="2" /><text x="468" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">4</text><rect x="515" y="145" width="81" height="80" rx="4" fill="#c9e9df" stroke="none" stroke-width="2" /><text x="555" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">5</text><rect x="602" y="145" width="81" height="80" rx="4" fill="#c9e9df" stroke="none" stroke-width="2" /><text x="642" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">6</text><rect x="689" y="145" width="81" height="80" rx="4" fill="#e3e9eb" stroke="none" stroke-width="2" /><text x="729" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">7</text><rect x="776" y="145" width="81" height="80" rx="4" fill="#e3e9eb" stroke="none" stroke-width="2" /><text x="816" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">8</text><rect x="863" y="145" width="81" height="80" rx="4" fill="#e3e9eb" stroke="none" stroke-width="2" /><text x="903" y="194" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">9</text><rect x="50" y="300" width="360" height="100" rx="9" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="230.0" y="336" font-size="23" fill="#243746" text-anchor="middle" font-weight="bold">Antes: mundo 11, cámara 4</text><text x="230.0" y="368" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">Pantalla 7: sobra una casilla</text><line x1="420" y1="350" x2="600" y2="350" stroke="#148f82" stroke-width="3" marker-end="url(#fig-camara_zona_simple-arrow)"/><rect x="615" y="300" width="375" height="100" rx="9" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="802.5" y="336" font-size="23" fill="#243746" text-anchor="middle" font-weight="bold">Después: cámara 5</text><text x="802.5" y="368" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">Mundo 11 → pantalla 6</text><text x="80" y="460" font-size="23" fill="#243746" text-anchor="start" font-weight="normal">Solo cambia la cámara. El objetivo conserva su coordenada de mundo.</text></g></svg><figcaption>Una marca situada en 7 sobresale una casilla de la zona. Avanzar la cámara una casilla hace que aparezca en 6.</figcaption></figure>
+<h3 id="doc-ch25-paso-a-paso-md-si-la-marca-se-sale-por-la-derecha">Si la marca se sale por la derecha</h3>
+<p>Con cámara 4 y marca en mundo 11, la marca aparece en <code>11 - 4 = 7</code>. Queremos que vuelva al límite permitido 6. Sobra una casilla.</p>
+<p>Sumamos esa casilla a la cámara: <code>4 + (7 - 6) = 5</code>. La marca conserva mundo 11 y ahora aparece en <code>11 - 5 = 6</code>.</p>
+<p>No estamos devolviendo la marca hacia atrás. Estamos desplazando la ventana hacia ella.</p>
+<h3 id="doc-ch25-paso-a-paso-md-si-se-sale-por-la-izquierda">Si se sale por la izquierda</h3>
+<p>Con cámara 6 y marca en mundo 8, aparece en 2. Falta una casilla para llegar al límite permitido 3.</p>
+<p>Restamos esa casilla a la cámara: <code>6 - (3 - 2) = 5</code>. La marca ahora aparece en <code>8 - 5 = 3</code>.</p>
+<h3 id="doc-ch25-paso-a-paso-md-si-sigue-dentro">Si sigue dentro</h3>
+<p>Con cámara 6 y marca en mundo 11, aparece en 5. No necesitamos corregir nada. Conservar la cámara anterior forma parte del algoritmo; no hay que centrarla otra vez en cada vuelta.</p>
+<h2 id="doc-ch25-paso-a-paso-md-8-la-funcion-pequena-linea-por-linea">8. La función pequeña, línea por línea</h2>
+<p>Esta función se puede añadir al ejemplo de consola, antes de <code>main</code>. Recibe la cámara anterior y devuelve la nueva. Sigue suponiendo mundo de 20, pantalla de 10 y marca de una casilla.</p>
+<pre><code class="language-c">int follow_point(int camera_x, int point_x)
+{
+    int screen_x;
+
+    screen_x = point_x - camera_x;
+
+    if (screen_x &lt; 3) {
+        camera_x = camera_x - (3 - screen_x);
+    } else if (screen_x &gt; 6) {
+        camera_x = camera_x + (screen_x - 6);
+    }
+
+    if (camera_x &lt; 0) {
+        camera_x = 0;
+    }
+    if (camera_x &gt; 10) {
+        camera_x = 10;
+    }
+
+    return camera_x;
+}
+</code></pre>
+<p>La primera resta <strong>observa</strong> dónde aparece la marca con la cámara anterior. Los dos primeros casos <strong>proponen</strong> una corrección. Los dos últimos <code>if</code> aseguran que la ventana cabe. El valor devuelto se <strong>conserva</strong> para el próximo movimiento.</p>
+<p>Para usarla, puedes sustituir el <code>main</code> anterior por este:</p>
+<pre><code class="language-c">int main(void)
+{
+    int camera_x;
+    int point_x;
+
+    camera_x = 4;
+    point_x = 11;
+    camera_x = follow_point(camera_x, point_x);
+    show_window(camera_x, point_x);
+    printf(&quot;camera=%d screen=%d\n&quot;, camera_x,
+           point_x - camera_x);
+    return 0;
+}
+</code></pre>
+<p>Resultado: <code>FGHIJK@MNO</code> y, debajo, <code>camera=5 screen=6</code>. Mantén también <code>#include &lt;stdio.h&gt;</code> y la función <code>show_<wbr>window</code> del primer bloque. No debes dejar dos funciones <code>main</code> en el mismo archivo.</p>
+<h2 id="doc-ch25-paso-a-paso-md-9-seguir-y-luego-dar-la-vuelta">9. Seguir y luego dar la vuelta</h2>
+<p>Cada fila de esta tabla parte de la cámara <strong>que dejó la anterior</strong>. Las posiciones de la marca son una secuencia de prueba; puedes colocarlas con el dedo sobre la tira.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Marca en mundo</th>
+<th style="text-align: right;">Cámara anterior</th>
+<th style="text-align: right;">Pantalla antes</th>
+<th style="text-align: right;">Cámara nueva</th>
+<th style="text-align: right;">Pantalla después</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">5</td>
+</tr>
+<tr>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">5</td>
+</tr>
+<tr>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">3</td>
+</tr>
+</tbody>
+</table>
+<p>Al pasar de mundo 12 a mundo 11, la marca retrocede pero la ventana se queda en 6. La marca debe atravesar la zona central antes de empujar la ventana hacia la izquierda. Por eso el seguimiento depende de la cámara anterior, además de la posición del objetivo.</p>
+<h3 id="doc-ch25-paso-a-paso-md-un-caso-donde-no-puede-cumplir-la-zona">Un caso donde no puede cumplir la zona</h3>
+<p>Marca en mundo 19, cámara 10. La posición visible es 9. La regla propondría cámara <code>10 + (9 - 6) = 13</code>, pero la ventana saldría del papel. El límite vuelve a dejarla en 10.</p>
+<p>La marca permanece visible en 9, fuera de la zona central. Es el resultado correcto. La condición obligatoria es que la ventana quepa; la zona central se mantiene cuando queda mundo suficiente hacia ese lado.</p>
+<h2 id="doc-ch25-paso-a-paso-md-10-anadir-altura-no-cambia-la-idea">10. Añadir altura no cambia la idea</h2>
+<p>Imagina ahora una hoja de 20 columnas y 12 filas, con una ventana de 10 × 6. Su cámara es una pareja <code>(camera_<wbr>x, camera_<wbr>y)</code>.</p>
+<p>El origen está arriba a la izquierda. X aumenta hacia la derecha y Y <strong>hacia abajo</strong>, como las filas de una página.</p>
+<pre><code class="language-text">Marca en mundo: (9,7)
+Cámara:         (4,3)
+Pantalla:       (9-4, 7-3) = (5,4)
+</code></pre>
+<p>Cada eje hace su propia resta y su propio seguimiento. Los límites son X entre 0 y <code>20-10=10</code>; Y entre 0 y <code>12-6=6</code>. Mover la cámara vertical no altera la coordenada horizontal de la marca.</p>
+<h2 id="doc-ch25-paso-a-paso-md-11-de-la-tira-al-juego-cambiar-nombres-y-tamanos">11. De la tira al juego: cambiar nombres y tamaños</h2>
+<table>
+<thead>
+<tr>
+<th>En el ejemplo</th>
+<th>En el juego</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tira de 20 casillas</td>
+<td>Mapa de 640 × 400 píxeles</td>
+</tr>
+<tr>
+<td>Ventana de 10 casillas</td>
+<td>Pantalla de 320 × 200 píxeles</td>
+</tr>
+<tr>
+<td>Marca de una casilla</td>
+<td>Sprite de tanque de 18 × 18</td>
+</tr>
+<tr>
+<td><code>point_<wbr>x</code></td>
+<td><code>target_<wbr>x</code>, normalmente <code>player1.position_<wbr>x</code> o <code>player2.position_<wbr>x</code></td>
+</tr>
+<tr>
+<td>Cámara entre 0 y 10</td>
+<td>X entre 0 y 320; Y entre 0 y 200</td>
+</tr>
+<tr>
+<td>Margen horizontal de 3</td>
+<td>Márgenes X=100 e Y=70</td>
+</tr>
+<tr>
+<td><code>follow_<wbr>point</code></td>
+<td><code>bmp_<wbr>camera_<wbr>follow</code> en <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/src/bmp.c">src/bmp.c</a></td>
+</tr>
+<tr>
+<td><code>show_<wbr>window</code></td>
+<td>Fondo con <code>bmp_<wbr>draw_<wbr>world_<wbr>window</code>, luego sprites</td>
+</tr>
+</tbody>
+</table>
+<p>La diferencia importante es el tamaño del objetivo. En el juego su posición guarda la <strong>esquina superior izquierda</strong>, no el centro. Hay que reservar sitio para los dieciocho píxeles del tanque.</p>
+<p>Por eso el límite derecho de su esquina es <code>320 - 100 - 18 = 202</code>. Si la esquina está en 202, sus columnas son 202 a 219. El margen derecho empieza en 220: el tanque todavía cabe entero.</p>
+<p>La misma cuenta en Y da <code>200 - 70 - 18 = 112</code>. Su esquina puede circular por X=100..202 e Y=70..112 sin empujar la cámara.</p>
+<h2 id="doc-ch25-paso-a-paso-md-12-una-vuelta-real-explicada-con-las-mismas-cuatro-preguntas">12. Una vuelta real, explicada con las mismas cuatro preguntas</h2>
+<p>Supón mapa grande, cámara <code>(90,40)</code> y tanque objetivo <code>(188,155)</code>. Es un ejemplo de la función de cámara; aquí no estamos comprobando si un movimiento del tanque atraviesa una pared.</p>
+<p><strong>¿Dónde aparece antes?</strong> Restamos: <code>(188-90,155-40) = (98,115)</code>.</p>
+<p><strong>¿Cuánto sobresale?</strong> En X, 98 está dos píxeles antes de 100. En Y, 115 está tres píxeles después de 112.</p>
+<p><strong>¿Qué ventana lo recoloca?</strong> X necesita cámara <code>90-2=88</code>; Y necesita <code>40+3=43</code>. Ambas coordenadas caben en sus límites.</p>
+<p><strong>¿Dónde lo dibujamos al final?</strong> Con la cámara nueva: <code>(188-88,155-43) = (100,112)</code>.</p>
+<p>Observa lo que conserva su valor: el tanque sigue en mundo <code>(188,155)</code>. El dibujo del fondo también debe usar cámara <code>(88,43)</code>. Usar la cámara vieja para el suelo y la nueva para el tanque haría que parecieran deslizarse uno respecto del otro.</p>
+<h2 id="doc-ch25-paso-a-paso-md-13-seguir-no-es-lo-mismo-que-colocar-de-golpe">13. Seguir no es lo mismo que colocar de golpe</h2>
+<p><code>bmp_<wbr>camera_<wbr>follow</code> deja que el objetivo se desplace por la zona central. <code>bmp_<wbr>camera_<wbr>snap</code> calcula directamente una cámara centrada, sin utilizar la cámara anterior para decidir cuánto desplazarse.</p>
+<p>Para centrar un tanque de 18 × 18 hay que centrar su <strong>centro</strong>, que está nueve píxeles después de su esquina:</p>
+<pre><code class="language-text">camera_x = target_x + 9 - 160
+camera_y = target_y + 9 - 100
+</code></pre>
+<p>Con la salida P1 del mapa grande, <code>(166,299)</code>, sale <code>(15,208)</code>. El máximo Y es 200, así que la cámara definitiva es <code>(15,200)</code>. El tanque aparece en <code>(151,99)</code>; no puede quedar perfectamente centrado en Y sin mostrar ocho filas fuera del mapa.</p>
+<p>En una reaparición interesa colocar la ventana de golpe cerca del nuevo objetivo. Durante el movimiento normal interesa conservar la zona de libertad. La <a href="#doc-ch25-md">lección 25</a> sigue las llamadas exactas que toman esa decisión.</p>
+<h2 id="doc-ch25-paso-a-paso-md-14-prueba-tu-comprension-antes-de-continuar">14. Prueba tu comprensión antes de continuar</h2>
+<p>Resuelve estos casos sin consultar las tablas. En los cuatro primeros usamos la tira de 20, ventana de 10, marca de una casilla y zona 3..6.</p>
+<ol>
+<li>Cámara 5, marca 12. ¿Dónde aparece sin actualizar la cámara?</li>
+<li>Aplica seguimiento al caso anterior. ¿Qué números cambian?</li>
+<li>Ahora la marca retrocede a 10. ¿Retrocede también la cámara?</li>
+<li>Cámara 0, marca 1. ¿Por qué no termina la marca en pantalla 3?</li>
+<li>En el juego, ¿por qué se resta 18 al calcular 202?</li>
+<li>Si ambas máquinas guardan el tanque en el mismo lugar del mundo pero usan cámaras distintas, ¿deben verse capturas iguales?</li>
+</ol>
+<h3 id="doc-ch25-paso-a-paso-md-respuestas-razonadas">Respuestas razonadas</h3>
+<ol>
+<li>Aparece en 7, porque <code>12-5=7</code>.</li>
+<li>Sobra una casilla: cámara nueva 6, pantalla nueva 6. Mundo conserva 12.</li>
+<li>Con cámara 6 aparece en 4, dentro de la zona. La cámara conserva 6.</li>
+<li>Haría falta cámara −2. El límite la devuelve a 0 y la marca permanece en pantalla 1.</li>
+<li>Porque la esquina necesita dejar espacio a toda la anchura del tanque. El borde 220 marca dónde empieza el margen, no dónde puede comenzar un tanque de 18.</li>
+<li>No. Las reglas usan el mundo; la cámara decide la vista. Este es también el motivo por el que la cámara no entra en el checksum del estado compartido.</li>
+</ol>
+<p>Continúa con <a href="#doc-ch25-md">la lección 25 ampliada</a>. Después abre el <a href="../camara.html">laboratorio interactivo</a>: prueba primero «Manual: mover la ventana», cambiando solo la cámara; después «Zona muerta: seguir», cambiando la posición del tanque. Esos dos experimentos corresponden a los apartados 3 y 7 de esta guía.</p>
+<p class="chapter-nav"><a href="../pdf/curso_completo.pdf#nameddest=doc-readme-md">Índice</a> · <a href="#doc-ch25-md">Continuar: cámara en el juego</a> · <a href="../pdf/curso_completo.pdf#nameddest=doc-ch20-paso-a-paso-md">Checksum desde cero</a></p></article>
+<article class="chapter" id="doc-ch25-md" data-source="ch25.md"><div class="kicker">CURSO / LECCIONES</div><h1 id="doc-ch25-md-25-construir-y-ajustar-la-camara">25. Construir y ajustar la cámara</h1>
+<p><strong>Vas a construir:</strong> seguimiento con zona muerta, límites de mapa y centrado al reaparecer. <strong>Laboratorio:</strong> <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/tutorial/ch22/chap22.c">chap22.c</a>. C alterna cámara fija, seguimiento y centrado; las flechas mueven el tanque.</p>
+<p><strong>Si todavía cuesta imaginar la cámara, empieza por <a href="#doc-ch25-paso-a-paso-md">25A: una tira de papel y una ventana de diez casillas</a>.</strong> Incluye un programa de consola sin dependencias del juego. En esta lección aplicaremos exactamente ese razonamiento al motor real.</p>
+<h2 id="doc-ch25-md-los-tres-datos-que-debes-separar">Los tres datos que debes separar</h2>
+<p><code>player1.position_<wbr>x</code> guarda dónde está P1 <strong>en el mundo</strong>. <code>camera_<wbr>x</code> guarda dónde empieza la ventana. La resta entre ambos calcula una posición temporal <strong>para dibujar</strong>. Solo el primero participa en las reglas de movimiento y colisión del tanque.</p>
+<p>Por ejemplo, mundo X=304 y cámara X=102 dan pantalla X=202. Si guardases 202 de vuelta en <code>player1.position_<wbr>x</code>, habrías trasladado físicamente el tanque 102 píxeles. Por eso la transformación se entrega al dibujo y no sustituye al estado del jugador.</p>
+<p>Esta cámara solo traslada una ventana: no gira el mapa ni aumenta su escala. Un píxel del mundo ocupa un píxel de pantalla cuando queda visible.</p>
+<h2 id="doc-ch25-md-antes-de-programar-decide-el-comportamiento">Antes de programar, decide el comportamiento</h2>
+<p>Queremos que el tanque pueda desplazarse por el centro sin mover el paisaje. Cuando alcanza un borde de esa región, la cámara acompaña su avance. Al detenerse, la cámara se detiene. No hay aceleración, interpolación ni inercia en este algoritmo.</p>
+<p>La zona muerta se define mediante márgenes desde los bordes de pantalla: 100 píxeles en horizontal y 70 en vertical. El rectángulo físico interior es <code>[100,220) × [70,130)</code>.</p>
+<p>El tanque mide 18 × 18 y debe caber entero dentro. Por tanto, su <strong>esquina</strong> puede moverse por:</p>
+<pre><code class="language-text">X mínima = 100
+X máxima = 320 - 100 - 18 = 202
+Y mínima = 70
+Y máxima = 200 - 70 - 18 = 112
+</code></pre>
+<p>El origen puede estar exactamente en 202: el tanque termina en la columna 219. No confundas el borde físico 220 con la mayor X de su esquina.</p>
+<figure class="figure"><svg xmlns="http://www.w3.org/2000/svg" width="1040" height="520" viewBox="0 0 1040 520" role="img" aria-labelledby="fig-zona-title fig-zona-desc">
+<title id="fig-zona-title">Zona muerta: el tanque entero debe caber</title><desc id="fig-zona-desc">El borde físico derecho está en 220, pero la esquina del tanque solo puede llegar a 202.</desc>
+<defs><marker id="fig-zona-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#148f82"/></marker></defs>
+<rect width="1040" height="520" rx="16" fill="#f7faf9"/>
+<g font-family="DejaVu Sans, sans-serif"><text x="28" y="43" font-size="26" fill="#173548" text-anchor="start" font-weight="bold">Zona muerta: el tanque entero debe caber</text><rect x="30" y="80" width="640" height="400" rx="0" fill="#e3eeeb" stroke="#173548" stroke-width="2" /><rect x="230" y="220" width="240" height="120" rx="0" fill="#c6e8dc" stroke="#148f82" stroke-width="2" /><rect x="434" y="254" width="8" height="36" rx="2" fill="#173548" stroke="none" stroke-width="2" /><rect x="462" y="254" width="8" height="36" rx="2" fill="#173548" stroke="none" stroke-width="2" /><rect x="442" y="260" width="20" height="26" rx="2" fill="#148f82" stroke="none" stroke-width="2" /><rect x="450" y="254" width="4" height="20" rx="0" fill="#148f82" stroke="none" stroke-width="2" /><line x1="230" y1="80" x2="230" y2="480" stroke="#148f82" stroke-width="2" stroke-dasharray="6 5"/><line x1="470" y1="80" x2="470" y2="480" stroke="#148f82" stroke-width="2" stroke-dasharray="6 5"/><text x="80" y="135" font-size="23" fill="#243746" text-anchor="start" font-weight="normal">100 px</text><text x="520" y="135" font-size="23" fill="#243746" text-anchor="start" font-weight="normal">100 px</text><text x="235" y="210" font-size="21" fill="#148f82" text-anchor="start" font-weight="normal">zona interior</text><text x="725" y="140" font-size="24" fill="#243746" text-anchor="start" font-weight="bold">Pantalla 320 × 200</text><text x="725" y="205" font-size="23" fill="#243746" text-anchor="start" font-weight="normal">Tanque 18 × 18</text><text x="725" y="275" font-size="23" fill="#243746" text-anchor="start" font-weight="normal">Esquina permitida:</text><text x="725" y="320" font-size="27" fill="#148f82" text-anchor="start" font-weight="bold">X: 100..202</text><text x="725" y="365" font-size="27" fill="#148f82" text-anchor="start" font-weight="bold">Y: 70..112</text><text x="725" y="435" font-size="19" fill="#243746" text-anchor="start" font-weight="normal">Al sobresalir, empuja</text><text x="725" y="465" font-size="19" fill="#243746" text-anchor="start" font-weight="normal">la cámara lo justo.</text></g></svg><figcaption>El borde físico derecho está en 220, pero la esquina del tanque solo puede llegar a 202.</figcaption></figure>
+<h2 id="doc-ch25-md-deducir-cuanto-mover-la-camara">Deducir cuánto mover la cámara</h2>
+<p>Si el tanque aparece en X=207, sobresale <code>207-202 = 5</code>. Sumar 5 a la cámara resta 5 a la posición de pantalla y lo deja en 202. Si aparece en X=96, restar 4 a la cámara lo devuelve a 100.</p>
+<p>Fragmento de un eje, utilizando las constantes del proyecto:</p>
+<pre><code class="language-c">int screen_x;
+int right_edge;
+
+screen_x = target_x - camera_x;
+right_edge = WIDTH - CAMERA_DEAD_ZONE_X - target_width;
+
+if (screen_x &lt; CAMERA_DEAD_ZONE_X) {
+    camera_x = camera_x - (CAMERA_DEAD_ZONE_X - screen_x);
+} else if (screen_x &gt; right_edge) {
+    camera_x = camera_x + (screen_x - right_edge);
+}
+</code></pre>
+<p>Repite el razonamiento para Y. Después limita ambas coordenadas al mapa. <code>if</code>/<code>else if</code> expresa que, para una zona válida, el objetivo no puede salirse simultáneamente por ambos lados del mismo eje.</p>
+<h2 id="doc-ch25-md-traza-completa-avanzar-y-dar-la-vuelta">Traza completa: avanzar y dar la vuelta</h2>
+<p>Mundo 640 × 400. Empezamos con cámara X=100, lejos de los límites. Cada fila usa la cámara resultante de la anterior:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">X del tanque en mundo</th>
+<th style="text-align: right;">Cámara antes</th>
+<th style="text-align: right;">X en pantalla antes</th>
+<th style="text-align: right;">Corrección</th>
+<th style="text-align: right;">Cámara después</th>
+<th style="text-align: right;">X dibujada</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">200</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">200</td>
+</tr>
+<tr>
+<td style="text-align: right;">302</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">202</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">202</td>
+</tr>
+<tr>
+<td style="text-align: right;">304</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">204</td>
+<td style="text-align: right;">+2</td>
+<td style="text-align: right;">102</td>
+<td style="text-align: right;">202</td>
+</tr>
+<tr>
+<td style="text-align: right;">306</td>
+<td style="text-align: right;">102</td>
+<td style="text-align: right;">204</td>
+<td style="text-align: right;">+2</td>
+<td style="text-align: right;">104</td>
+<td style="text-align: right;">202</td>
+</tr>
+<tr>
+<td style="text-align: right;">304</td>
+<td style="text-align: right;">104</td>
+<td style="text-align: right;">200</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">104</td>
+<td style="text-align: right;">200</td>
+</tr>
+<tr>
+<td style="text-align: right;">204</td>
+<td style="text-align: right;">104</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">104</td>
+<td style="text-align: right;">100</td>
+</tr>
+<tr>
+<td style="text-align: right;">202</td>
+<td style="text-align: right;">104</td>
+<td style="text-align: right;">98</td>
+<td style="text-align: right;">−2</td>
+<td style="text-align: right;">102</td>
+<td style="text-align: right;">100</td>
+</tr>
+</tbody>
+</table>
+<p>Al dar la vuelta, el tanque atraviesa la zona central antes de que la cámara retroceda. Ese espacio quieto es el efecto buscado.</p>
+<figure class="figure"><svg xmlns="http://www.w3.org/2000/svg" width="1040" height="500" viewBox="0 0 1040 500" role="img" aria-labelledby="fig-traza-title fig-traza-desc">
+<title id="fig-traza-title">La cámara conserva historia</title><desc id="fig-traza-desc">Traza numérica de la lección 25: la cámara no retrocede inmediatamente al invertir la marcha.</desc>
+<defs><marker id="fig-traza-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#148f82"/></marker></defs>
+<rect width="1040" height="500" rx="16" fill="#f7faf9"/>
+<g font-family="DejaVu Sans, sans-serif"><text x="28" y="43" font-size="26" fill="#173548" text-anchor="start" font-weight="bold">La cámara conserva historia</text><text x="45" y="110" font-size="24" fill="#243746" text-anchor="start" font-weight="bold">Avanzar, frenar y volver</text><rect x="45" y="140" width="127" height="215" rx="9" fill="#eef5f4" stroke="#c5d6dc" stroke-width="2" /><text x="108" y="178" font-size="20" fill="#243746" text-anchor="middle" font-weight="normal">1</text><text x="108" y="230" font-size="27" fill="#243746" text-anchor="middle" font-weight="normal">300</text><text x="108" y="290" font-size="27" fill="#148f82" text-anchor="middle" font-weight="normal">100</text><rect x="185" y="140" width="127" height="215" rx="9" fill="#eef5f4" stroke="#c5d6dc" stroke-width="2" /><text x="248" y="178" font-size="20" fill="#243746" text-anchor="middle" font-weight="normal">2</text><text x="248" y="230" font-size="27" fill="#243746" text-anchor="middle" font-weight="normal">302</text><text x="248" y="290" font-size="27" fill="#148f82" text-anchor="middle" font-weight="normal">100</text><rect x="325" y="140" width="127" height="215" rx="9" fill="#eef5f4" stroke="#c5d6dc" stroke-width="2" /><text x="388" y="178" font-size="20" fill="#243746" text-anchor="middle" font-weight="normal">3</text><text x="388" y="230" font-size="27" fill="#243746" text-anchor="middle" font-weight="normal">304</text><text x="388" y="290" font-size="27" fill="#148f82" text-anchor="middle" font-weight="normal">102</text><rect x="465" y="140" width="127" height="215" rx="9" fill="#eef5f4" stroke="#c5d6dc" stroke-width="2" /><text x="528" y="178" font-size="20" fill="#243746" text-anchor="middle" font-weight="normal">4</text><text x="528" y="230" font-size="27" fill="#243746" text-anchor="middle" font-weight="normal">306</text><text x="528" y="290" font-size="27" fill="#148f82" text-anchor="middle" font-weight="normal">104</text><rect x="605" y="140" width="127" height="215" rx="9" fill="#eef5f4" stroke="#c5d6dc" stroke-width="2" /><text x="668" y="178" font-size="20" fill="#243746" text-anchor="middle" font-weight="normal">5</text><text x="668" y="230" font-size="27" fill="#243746" text-anchor="middle" font-weight="normal">304</text><text x="668" y="290" font-size="27" fill="#148f82" text-anchor="middle" font-weight="normal">104</text><rect x="745" y="140" width="127" height="215" rx="9" fill="#eef5f4" stroke="#c5d6dc" stroke-width="2" /><text x="808" y="178" font-size="20" fill="#243746" text-anchor="middle" font-weight="normal">6</text><text x="808" y="230" font-size="27" fill="#243746" text-anchor="middle" font-weight="normal">204</text><text x="808" y="290" font-size="27" fill="#148f82" text-anchor="middle" font-weight="normal">104</text><rect x="885" y="140" width="127" height="215" rx="9" fill="#eef5f4" stroke="#c5d6dc" stroke-width="2" /><text x="948" y="178" font-size="20" fill="#243746" text-anchor="middle" font-weight="normal">7</text><text x="948" y="230" font-size="27" fill="#243746" text-anchor="middle" font-weight="normal">202</text><text x="948" y="290" font-size="27" fill="#148f82" text-anchor="middle" font-weight="normal">102</text><text x="50" y="397" font-size="21" fill="#243746" text-anchor="start" font-weight="normal">Fila superior: X del tanque en mundo. Fila verde: X de cámara.</text><text x="50" y="448" font-size="23" fill="#148f82" text-anchor="start" font-weight="normal">Al volver, el tanque atraviesa la zona antes de arrastrar la cámara.</text></g></svg><figcaption>Traza numérica de la lección 25: la cámara no retrocede inmediatamente al invertir la marcha.</figcaption></figure>
+<h2 id="doc-ch25-md-los-limites-tienen-la-ultima-palabra">Los límites tienen la última palabra</h2>
+<p>La ventana debe permanecer dentro del mundo:</p>
+<pre><code class="language-text">0 &lt;= camera_x &lt;= map_width  - 320
+0 &lt;= camera_y &lt;= map_height - 200
+</code></pre>
+<p>En el mapa grande, los máximos son <code>(320,200)</code>. Con cámara X=320 y tanque X=610, el seguimiento propondría X=408 para colocarlo en 202. El límite corrige a 320 y el tanque aparece en 290. Cerca del extremo del mundo <strong>puede salir de la zona muerta</strong>: no queda paisaje hacia el que desplazar la ventana.</p>
+<p>No intentes arreglarlo moviendo el tanque ni leyendo más allá del mapa. La prioridad es ventana válida; la zona muerta se respeta cuando existe espacio suficiente.</p>
+<figure class="figure"><svg xmlns="http://www.w3.org/2000/svg" width="1040" height="530" viewBox="0 0 1040 530" role="img" aria-labelledby="fig-limites-title fig-limites-desc">
+<title id="fig-limites-title">Cuatro extremos válidos de la ventana</title><desc id="fig-limites-desc">Restar el tamaño de pantalla al tamaño de mapa deja espacio para la ventana completa.</desc>
+<defs><marker id="fig-limites-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#148f82"/></marker></defs>
+<rect width="1040" height="530" rx="16" fill="#f7faf9"/>
+<g font-family="DejaVu Sans, sans-serif"><text x="28" y="43" font-size="26" fill="#173548" text-anchor="start" font-weight="bold">Cuatro extremos válidos de la ventana</text><rect x="35" y="90" width="220" height="140" rx="0" fill="#dce8e7" stroke="#173548" stroke-width="2" /><rect x="35.0" y="90.0" width="110" height="70" rx="0" fill="#96cfc0" stroke="#148f82" stroke-width="2" /><text x="275" y="130" font-size="19" fill="#243746" text-anchor="start" font-weight="normal">superior izquierda</text><text x="275" y="175" font-size="26" fill="#148f82" text-anchor="start" font-weight="bold">(0,0)</text><rect x="545" y="90" width="220" height="140" rx="0" fill="#dce8e7" stroke="#173548" stroke-width="2" /><rect x="655.0" y="90.0" width="110" height="70" rx="0" fill="#96cfc0" stroke="#148f82" stroke-width="2" /><text x="785" y="130" font-size="19" fill="#243746" text-anchor="start" font-weight="normal">superior derecha</text><text x="785" y="175" font-size="26" fill="#148f82" text-anchor="start" font-weight="bold">(320,0)</text><rect x="35" y="280" width="220" height="140" rx="0" fill="#dce8e7" stroke="#173548" stroke-width="2" /><rect x="35.0" y="350.0" width="110" height="70" rx="0" fill="#96cfc0" stroke="#148f82" stroke-width="2" /><text x="275" y="320" font-size="19" fill="#243746" text-anchor="start" font-weight="normal">inferior izquierda</text><text x="275" y="365" font-size="26" fill="#148f82" text-anchor="start" font-weight="bold">(0,200)</text><rect x="545" y="280" width="220" height="140" rx="0" fill="#dce8e7" stroke="#173548" stroke-width="2" /><rect x="655.0" y="350.0" width="110" height="70" rx="0" fill="#96cfc0" stroke="#148f82" stroke-width="2" /><text x="785" y="320" font-size="19" fill="#243746" text-anchor="start" font-weight="normal">inferior derecha</text><text x="785" y="365" font-size="26" fill="#148f82" text-anchor="start" font-weight="bold">(320,200)</text><text x="50" y="490" font-size="22" fill="#243746" text-anchor="start" font-weight="normal">La esquina de cámara llega a (320,200), no al último píxel del mundo.</text></g></svg><figcaption>Restar el tamaño de pantalla al tamaño de mapa deja espacio para la ventana completa.</figcaption></figure>
+<h2 id="doc-ch25-md-snap-colocar-la-camara-al-iniciar-una-ronda">Snap: colocar la cámara al iniciar una ronda</h2>
+<p>En una reaparición no hay un recorrido anterior que conservar. Se centra el objetivo directamente:</p>
+<pre><code class="language-text">camera_x = target_x + target_width/2  - 320/2
+camera_y = target_y + target_height/2 - 200/2
+</code></pre>
+<p>Después se aplican los mismos límites. Para los puntos de salida grandes:</p>
+<table>
+<thead>
+<tr>
+<th>Objetivo</th>
+<th>Cámara propuesta</th>
+<th>Cámara limitada</th>
+<th>Esquina visible del tanque</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P1 <code>(166,299)</code></td>
+<td><code>(15,208)</code></td>
+<td><code>(15,200)</code></td>
+<td><code>(151,99)</code></td>
+</tr>
+<tr>
+<td>P2 <code>(483,106)</code></td>
+<td><code>(332,15)</code></td>
+<td><code>(320,15)</code></td>
+<td><code>(163,91)</code></td>
+</tr>
+</tbody>
+</table>
+<p>El centro ideal de la esquina sería <code>(151,91)</code>. La diferencia de esos resultados nace de los bordes del mapa, no de un error de seguimiento.</p>
+<p>Hay que hacer snap <strong>después</strong> de inicializar las dimensiones del mapa. Si todavía valen 320 × 200, el clamp devuelve <code>(0,0)</code> aunque estés preparando un mundo grande.</p>
+<h2 id="doc-ch25-md-ajustar-los-margenes-sin-invertir-la-intuicion">Ajustar los márgenes sin invertir la intuición</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Margen X</th>
+<th>Intervalo permitido de la esquina, tanque de 18</th>
+<th>Comportamiento</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">0</td>
+<td><code>[0,302]</code></td>
+<td>Casi toda la pantalla; cámara tarda en seguir</td>
+</tr>
+<tr>
+<td style="text-align: right;">50</td>
+<td><code>[50,252]</code></td>
+<td>Zona amplia</td>
+</tr>
+<tr>
+<td style="text-align: right;">100</td>
+<td><code>[100,202]</code></td>
+<td>Configuración actual</td>
+</tr>
+<tr>
+<td style="text-align: right;">151</td>
+<td><code>[151,151]</code></td>
+<td>Zona de recorrido cero; sigue el centro, salvo límites</td>
+</tr>
+<tr>
+<td style="text-align: right;">152</td>
+<td><code>[152,150]</code></td>
+<td>Configuración invertida e inválida</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Margen cero no centra la cámara.</strong> Aumentar el margen reduce la zona. Para una zona con recorrido positivo necesitas <code>2*margin_<wbr>x + target_<wbr>width &lt; WIDTH</code>; igualdad deja un único punto. En Y, el caso de igualdad es margen 91.</p>
+<p>Una cámara con interpolación sería una ampliación posterior: cambia el ritmo del seguimiento y puede dejar al objetivo temporalmente fuera. No atribuyas ese comportamiento a la implementación actual.</p>
+<h2 id="doc-ch25-md-integrarla-sin-desincronizar-la-partida">Integrarla sin desincronizar la partida</h2>
+<p><code>update_<wbr>camera()</code> elige el tanque local y llama a follow o snap. El render actualiza la cámara, copia el fondo, transforma los objetos y añade el HUD. Toda esa imagen usa la misma cámara: actualizarla entre fondo y tanque produciría un desplazamiento relativo falso.</p>
+<p>Cada equipo puede seguir a su jugador. Cámara y tema son presentación; no se transmiten como estado de simulación ni se incorporan al checksum. El juego exige red para el mapa grande porque una sola ventana no permite seguir cómodamente a dos jugadores separados en un teclado.</p>
+<h2 id="doc-ch25-md-recorrer-las-funciones-del-juego-en-orden">Recorrer las funciones del juego en orden</h2>
+<p>Abre <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/src/main.c">src/main.c</a> y <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/src/bmp.c">src/bmp.c</a>. Busca los nombres de esta tabla, siguiendo el orden de arriba abajo durante un fotograma normal:</p>
+<table>
+<thead>
+<tr>
+<th>Lugar</th>
+<th>Qué decisión toma</th>
+<th>Qué conserva</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>draw_<wbr>to_<wbr>buffer</code></td>
+<td>Actualiza la cámara antes de componer la imagen</td>
+<td>La misma cámara para todo ese dibujo</td>
+</tr>
+<tr>
+<td><code>update_<wbr>camera(0)</code></td>
+<td>Elige P1 o P2 como objetivo local</td>
+<td>Las posiciones de ambos tanques</td>
+</tr>
+<tr>
+<td><code>bmp_<wbr>camera_<wbr>follow</code></td>
+<td>Corrige solo el exceso sobre la zona</td>
+<td>La cámara anterior mientras el objetivo permanece dentro</td>
+</tr>
+<tr>
+<td><code>bmp_<wbr>camera_<wbr>clamp</code></td>
+<td>Impide que la ventana salga del mundo</td>
+<td>Una ventana válida, aunque no pueda centrar al tanque</td>
+</tr>
+<tr>
+<td><code>bmp_<wbr>draw_<wbr>world_<wbr>window</code></td>
+<td>Copia el trozo de fondo elegido</td>
+<td>El mapa completo en su buffer original</td>
+</tr>
+<tr>
+<td><code>draw_<wbr>sprite_<wbr>to_<wbr>buffer</code></td>
+<td>Dibuja y recorta cada sprite en pantalla</td>
+<td>Las coordenadas de mundo usadas por la simulación</td>
+</tr>
+</tbody>
+</table>
+<h3 id="doc-ch25-md-1-elegir-el-objetivo-es-distinto-de-calcular-el-seguimiento">1. Elegir el objetivo es distinto de calcular el seguimiento</h3>
+<p><code>update_<wbr>camera</code> empieza con <code>target = &amp;player1</code>. Si está en red y <code>local_<wbr>player_<wbr>is_<wbr>1 == 0</code>, cambia a <code>&amp;player2</code>. El puntero permite usar el mismo cálculo para cualquiera de los dos, sin copiar ni modificar sus estructuras.</p>
+<p>Con <code>snap_<wbr>to_<wbr>target == 1</code>, llama a <code>bmp_<wbr>camera_<wbr>snap</code>; en el otro caso llama a <code>bmp_<wbr>camera_<wbr>follow</code>. Las dos reciben X, Y, anchura y altura del objetivo. <code>follow</code> no tiene que averiguar qué teclado o qué máquina controla ese tanque.</p>
+<p>Durante el render normal, <code>draw_<wbr>to_<wbr>buffer</code> llama a <code>update_<wbr>camera(0)</code> una sola vez antes del fondo. La preparación de la vista al inicio o reinicio utiliza <code>update_<wbr>camera(1)</code> para colocarla de golpe.</p>
+<h3 id="doc-ch25-md-2-dibujar-el-fondo-utiliza-la-transformacion-inversa">2. Dibujar el fondo utiliza la transformación inversa</h3>
+<p>Después del seguimiento del ejercicio <code>(188,155)</code>, la cámara queda en <code>(88,43)</code>. El primer píxel de pantalla debe tomar el píxel de mundo <code>(88,43)</code>. El de pantalla <code>(10,2)</code> necesita el de mundo <code>(98,45)</code>.</p>
+<pre><code class="language-text">world_x = camera_x + screen_x
+world_y = camera_y + screen_y
+</code></pre>
+<p>En <code>bmp_<wbr>draw_<wbr>world_<wbr>window</code>, <code>row</code> es la fila <strong>de pantalla</strong>. Cada comienzo de fila del mapa se calcula con:</p>
+<pre><code class="language-text">origen = (camera_y + row) * map_width + camera_x
+</code></pre>
+<p>Con nuestra cámara y anchura de mundo 640, la fila 0 comienza en el byte 27608; la fila 1, en 28248. De cada una se copian 320 bytes. En el destino, esas filas comienzan en 0 y 320. El salto de fila del mundo es 640; el de pantalla, 320.</p>
+<p>El código convierte a <code>unsigned long</code> <strong>antes de multiplicar</strong>, porque los desplazamientos del mapa pueden superar 65.535. Reconstruye el puntero <code>huge</code> desde la base en cada fila. El detalle de memoria está desarrollado en <a href="#doc-ch22-md">22</a> y <a href="#doc-ch23-md">23</a>; la idea de cámara no cambia por utilizar ese tipo de puntero.</p>
+<h3 id="doc-ch25-md-3-dibujar-el-tanque-utiliza-la-resta">3. Dibujar el tanque utiliza la resta</h3>
+<p>Con la misma cámara <code>(88,43)</code>, el tanque de mundo <code>(188,155)</code> se dibuja en <code>(100,112)</code>. En la llamada real se transforma cada coordenada así:</p>
+<pre><code class="language-c">(int)player1.position_x - camera_x
+(int)player1.position_y - camera_y
+</code></pre>
+<p>Son las expresiones de los argumentos de posición, no asignaciones a <code>player1</code>. El molde a <code>int</code> mantiene el resultado con signo. Si otro sprite tuviera X de mundo 83, obtendríamos <code>83-88=-5</code>: sus primeras cinco columnas quedarían fuera y habría que recortarlas. Para un sprite de anchura 18 quedarían trece columnas visibles, si Y permite verlo completo.</p>
+<p>Tanques, balas y explosiones comparten esta transformación. El HUD, que incluye las cifras del radar, usa directamente coordenadas de pantalla porque debe quedarse en el mismo sitio del monitor.</p>
+<h2 id="doc-ch25-md-cinco-preguntas-para-localizar-una-confusion">Cinco preguntas para localizar una confusión</h2>
+<table>
+<thead>
+<tr>
+<th>Si te preguntas…</th>
+<th>Comprueba esto</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>«¿Por qué la cámara avanza y el paisaje retrocede?»</td>
+<td>Al aumentar la cantidad que restas, disminuye la posición de pantalla</td>
+</tr>
+<tr>
+<td>«¿Por qué el tanque no queda siempre en el centro?»</td>
+<td><code>follow</code> mantiene una zona; <code>snap</code> propone centrar y después limita</td>
+</tr>
+<tr>
+<td>«¿Por qué el fondo y el tanque se separan?»</td>
+<td>Ambos dibujos deben usar la misma cámara y el mismo frame</td>
+</tr>
+<tr>
+<td>«¿Por qué al invertir la marcha no sigue enseguida?»</td>
+<td>La posición vuelve al interior y la cámara conserva su valor anterior</td>
+</tr>
+<tr>
+<td>«¿Por qué el mapa de 320 × 200 no se desplaza?»</td>
+<td>Mundo menos pantalla vale cero en los dos ejes</td>
+</tr>
+</tbody>
+</table>
+<p>Para depurar, anota juntos <strong>mundo del objetivo, cámara anterior, pantalla antes, cámara final y pantalla después</strong>. Una sola coordenada aislada no permite distinguir movimiento real de movimiento aparente.</p>
+<h2 id="doc-ch25-md-practica-y-solucion">Práctica y solución</h2>
+<p><strong>Ejercicio:</strong> cámara <code>(90,40)</code>, tanque <code>(188,155)</code>. Calcula seguimiento completo en el mundo grande.</p>
+<p><strong>Solución:</strong> pantalla inicial <code>(98,115)</code>. X necesita −2; Y necesita +3. Cámara final <code>(88,43)</code>, tanque visible <code>(100,112)</code>. Ningún límite interviene.</p>
+<p>Repite los casos del <a href="#doc-labs-md">laboratorio ampliado</a>. Para aprobar esta lección debes explicar tanto cuándo la cámara se mueve como cuándo <strong>debe quedarse quieta</strong>, y por qué deja de seguir al llegar al final del mapa.</p>
+<p class="chapter-nav"><a href="#doc-ch24-md">Anterior</a> · <a href="../pdf/curso_completo.pdf#nameddest=doc-readme-md">Índice</a> · <a href="#doc-ch26-md">Siguiente: paredes en bits</a></p></article>
+<article class="chapter" id="doc-ch26-md" data-source="ch26.md"><div class="kicker">CURSO / LECCIONES</div><h1 id="doc-ch26-md-26-un-bit-para-cada-pared">26. Un bit para cada pared</h1>
+<p><strong>Vas a construir:</strong> una máscara compacta que conserva las colisiones de todo el mundo. <strong>Laboratorio:</strong> <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/tutorial/ch23/chap23.c">chap23.c</a>. <strong>Código real:</strong> <code>bmp_<wbr>fill_<wbr>background_<wbr>collision_<wbr>in_<wbr>buffer()</code> y <code>bmp_<wbr>is_<wbr>wall()</code> en <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/src/bmp.c">bmp.c</a>.</p>
+<figure class="figure"><svg xmlns="http://www.w3.org/2000/svg" width="1040" height="500" viewBox="0 0 1040 500" role="img" aria-labelledby="fig-mascara-title fig-mascara-desc">
+<title id="fig-mascara-title">Ocho preguntas de pared en un solo byte</title><desc id="fig-mascara-desc">El píxel inicial usa el bit menos significativo; la escritura binaria habitual se muestra en orden inverso.</desc>
+<defs><marker id="fig-mascara-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#148f82"/></marker></defs>
+<rect width="1040" height="500" rx="16" fill="#f7faf9"/>
+<g font-family="DejaVu Sans, sans-serif"><text x="28" y="43" font-size="26" fill="#173548" text-anchor="start" font-weight="bold">Ocho preguntas de pared en un solo byte</text><text x="35" y="100" font-size="24" fill="#243746" text-anchor="start" font-weight="normal">Paredes en X = 0, 3 y 7 de una fila de ocho píxeles</text><rect x="45" y="140" width="105" height="78" rx="9" fill="#148f82" stroke="none" stroke-width="2" /><text x="97" y="190" font-size="29" fill="#ffffff" text-anchor="middle" font-weight="normal">1</text><text x="97" y="260" font-size="19" fill="#243746" text-anchor="middle" font-weight="normal">bit 0</text><rect x="165" y="140" width="105" height="78" rx="9" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="217" y="190" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">0</text><text x="217" y="260" font-size="19" fill="#243746" text-anchor="middle" font-weight="normal">bit 1</text><rect x="285" y="140" width="105" height="78" rx="9" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="337" y="190" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">0</text><text x="337" y="260" font-size="19" fill="#243746" text-anchor="middle" font-weight="normal">bit 2</text><rect x="405" y="140" width="105" height="78" rx="9" fill="#148f82" stroke="none" stroke-width="2" /><text x="457" y="190" font-size="29" fill="#ffffff" text-anchor="middle" font-weight="normal">1</text><text x="457" y="260" font-size="19" fill="#243746" text-anchor="middle" font-weight="normal">bit 3</text><rect x="525" y="140" width="105" height="78" rx="9" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="577" y="190" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">0</text><text x="577" y="260" font-size="19" fill="#243746" text-anchor="middle" font-weight="normal">bit 4</text><rect x="645" y="140" width="105" height="78" rx="9" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="697" y="190" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">0</text><text x="697" y="260" font-size="19" fill="#243746" text-anchor="middle" font-weight="normal">bit 5</text><rect x="765" y="140" width="105" height="78" rx="9" fill="#dce7eb" stroke="none" stroke-width="2" /><text x="817" y="190" font-size="29" fill="#243746" text-anchor="middle" font-weight="normal">0</text><text x="817" y="260" font-size="19" fill="#243746" text-anchor="middle" font-weight="normal">bit 6</text><rect x="885" y="140" width="105" height="78" rx="9" fill="#148f82" stroke="none" stroke-width="2" /><text x="937" y="190" font-size="29" fill="#ffffff" text-anchor="middle" font-weight="normal">1</text><text x="937" y="260" font-size="19" fill="#243746" text-anchor="middle" font-weight="normal">bit 7</text><text x="70" y="345" font-size="31" fill="#148f82" text-anchor="start" font-weight="bold">1 + 8 + 128 = 137 = 0x89</text><text x="70" y="415" font-size="23" fill="#243746" text-anchor="start" font-weight="normal">i = y × anchura + x    byte = i / 8    máscara = 1 &lt;&lt; (i % 8)</text><text x="70" y="460" font-size="23" fill="#243746" text-anchor="start" font-weight="normal">Al escribir: OR. Al consultar: AND distinto de cero.</text></g></svg><figcaption>El píxel inicial usa el bit menos significativo; la escritura binaria habitual se muestra en orden inverso.</figcaption></figure>
+<h2 id="doc-ch26-md-una-imagen-para-mirar-otra-para-decidir">Una imagen para mirar, otra para decidir</h2>
+<p>El dibujo del escenario puede tener sombras, rejillas y manchas. Ninguna de ellas debería convertirse accidentalmente en una pared. El juego carga otra imagen, <code>bigcol.bmp</code>, donde el <strong>índice 252</strong> significa pared. Los demás índices significan suelo.</p>
+<p>Importa el índice del píxel, no el RGB que ese índice muestra en el editor. Un editor que reordene la paleta puede conservar el aspecto y destruir la interpretación lógica.</p>
+<p>Como solo hay dos respuestas, basta un bit: 0 para suelo, 1 para pared. Un byte guarda ocho respuestas.</p>
+<pre><code class="language-text">640 * 400 = 256000 píxeles
+256000 / 8 = 32000 bytes
+</code></pre>
+<p>Para un número de píxeles no divisible por ocho, usa <code>(pixels+7)/8</code>. Una máscara de 10 píxeles necesita dos bytes, aunque sobren seis bits.</p>
+<h2 id="doc-ch26-md-encontrar-el-byte-y-el-bit">Encontrar el byte y el bit</h2>
+<p>Primero convierte <code>(x,y)</code> en índice lineal del <strong>mundo</strong>:</p>
+<pre><code class="language-text">i = y * map_width + x
+byte_index = i / 8        equivalente a i &gt;&gt; 3
+bit_number = i % 8        equivalente a i &amp; 7
+bit_mask = 1 &lt;&lt; bit_number
+</code></pre>
+<p>El código numera desde el bit menos significativo. Para una fila de ocho píxeles con pared en X=0, 3 y 7:</p>
+<pre><code class="language-text">x:                0 1 2 3 4 5 6 7
+pared:            1 0 0 1 0 0 0 1
+byte, bits 7..0:   1 0 0 0 1 0 0 1 = 0x89 = 137
+</code></pre>
+<p>La representación binaria escrita suele mostrar primero el bit 7; las X de la fila empiezan por el bit 0. No inviertas esa relación al depurar.</p>
+<h2 id="doc-ch26-md-escribir-y-consultar">Escribir y consultar</h2>
+<p>Para marcar una pared, conserva los otros bits mediante OR:</p>
+<pre><code class="language-c">mask[byte_index] = mask[byte_index] | bit_mask;
+</code></pre>
+<p>Para consultar, usa AND y compara con cero:</p>
+<pre><code class="language-c">if ((mask[byte_index] &amp; bit_mask) != 0) {
+    return 1;
+}
+return 0;
+</code></pre>
+<p>No uses <code>== 1</code>: una pared en el bit 7 devuelve 128 al hacer AND y sigue siendo pared. No uses una asignación directa de <code>bit_<wbr>mask</code> al cargar: borraría las paredes anteriores del mismo byte.</p>
+<p>En el mundo grande, <code>(639,399)</code> da índice 255999, byte 31999 y bit 7. Por eso el índice lineal es <code>unsigned long</code>, mientras que el índice de byte cabe en <code>unsigned int</code>. Esa elección deja de servir si amplías tanto el mundo que la máscara supera 65535 bytes.</p>
+<h2 id="doc-ch26-md-cargar-sin-reservar-otros-256000-bytes">Cargar sin reservar otros 256000 bytes</h2>
+<p>El cargador lee una fila de la imagen en <code>map_<wbr>line</code>, de hasta 640 bytes, y marca inmediatamente los bits correspondientes. Como el BMP está guardado de abajo arriba, la primera fila leída se asigna a <code>map_<wbr>height-1</code>.</p>
+<p>La máscara se pone a cero antes de cargar. Si vuelves a cargar sobre la misma reserva sin limpiarla, las paredes antiguas pueden permanecer: el OR añade bits, no los borra.</p>
+<p>El mapa visual y el lógico deben tener las dimensiones esperadas. El cargador actual usa el formato fijo del proyecto y no constituye un validador general de BMP; una lectura incompleta puede dejar datos sin cargar. Valida tus recursos antes de incorporarlos.</p>
+<h2 id="doc-ch26-md-fuera-del-mundo-y-mascara-ausente">Fuera del mundo y máscara ausente</h2>
+<p><code>bmp_<wbr>is_<wbr>wall</code> devuelve pared si X o Y están fuera del mapa. Así una consulta exterior no lee memoria ajena. Sin embargo, si la coordenada está dentro y el puntero de máscara es <code>NULL</code>, devuelve suelo. No confundas eso con una recuperación completa ante fallo de carga: el juego necesita una máscara válida para conservar sus reglas.</p>
+<p>Nunca restes la cámara en esta función. Una pared no cambia de identidad cuando mueves la ventana.</p>
+<h2 id="doc-ch26-md-practica-y-solucion">Práctica y solución</h2>
+<p><strong>Ejercicio:</strong> mapa de anchura 640, consulta <code>(13,2)</code>. Calcula índice, byte y máscara. Supón que ese byte vale 32.</p>
+<p><strong>Solución:</strong> <code>i=1293</code>, byte 161, bit 5, máscara 32. <code>32 &amp; 32</code> vale 32: hay pared. Si consultas <code>(12,2)</code>, obtienes bit 4 y <code>32 &amp; 16 = 0</code>: suelo.</p>
+<p>Como práctica en una copia, pinta una pared lógica pequeña sobre un suelo visual reconocible. Comprueba que bloquea aunque su dibujo no cambie. Después alinea ambos mapas: la separación es útil para programar, pero el jugador necesita poder leer dónde puede pasar.</p>
+<p class="chapter-nav"><a href="#doc-ch25-md">Anterior</a> · <a href="../pdf/curso_completo.pdf#nameddest=doc-readme-md">Índice</a> · <a href="#doc-ch27-md">Siguiente: diseñar un nivel</a></p></article>
+<article class="chapter" id="doc-ch27-md" data-source="ch27.md"><div class="kicker">CURSO / LECCIONES</div><h1 id="doc-ch27-md-27-disenar-mapas-que-se-puedan-jugar">27. Diseñar mapas que se puedan jugar</h1>
+<p><strong>Vas a producir:</strong> el diseño de un nivel y una lista concreta para comprobar sus recursos. Trabaja sobre copias; los recursos originales son la referencia. <strong>Fuentes:</strong> <a href="https://github.com/tsw1985/CutreGameMSDOS/tree/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/res/15Level">res/15Level</a>, <code>init_<wbr>graphics()</code> en <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/src/main.c">main.c</a> y <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/src/players.c">players.c</a>.</p>
+<figure class="figure"><svg xmlns="http://www.w3.org/2000/svg" width="1040" height="500" viewBox="0 0 1040 500" role="img" aria-labelledby="fig-temas-title fig-temas-desc">
+<title id="fig-temas-title">La geometría compartida no depende del tema</title><desc id="fig-temas-desc">Esquema didáctico de tres aspectos sobre una misma distribución; no es una captura de un nivel del juego.</desc>
+<defs><marker id="fig-temas-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#148f82"/></marker></defs>
+<rect width="1040" height="500" rx="16" fill="#f7faf9"/>
+<g font-family="DejaVu Sans, sans-serif"><text x="28" y="43" font-size="26" fill="#173548" text-anchor="start" font-weight="bold">La geometría compartida no depende del tema</text><rect x="40" y="110" width="295" height="235" rx="0" fill="#dce8e4" stroke="#173548" stroke-width="2" /><rect x="55" y="125" width="265" height="18" rx="9" fill="#148f82" stroke="none" stroke-width="2" /><rect x="55" y="312" width="265" height="18" rx="9" fill="#148f82" stroke="none" stroke-width="2" /><rect x="55" y="125" width="18" height="205" rx="9" fill="#148f82" stroke="none" stroke-width="2" /><rect x="302" y="125" width="18" height="205" rx="9" fill="#148f82" stroke="none" stroke-width="2" /><rect x="145" y="145" width="22" height="105" rx="9" fill="#148f82" stroke="none" stroke-width="2" /><rect x="230" y="225" width="22" height="95" rx="9" fill="#148f82" stroke="none" stroke-width="2" /><rect x="100" y="260" width="8" height="36" rx="2" fill="#173548" stroke="none" stroke-width="2" /><rect x="128" y="260" width="8" height="36" rx="2" fill="#173548" stroke="none" stroke-width="2" /><rect x="108" y="266" width="20" height="26" rx="2" fill="#148f82" stroke="none" stroke-width="2" /><rect x="116" y="260" width="4" height="20" rx="0" fill="#148f82" stroke="none" stroke-width="2" /><text x="187" y="385" font-size="25" fill="#148f82" text-anchor="middle" font-weight="bold">SKYNET</text><rect x="375" y="110" width="295" height="235" rx="0" fill="#dce8e4" stroke="#173548" stroke-width="2" /><rect x="390" y="125" width="265" height="18" rx="9" fill="#7b854f" stroke="none" stroke-width="2" /><rect x="390" y="312" width="265" height="18" rx="9" fill="#7b854f" stroke="none" stroke-width="2" /><rect x="390" y="125" width="18" height="205" rx="9" fill="#7b854f" stroke="none" stroke-width="2" /><rect x="637" y="125" width="18" height="205" rx="9" fill="#7b854f" stroke="none" stroke-width="2" /><rect x="480" y="145" width="22" height="105" rx="9" fill="#7b854f" stroke="none" stroke-width="2" /><rect x="565" y="225" width="22" height="95" rx="9" fill="#7b854f" stroke="none" stroke-width="2" /><rect x="435" y="260" width="8" height="36" rx="2" fill="#173548" stroke="none" stroke-width="2" /><rect x="463" y="260" width="8" height="36" rx="2" fill="#173548" stroke="none" stroke-width="2" /><rect x="443" y="266" width="20" height="26" rx="2" fill="#7b854f" stroke="none" stroke-width="2" /><rect x="451" y="260" width="4" height="20" rx="0" fill="#7b854f" stroke="none" stroke-width="2" /><text x="522" y="385" font-size="25" fill="#7b854f" text-anchor="middle" font-weight="bold">MILITAR</text><rect x="710" y="110" width="295" height="235" rx="0" fill="#dce8e4" stroke="#173548" stroke-width="2" /><rect x="725" y="125" width="265" height="18" rx="9" fill="#8463b7" stroke="none" stroke-width="2" /><rect x="725" y="312" width="265" height="18" rx="9" fill="#8463b7" stroke="none" stroke-width="2" /><rect x="725" y="125" width="18" height="205" rx="9" fill="#8463b7" stroke="none" stroke-width="2" /><rect x="972" y="125" width="18" height="205" rx="9" fill="#8463b7" stroke="none" stroke-width="2" /><rect x="815" y="145" width="22" height="105" rx="9" fill="#8463b7" stroke="none" stroke-width="2" /><rect x="900" y="225" width="22" height="95" rx="9" fill="#8463b7" stroke="none" stroke-width="2" /><rect x="770" y="260" width="8" height="36" rx="2" fill="#173548" stroke="none" stroke-width="2" /><rect x="798" y="260" width="8" height="36" rx="2" fill="#173548" stroke="none" stroke-width="2" /><rect x="778" y="266" width="20" height="26" rx="2" fill="#8463b7" stroke="none" stroke-width="2" /><rect x="786" y="260" width="4" height="20" rx="0" fill="#8463b7" stroke="none" stroke-width="2" /><text x="857" y="385" font-size="25" fill="#8463b7" text-anchor="middle" font-weight="bold">NEON</text><text x="75" y="455" font-size="22" fill="#243746" text-anchor="start" font-weight="normal">Un nivel, tres aspectos: misma máscara lógica, distintas paletas y dibujos.</text></g></svg><figcaption>Esquema didáctico de tres aspectos sobre una misma distribución; no es una captura de un nivel del juego.</figcaption></figure>
+<h2 id="doc-ch27-md-dibuja-primero-las-decisiones-del-jugador">Dibuja primero las decisiones del jugador</h2>
+<p>Un nivel no empieza con una textura. Empieza con dos salidas, caminos que las conectan y lugares donde elegir. Esboza una ruta corta y expuesta, otra más larga con cobertura y algún espacio para girar. Una bifurcación que termina enseguida en una pared no ofrece la misma elección que dos rutas conectadas.</p>
+<p>Usa inicialmente una cuadrícula en papel, por ejemplo de 16 píxeles por celda. El tanque mide 18, de modo que una celda no equivale a un pasillo válido. Para empezar, un corredor de 32 píxeles deja margen para el dibujo y para maniobrar; no es una regla del motor ni sustituye las pruebas de choque.</p>
+<h2 id="doc-ch27-md-tres-capas-que-deben-coincidir">Tres capas que deben coincidir</h2>
+<table>
+<thead>
+<tr>
+<th>Capa</th>
+<th>Contiene</th>
+<th>Comprueba</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Geometría lógica</td>
+<td><code>bigcol.bmp</code>, pared en índice 252</td>
+<td>Conexión, pasos y salidas libres</td>
+</tr>
+<tr>
+<td>Aspecto</td>
+<td><code>big.bmp</code></td>
+<td>Paredes visuales alineadas con las lógicas</td>
+</tr>
+<tr>
+<td>Presentación del tema</td>
+<td>Sprites y <code>numbers.bmp</code></td>
+<td>Índices compatibles con la paleta del mapa</td>
+</tr>
+</tbody>
+</table>
+<p>El motor no deduce paredes por luminosidad. Tampoco puede mostrar simultáneamente tres paletas independientes en modo 13h: hay una paleta VGA global.</p>
+<h2 id="doc-ch27-md-organizacion-que-usa-el-juego">Organización que usa el juego</h2>
+<p>Los niveles 1–5 se buscan así, desde <code>bin</code>:</p>
+<pre><code class="language-text">..\res\15Level\SKYNET\NIVEL01\big.bmp
+..\res\15Level\SKYNET\NIVEL01\bigcol.bmp
+</code></pre>
+<p>Las alternativas de tema son <code>MILITAR</code> y <code>NEON</code>; los directorios llegan a <code>NIVEL05</code>. El nivel 0 usa las imágenes de <code>res/</code> y su <code>bigcol.bmp</code> compartido. El mapa pequeño usa <code>cutre.bmp</code>, <code>cutrecol.bmp</code> y <code>sprites.bmp</code>.</p>
+<p>Los 15 directorios de tema y nivel no significan 15 geometrías distintas: hay cinco niveles con tres aspectos. En los recursos revisados, los tres <code>bigcol.bmp</code> de un mismo nivel son idénticos byte a byte. Por eso se acuerda <strong>nivel</strong> por red, mientras cada equipo puede escoger su <strong>tema</strong>.</p>
+<p>No cambies solo una máscara temática si quieres conservar esa libertad: los jugadores podrían ver paredes aparentemente equivalentes y simular choques distintos. El checksum no sustituye una validación previa de los recursos.</p>
+<h2 id="doc-ch27-md-contrato-de-exportacion-bmp">Contrato de exportación BMP</h2>
+<p>Para estos mapas: 640 × 400, 8 bits indexados, sin compresión, cabecera DIB de 40 bytes, 256 entradas de paleta y píxeles desde el byte 1078. Las filas se guardan de abajo arriba. El tamaño habitual es <code>1078+256000 = 257078</code> bytes.</p>
+<p>No basta con que el fichero termine en <code>.bmp</code>. Un BMP de 24 bits, una paleta acortada, RLE o una imagen de altura negativa no cumplen el contrato de estos cargadores.</p>
+<p>Conserva nombres que funcionen en DOS 8.3. Si añades un sexto nivel, también debes ampliar análisis de argumentos y acuerdo de nivel: crear <code>NIVEL06</code> por sí solo no lo hace seleccionable.</p>
+<h2 id="doc-ch27-md-los-puntos-de-salida-son-datos-del-juego">Los puntos de salida son datos del juego</h2>
+<p>En el mapa grande P1 empieza en <code>(166,299)</code>, mirando arriba, y P2 en <code>(483,106)</code>, mirando abajo. Comprueba el área completa de 18 × 18 y el espacio inmediato delante del cañón. El juego no busca automáticamente un lugar libre dentro del BMP.</p>
+<p>Las colisiones del tanque consultan tres puntos delanteros, no cada píxel de su silueta. Las esquinas, cambios de dirección y pasos estrechos deben probarse desde ambos sentidos. Además, las balas avanzan 3 píxeles por actualización: un obstáculo lógico extremadamente fino puede quedar entre posiciones consultadas. Diseñar paredes con grosor razonable ayuda, pero la solución general a atravesar obstáculos rápidos sería una prueba de trayecto.</p>
+<h2 id="doc-ch27-md-plan-de-validacion-del-nivel">Plan de validación del nivel</h2>
+<ol>
+<li>Recorre cada salida hacia el centro sin oponente. Anota bloqueos y entradas que no se leen bien visualmente.</li>
+<li>Cruza cada puerta desde ambos lados; gira junto a sus cuatro esquinas.</li>
+<li>Dispara paralelo a una pared, hacia ella y cerca de una esquina.</li>
+<li>Lleva la cámara a los cuatro extremos y comprueba fondo, sprites y máscara.</li>
+<li>Repite con el otro tanque. Después juega entre temas distintos del mismo nivel.</li>
+<li>Reinicia una ronda lejos de las salidas: comprueba reaparición, snap y primer fotograma.</li>
+</ol>
+<p>El registro debe decir qué posición y dirección fallaron, no solo «el mapa va mal». Un punto reproducible convierte una impresión en una tarea corregible.</p>
+<h2 id="doc-ch27-md-practica-y-solucion">Práctica y solución</h2>
+<p><strong>Ejercicio:</strong> haces dos versiones de un nivel. Cambias un muro de X=250 a X=260 en la máscara NEON, pero dejas SKYNET igual. ¿Puedes considerarlo solo un cambio de aspecto?</p>
+<p><strong>Solución:</strong> no. Las mismas entradas pueden detener un tanque en un equipo y permitirle avanzar en el otro. Debes mantener la geometría común o tratarlo como otro nivel acordado por ambos.</p>
+<p>Entrega un croquis, las coordenadas de las salidas, tres rutas de prueba y una tabla de recursos. Esa es una especificación de nivel que otra persona puede verificar.</p>
+<p class="chapter-nav"><a href="#doc-ch26-md">Anterior</a> · <a href="../pdf/curso_completo.pdf#nameddest=doc-readme-md">Índice</a> · <a href="#doc-ch28-md">Siguiente: radar</a></p></article>
+<article class="chapter" id="doc-ch28-md" data-source="ch28.md"><div class="kicker">CURSO / LECCIONES</div><h1 id="doc-ch28-md-28-un-radar-que-orienta-sin-ensenar-el-mapa-entero">28. Un radar que orienta sin enseñar el mapa entero</h1>
+<p><strong>Vas a construir:</strong> un porcentaje de cercanía dibujado con sprites. <strong>Laboratorio:</strong> <a href="https://github.com/tsw1985/CutreGameMSDOS/blob/2bc401ed00e9bd3ce8c1cb297ca63836e1520988/tutorial/ch24/chap24.c">chap24.c</a>, dos tanques sobre SKYNET nivel 1; flechas y WASD, T alterna contorno. Este laboratorio es local y no necesita IPX.</p>
+<figure class="figure"><svg xmlns="http://www.w3.org/2000/svg" width="1040" height="510" viewBox="0 0 1040 510" role="img" aria-labelledby="fig-radar-title fig-radar-desc">
+<title id="fig-radar-title">Cercanía: una cifra, no una ruta</title><desc id="fig-radar-desc">La distancia ignora las paredes; indica separación geométrica aproximada.</desc>
+<defs><marker id="fig-radar-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9" fill="#148f82"/></marker></defs>
+<rect width="1040" height="510" rx="16" fill="#f7faf9"/>
+<g font-family="DejaVu Sans, sans-serif"><text x="28" y="43" font-size="26" fill="#173548" text-anchor="start" font-weight="bold">Cercanía: una cifra, no una ruta</text><rect x="35" y="110" width="280" height="125" rx="9" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="175.0" y="146" font-size="23" fill="#243746" text-anchor="middle" font-weight="bold">Separación de salidas</text><text x="175.0" y="178" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">dx=317 · dy=193</text><rect x="380" y="110" width="280" height="125" rx="9" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="520.0" y="146" font-size="23" fill="#243746" text-anchor="middle" font-weight="bold">Distancia aproximada</text><text x="520.0" y="178" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">317 + 193/2 = 413</text><rect x="725" y="110" width="280" height="125" rx="9" fill="#eef5f4" stroke="none" stroke-width="2" /><text x="865.0" y="146" font-size="23" fill="#243746" text-anchor="middle" font-weight="bold">Normalización</text><text x="865.0" y="178" font-size="18" fill="#243746" text-anchor="middle" font-weight="normal">máximo geométrico 813</text><line x1="320" y1="172" x2="370" y2="172" stroke="#148f82" stroke-width="3" marker-end="url(#fig-radar-arrow)"/><line x1="665" y1="172" x2="715" y2="172" stroke="#148f82" stroke-width="3" marker-end="url(#fig-radar-arrow)"/><text x="520" y="325" font-size="30" fill="#148f82" text-anchor="middle" font-weight="bold">100 − floor(413 × 100 / 813) = 50</text><rect x="348" y="360" width="82" height="77" rx="9" fill="#173548" stroke="none" stroke-width="2" /><text x="389" y="414" font-size="44" fill="#ffffff" text-anchor="middle" font-weight="bold">0</text><rect x="435" y="360" width="82" height="77" rx="9" fill="#173548" stroke="none" stroke-width="2" /><text x="476" y="414" font-size="44" fill="#ffffff" text-anchor="middle" font-weight="bold">5</text><rect x="522" y="360" width="82" height="77" rx="9" fill="#173548" stroke="none" stroke-width="2" /><text x="563" y="414" font-size="44" fill="#ffffff" text-anchor="middle" font-weight="bold">0</text><rect x="609" y="360" width="82" height="77" rx="9" fill="#173548" stroke="none" stroke-width="2" /><text x="650" y="414" font-size="44" fill="#ffffff" text-anchor="middle" font-weight="bold">%</text><text x="520" y="478" font-size="21" fill="#243746" text-anchor="middle" font-weight="normal">El HUD usa pantalla. Mover solo la cámara no cambia el porcentaje.</text></g></svg><figcaption>La distancia ignora las paredes; indica separación geométrica aproximada.</figcaption></figure>
+<h2 id="doc-ch28-md-decide-que-informacion-quieres-dar">Decide qué información quieres dar</h2>
+<p>El radar responde «¿me estoy acercando?». No dibuja la dirección del enemigo ni la ruta más corta entre paredes. Dos tanques separados por una pared pueden marcar una proximidad alta.</p>
+<p>Es un elemento de pantalla: se dibuja al final, en coordenadas fijas. No resta la cámara y no altera la simulación.</p>
+<h2 id="doc-ch28-md-distancia-con-cuentas-enteras">Distancia con cuentas enteras</h2>
+<p>Primero calcula diferencias absolutas entre posiciones de mundo. Como las posiciones son unsigned, convierte antes de restar:</p>
+<pre><code class="language-c">int dx;
+int dy;
+
+dx = (int)player1.position_x - (int)player2.position_x;
+dy = (int)player1.position_y - (int)player2.position_y;
+if (dx &lt; 0) {
+    dx = -dx;
+}
+if (dy &lt; 0) {
+    dy = -dy;
+}
+</code></pre>
+<p>El radar aproxima la distancia usando <code>mayor + menor/2</code>. Para diferencias <code>(100,0)</code>, da 100; para <code>(100,100)</code>, da 150, frente a aproximadamente 141,42 de distancia euclídea. No es distancia de Manhattan, que daría 200 en ese último caso.</p>
+<p>La aproximación continua puede sobreestimar hasta aproximadamente 11,8 %; la división entera añade redondeo. Sirve como indicador económico, no como regla exacta para impactos ni como búsqueda de caminos.</p>
+<h2 id="doc-ch28-md-convertirla-en-porcentaje">Convertirla en porcentaje</h2>
+<p>Las esquinas de dos tanques de 18 × 18 pueden separarse geométricamente hasta 622 en X y 382 en Y dentro del mundo de 640 × 400:</p>
+<pre><code class="language-text">worst_distance = 622 + 382/2 = 813
+percent = 100 - floor(distance*100/813)
+</code></pre>
+<p>Se limita después a 0–100. Las paredes pueden impedir alcanzar esos extremos geométricos; no prometas que cada nivel permitirá ver exactamente 0 % durante una partida normal.</p>
+<table>
+<thead>
+<tr>
+<th>Separación absoluta</th>
+<th style="text-align: right;">Distancia aproximada</th>
+<th style="text-align: right;">Porcentaje</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>(0,0)</code></td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">100</td>
+</tr>
+<tr>
+<td><code>(100,0)</code></td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">88</td>
+</tr>
+<tr>
+<td><code>(100,100)</code></td>
+<td style="text-align: right;">150</td>
+<td style="text-align: right;">82</td>
+</tr>
+<tr>
+<td>Salidas: <code>(317,193)</code></td>
+<td style="text-align: right;">413</td>
+<td style="text-align: right;">50</td>
+</tr>
+<tr>
+<td><code>(622,382)</code></td>
+<td style="text-align: right;">813</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+<p><code>distance</code> y el producto se calculan en <code>long</code>: 81300 no cabe en 16 bits unsigned. En el código actual, como <code>distance</code> ya es <code>long</code>, cambiar únicamente el literal <code>100L</code> por <code>100</code> no haría que el producto pasara a 16 bits. El tipo de <strong>toda la expresión</strong> importa.</p>
+<h2 id="doc-ch28-md-del-numero-a-cuatro-dibujos">Del número a cuatro dibujos</h2>
+<p>Para un porcentaje <code>p</code>:</p>
+<pre><code class="language-text">centenas = p / 100
+decenas  = (p / 10) % 10
+unidades = p % 10
+última celda = símbolo %
+</code></pre>
+<p>La hoja contiene 11 celdas de 18 × 18: cifras 0–9 y porcentaje. Se extraen de una imagen BMP de 320 × 200; no es un BMP de solo 198 × 18. La celda N empieza en X=<code>N*18</code>.</p>
+<p>Las cifras avanzan 13 píxeles al colocarse. Cuatro celdas ocupan <code>3*13+18 = 57</code> píxeles. El HUD empieza en <code>(131,180)</code> y cabe en los 320 × 200. Un paso menor que 18 aprovecha el espacio transparente de las celdas.</p>
+<h2 id="doc-ch28-md-contorno-sin-tapar-las-cifras-vecinas">Contorno sin tapar las cifras vecinas</h2>
+<p>Se dibuja cada silueta en negro desplazada un píxel a izquierda, derecha, arriba y abajo. Primero se pintan <strong>todos</strong> los contornos y después <strong>todas</strong> las cifras. Si intercalases contorno y cifra por celda, el contorno siguiente podría tapar tinta de la anterior al solaparse los rectángulos.</p>
+<p>Son 16 llamadas de silueta y 4 de sprite para cuatro símbolos. No hace falta guardar otra imagen para cada versión de contorno.</p>
+<p>El radar se habilita en mapa grande con tema. Los números temáticos no comparten la paleta del mapa original y no existe una hoja ORIGINAL equivalente. Esa ausencia es un requisito de recursos, no un fallo matemático del porcentaje.</p>
+<h2 id="doc-ch28-md-practica-y-solucion">Práctica y solución</h2>
+<p>Mantén un tanque quieto y mueve el otro horizontalmente: el valor debe subir al acercarte y bajar al alejarte. Cambia solo la cámara: el valor no debe cambiar. Alterna T sobre fondos claros y oscuros para valorar la legibilidad.</p>
+<p><strong>Ejercicio:</strong> P1 <code>(200,100)</code>, P2 <code>(260,180)</code>. Calcula las cuatro celdas.</p>
+<p><strong>Solución:</strong> diferencias 60 y 80, distancia <code>80+60/2=110</code>; porcentaje <code>100-floor(11000/813)=87</code>. Celdas <code>0</code>, <code>8</code>, <code>7</code>, <code>%</code>.</p>
+<p class="chapter-nav"><a href="#doc-ch27-md">Anterior</a> · <a href="../pdf/curso_completo.pdf#nameddest=doc-readme-md">Índice</a> · <a href="../pdf/curso_completo.pdf#nameddest=doc-ch29-md">Siguiente: integración</a></p></article>
+<article class="chapter compact" id="doc-labs-md" data-source="LABS.md"><div class="kicker">GUÍAS Y MATERIAL DE APOYO</div><h1 id="doc-labs-md-laboratorio-de-camara-y-mapas-con-respuestas">Laboratorio de cámara y mapas, con respuestas</h1>
+<p>Resuelve primero en papel. Estas pruebas no requieren ejecutar DOS ni modificar el proyecto. Después puedes reproducir los casos en tu copia de los capítulos 20–24 de <code>tutorial/</code>. Todas las dimensiones se expresan en píxeles; los intervalos finales son excluidos.</p>
+<h2 id="doc-labs-md-1-la-resta-y-su-inversa">1. La resta y su inversa</h2>
+<p>Mundo 640 × 400, cámara <code>(83,117)</code>, tanque en <code>(260,230)</code>.</p>
+<ol>
+<li>¿Dónde aparece?</li>
+<li>¿Qué píxel del mundo ves en pantalla <code>(7,9)</code>?</li>
+<li>Si la cámara pasa a <code>(85,117)</code>, ¿ha cambiado alguna colisión del tanque?</li>
+</ol>
+<p><strong>Respuesta:</strong> <code>(177,113)</code>; mundo <code>(90,126)</code>; no cambia ninguna por mover solo la cámara. El tanque aparece ahora en <code>(175,113)</code>.</p>
+<h2 id="doc-labs-md-2-ventana-por-filas">2. Ventana por filas</h2>
+<p>Mundo de anchura 640, cámara <code>(37,103)</code>. Calcula primera dirección de origen de las filas de pantalla 0, 1 y 199, y el último byte leído.</p>
+<p><strong>Respuesta:</strong> 65957, 66597 y 193317. El último es 193636. Entre comienzos de fila hay 640 bytes; en destino hay 320. Ya la primera dirección excede 65535: una prueba que use solo la esquina superior izquierda no descubre todos los errores de 16 bits.</p>
+<h2 id="doc-labs-md-3-los-cuatro-extremos">3. Los cuatro extremos</h2>
+<p>Completa el último origen de cada ventana:</p>
+<table>
+<thead>
+<tr>
+<th>Cámara</th>
+<th style="text-align: right;">Primer origen</th>
+<th style="text-align: right;">Último origen</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>(0,0)</code></td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">127679</td>
+</tr>
+<tr>
+<td><code>(320,0)</code></td>
+<td style="text-align: right;">320</td>
+<td style="text-align: right;">127999</td>
+</tr>
+<tr>
+<td><code>(0,200)</code></td>
+<td style="text-align: right;">128000</td>
+<td style="text-align: right;">255679</td>
+</tr>
+<tr>
+<td><code>(320,200)</code></td>
+<td style="text-align: right;">128320</td>
+<td style="text-align: right;">255999</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Por qué sirve:</strong> si alguna dirección excede 255999, hay un error de límites o de fila final. Si el último destino excede 63999, el fallo está en la ventana de pantalla y no en el tamaño del mundo.</p>
+<h2 id="doc-labs-md-4-recorte-de-un-tanque">4. Recorte de un tanque</h2>
+<p>Para 18 × 18, completa la región local visible:</p>
+<table>
+<thead>
+<tr>
+<th>Destino</th>
+<th>X local</th>
+<th>Y local</th>
+<th style="text-align: right;">Píxeles geométricos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>(-9,-4)</code></td>
+<td><code>[9,18)</code></td>
+<td><code>[4,18)</code></td>
+<td style="text-align: right;">126</td>
+</tr>
+<tr>
+<td><code>(315,198)</code></td>
+<td><code>[0,5)</code></td>
+<td><code>[0,2)</code></td>
+<td style="text-align: right;">10</td>
+</tr>
+<tr>
+<td><code>(-18,40)</code></td>
+<td>Vacía</td>
+<td>—</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td><code>(319,199)</code></td>
+<td><code>[0,1)</code></td>
+<td><code>[0,1)</code></td>
+<td style="text-align: right;">1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pregunta adicional:</strong> ¿126 significa 126 escrituras? <strong>Respuesta:</strong> como máximo; la transparencia puede descartar píxeles dentro de ese rectángulo.</p>
+<h2 id="doc-labs-md-5-camara-con-historia">5. Cámara con historia</h2>
+<p>Márgenes 100/70, tanque 18 × 18. Cámara inicial <code>(100,50)</code>. Sigue sucesivamente estos objetivos:</p>
+<table>
+<thead>
+<tr>
+<th>Mundo del tanque</th>
+<th>Pantalla antes de seguir</th>
+<th>Cámara final</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>(300,160)</code></td>
+<td><code>(200,110)</code></td>
+<td><code>(100,50)</code></td>
+</tr>
+<tr>
+<td><code>(304,164)</code></td>
+<td><code>(204,114)</code></td>
+<td><code>(102,52)</code></td>
+</tr>
+<tr>
+<td><code>(302,162)</code></td>
+<td><code>(200,110)</code></td>
+<td><code>(102,52)</code></td>
+</tr>
+<tr>
+<td><code>(200,120)</code></td>
+<td><code>(98,68)</code></td>
+<td><code>(100,50)</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Respuesta razonada:</strong> el segundo paso sobresale dos píxeles por derecha y abajo; el tercero vuelve al interior y deja quieta la cámara; el cuarto sobresale dos por izquierda y arriba.</p>
+<h2 id="doc-labs-md-6-clamp-domina-a-la-zona-muerta">6. Clamp domina a la zona muerta</h2>
+<p>Cámara inicial <code>(0,0)</code>, tanque <code>(16,16)</code>. Follow propone <code>(-84,-54)</code>.</p>
+<p><strong>Respuesta:</strong> clamp deja <code>(0,0)</code> y el tanque sigue apareciendo en <code>(16,16)</code>. No existe mapa a la izquierda ni encima. La zona muerta no puede ser una obligación absoluta en el borde.</p>
+<p>Repite con tanque <code>(622,382)</code> y cámara <code>(320,200)</code>: follow propone <code>(420,270)</code>, clamp conserva <code>(320,200)</code>, pantalla <code>(302,182)</code>. El sprite termina exactamente en la esquina inferior derecha.</p>
+<h2 id="doc-labs-md-7-snap-y-mapa-pequeno">7. Snap y mapa pequeño</h2>
+<ol>
+<li>Haz snap a P1 <code>(166,299)</code> en mundo grande.</li>
+<li>Haz snap a <code>(110,164)</code> en mundo 320 × 200.</li>
+<li>¿Basta el mismo clamp para dibujar un mundo 200 × 100?</li>
+</ol>
+<p><strong>Respuesta:</strong> <code>(15,200)</code>; <code>(0,0)</code>; no. Para el mundo menor necesitas una copia recortada y rellenar el espacio que sobra. El bucle actual copia siempre 320 × 200.</p>
+<h2 id="doc-labs-md-8-empaquetar-una-fila">8. Empaquetar una fila</h2>
+<p>Mundo de 16 × 1. Paredes en X=0, 3, 7, 8 y 15.</p>
+<p><strong>Respuesta:</strong> bytes <code>0x89, 0x81</code>. Consultar X=7 usa byte 0 y máscara 128; consultar X=8 usa byte 1 y máscara 1. Este par descubre errores al cruzar un límite de byte.</p>
+<p>Para anchura 640, <code>(639,399)</code> usa byte 31999 y máscara 128. Consultar <code>(640,399)</code> devuelve pared por estar fuera, antes de buscar un byte.</p>
+<h2 id="doc-labs-md-9-la-misma-partida-con-dos-camaras">9. La misma partida con dos cámaras</h2>
+<p>Ambos equipos guardan P1 <code>(400,200)</code> y P2 <code>(450,220)</code>. A tiene cámara <code>(100,50)</code> y B <code>(300,100)</code>.</p>
+<p><strong>Respuesta:</strong> P1 aparece en <code>(300,150)</code> en A y <code>(100,100)</code> en B. La distancia del radar es <code>50+20/2=60</code>; porcentaje <code>100-floor(6000/813)=93</code> en ambos. Los campos compartidos del checksum deben coincidir. Las capturas no tienen por qué coincidir.</p>
+<h2 id="doc-labs-md-10-propiedades-que-comprueban-muchos-casos">10. Propiedades que comprueban muchos casos</h2>
+<p>Estas pruebas se llaman propiedades porque valen para familias de ejemplos:</p>
+<ul>
+<li><strong>Ida y vuelta:</strong> transformar mundo a pantalla y sumar la cámara recupera el mundo.</li>
+<li><strong>Traslación conjunta:</strong> sumar el mismo desplazamiento a objeto y cámara conserva la posición visible, mientras todo siga dentro de rangos válidos.</li>
+<li><strong>Estabilidad:</strong> aplicar follow dos veces con el mismo objetivo no cambia la cámara tras la primera corrección y clamp.</li>
+<li><strong>Identidad:</strong> mundo 320 × 200 y cámara cero produce la misma imagen que copiar el fondo completo.</li>
+<li><strong>Límites:</strong> todo píxel efectivamente escrito por clipping cae en <code>[0,64000)</code>.</li>
+<li><strong>Independencia:</strong> cambiar solo cámara o tema no cambia las paredes consultadas ni las entradas simuladas.</li>
+</ul>
+<h2 id="doc-labs-md-diagnostico-por-sintomas">Diagnóstico por síntomas</h2>
+<table>
+<thead>
+<tr>
+<th>Síntoma</th>
+<th>Primera hipótesis que comprobar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Imagen inclinada o filas desplazadas</td>
+<td>Stride, relleno BMP, offset 1078</td>
+</tr>
+<tr>
+<td>Falla al bajar a otra zona del mapa</td>
+<td>Multiplicación de 16 bits o puntero sin normalización</td>
+</tr>
+<tr>
+<td>Sprites desaparecen enteros al entrar por un borde</td>
+<td>Rechazo de negativos en lugar de clipping</td>
+</tr>
+<tr>
+<td>Bala pegada a la pantalla</td>
+<td>Falta restar cámara en ese dibujo</td>
+</tr>
+<tr>
+<td>Colisión cambia al mover la ventana</td>
+<td>Se ha usado pantalla al consultar la máscara</td>
+</tr>
+<tr>
+<td>Primer frame mira una esquina equivocada</td>
+<td>Snap antes de establecer dimensiones</td>
+</tr>
+<tr>
+<td>Radar salta de valor según quién esté a la izquierda</td>
+<td>Resta unsigned antes del cast</td>
+</tr>
+<tr>
+<td>Colores extraños y fallos aparentemente aleatorios</td>
+<td>Contrato de paleta y reserva insuficiente; ver erratas</td>
+</tr>
+</tbody>
+</table>
+<p class="chapter-nav"><a href="../pdf/curso_completo.pdf#nameddest=doc-readme-md">Volver al curso</a> · <a href="#doc-ch25-md">Teoría de cámara</a> · <a href="../pdf/curso_completo.pdf#nameddest=doc-erratas-md">Erratas</a></p></article></body></html>

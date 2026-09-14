@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Laboratorio de cámara · CutreGame MS-DOS</title>
+<style>
+:root{--ink:#173548;--teal:#148f82;--coral:#c35440;--paper:#f5f7f4}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,sans-serif;line-height:1.55}main{max-width:1440px;margin:auto;padding:32px}a{color:var(--teal)}h1{font-size:clamp(28px,4vw,46px);line-height:1.12;max-width:900px;margin:18px 0}h2{font-size:20px;margin:0 0 12px}.eyebrow{letter-spacing:.15em;font-size:12px;text-transform:uppercase;font-weight:700}.lead{max-width:900px;font-size:18px}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:24px}.card{padding:22px;background:white;border:1px solid #d4e1e0;border-radius:16px;margin-bottom:18px}.views{display:grid;grid-template-columns:1.45fr 1fr;gap:22px}.views svg{display:block;width:100%;height:auto;border:1px solid #afc4c7;background:#e6eeea;border-radius:6px}figcaption{font-size:13px;margin-top:9px;color:#48616b}figure{margin:0}label{display:block;font-size:14px;font-weight:600;margin:14px 0 4px}input[type=range]{width:100%;accent-color:var(--teal)}select,button{font:inherit;border:1px solid #bcced0;border-radius:8px;padding:9px 12px;background:white;color:var(--ink)}select{width:100%}button{cursor:pointer}button:hover,button:focus-visible{background:#dcf1eb;outline:2px solid var(--teal);outline-offset:2px}.buttons{display:flex;gap:8px;flex-wrap:wrap}.steps{display:grid;grid-template-columns:repeat(3,48px);gap:6px;justify-content:center;margin:16px}.steps button{padding:9px}.steps .up{grid-column:2}.steps .left{grid-column:1}.steps .down{grid-column:2}.steps .right{grid-column:3}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.metric{background:#eef5f2;border-radius:9px;padding:14px}.metric small{display:block;font-size:12px}.metric strong{font-size:22px}.formula{font-family:ui-monospace,monospace;background:#173548;color:#ecf8f4;padding:18px;border-radius:10px;line-height:1.8;white-space:pre-wrap}.note{font-size:14px;color:#47616c}.legend{display:flex;gap:18px;font-size:13px;flex-wrap:wrap}.swatch{display:inline-block;width:12px;height:12px;margin-right:5px}.exercises{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}.exercises h3{font-size:16px;margin-top:0}details{font-size:14px}summary{cursor:pointer;font-weight:600}.status{font-size:14px;min-height:2em}output{float:right;font-variant-numeric:tabular-nums}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}@media(max-width:1000px){.workspace{grid-template-columns:1fr}.controls{display:grid;grid-template-columns:1fr 1fr;gap:20px}}@media(max-width:650px){main{padding:18px}.views,.metrics,.exercises,.controls{grid-template-columns:1fr}.card{padding:16px}}@media print{.controls,.buttons,.steps{display:none}.workspace{display:block}body{background:white}.card{break-inside:avoid}}
+</style>
+</head>
+<body><main>
+<div class="eyebrow">CutreGame MS-DOS · laboratorio interactivo</div>
+<h1>Mueve el tanque. Mira qué hace la cámara.</h1>
+<p class="lead">El mundo conserva sus coordenadas. La pantalla enseña una ventana de 320 × 200. Prueba seguimiento, centrado y movimiento manual y observa las cuentas en cada paso.</p>
+<p><a href="README.md">Índice Markdown</a> · <a href="ch25.md">Lección de cámara</a> · <a href="pdf/camara_y_mapas.pdf">Libro de cámara y mapas</a></p>
+<div class="workspace">
+<div>
+<section class="card">
+<div class="views">
+<figure><h2>Todo el mundo</h2><svg id="world" viewBox="0 0 640 400" role="img" aria-label="Mapa completo con el tanque y el rectángulo de cámara"></svg><figcaption>La ventana verde delimita el trozo del mundo que aparece a la derecha.</figcaption></figure>
+<figure><h2>Lo que ves</h2><svg id="screen" viewBox="0 0 320 200" role="img" aria-label="Ventana de pantalla y zona muerta"></svg><figcaption>El marco punteado es la zona interior. El tanque debe caber entero para no empujar la cámara.</figcaption></figure>
+</div>
+<p class="legend"><span><i class="swatch" style="background:#d5a13d"></i>Tanque 18 × 18</span><span><i class="swatch" style="background:#148f82"></i>Cámara</span><span><i class="swatch" style="background:#b3ded1"></i>Zona muerta</span></p>
+<div class="buttons"><button id="spawn1">Salida P1</button><button id="spawn2">Salida P2</button><button id="edge">Borde inferior derecho</button><button id="clip">Recorte (−9,−4)</button><button id="reset">Reiniciar ejemplo</button></div>
+</section>
+<section class="card"><h2>Las cuentas de este instante</h2><div class="metrics"><div class="metric"><small>Tanque en el mundo</small><strong id="world-value"></strong></div><div class="metric"><small>Esquina de cámara</small><strong id="camera-value"></strong></div><div class="metric"><small>Tanque en pantalla</small><strong id="screen-value"></strong></div></div><pre class="formula" id="formula"></pre><p id="status" class="status" role="status" aria-live="polite"></p><p class="note">Modelo didáctico de las fórmulas del curso. El fondo es una cuadrícula ilustrativa; no simula paredes, disparos, sonido ni red. Las flechas del teclado mueven el tanque 2 píxeles cuando el foco no está en un control.</p></section>
+<section class="card"><h2>Tres experimentos</h2><div class="exercises">
+<div><h3>1. La zona se hace pequeña</h3><p>En seguimiento, cambia margen X de 0 a 100 y después a 151. Mueve el tanque lejos de los bordes.</p><details><summary>Qué debes observar</summary><p>Al aumentar el margen disminuye el recorrido libre. Con 151, la esquina deseada queda en X=151; los límites del mundo pueden impedirlo.</p></details></div>
+<div><h3>2. Una parte sigue visible</h3><p>Pulsa «Recorte». La posición de pantalla será negativa, pero todavía quedan píxeles del tanque.</p><details><summary>Resultado</summary><p>En (−9,−4), un tanque de 18 × 18 conserva 9 columnas y 14 filas geométricas. No se ha movido su posición del mundo para hacerlo caber.</p></details></div>
+<div><h3>3. El mundo de una pantalla</h3><p>Selecciona 320 × 200 y mueve el tanque en cualquier modo de seguimiento.</p><details><summary>Resultado</summary><p>Los dos máximos de cámara son cero. La fórmula general sigue funcionando y pantalla coincide con mundo.</p></details></div>
+</div></section>
+</div>
+<aside class="card controls"><div><h2>Controles</h2><label for="mode">Modelo de cámara</label><select id="mode"><option value="follow">Zona muerta: seguir</option><option value="snap">Centrada: snap continuo</option><option value="manual">Manual: mover la ventana</option></select><label for="size">Dimensiones del mundo</label><select id="size"><option value="640">640 × 400</option><option value="320">320 × 200</option></select><label for="tx">Tanque X <output id="tx-out"></output></label><input id="tx" type="range" min="0" max="622" step="1"><label for="ty">Tanque Y <output id="ty-out"></output></label><input id="ty" type="range" min="0" max="382" step="1"><div class="steps"><button class="up" data-dy="-2" aria-label="Mover arriba">↑</button><button class="left" data-dx="-2" aria-label="Mover izquierda">←</button><button class="down" data-dy="2" aria-label="Mover abajo">↓</button><button class="right" data-dx="2" aria-label="Mover derecha">→</button></div></div>
+<div><label for="mx">Margen X <output id="mx-out"></output></label><input id="mx" type="range" min="0" max="151" step="1"><label for="my">Margen Y <output id="my-out"></output></label><input id="my" type="range" min="0" max="91" step="1"><label for="cx">Cámara X (modo manual) <output id="cx-out"></output></label><input id="cx" type="range" min="0" max="320" step="1"><label for="cy">Cámara Y (modo manual) <output id="cy-out"></output></label><input id="cy" type="range" min="0" max="200" step="1"><p class="note">Los máximos de margen evitan invertir la zona: 2 × margen + tamaño del tanque no puede superar el tamaño de pantalla.</p></div></aside>
+</div></main>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const state = {w:640,h:400,tx:300,ty:160,cx:100,cy:50,mx:100,my:70,mode:'follow'};
+const clamp = (n,lo,hi) => Math.max(lo,Math.min(hi,n));
+function solve() {
+  state.tx=clamp(state.tx,0,state.w-18); state.ty=clamp(state.ty,0,state.h-18);
+  if(state.mode==='snap') {state.cx=state.tx+9-160;state.cy=state.ty+9-100;}
+  if(state.mode==='follow') {
+    const x=state.tx-state.cx,y=state.ty-state.cy,right=320-state.mx-18,bottom=200-state.my-18;
+    if(x<state.mx) state.cx-=state.mx-x; else if(x>right) state.cx+=x-right;
+    if(y<state.my) state.cy-=state.my-y; else if(y>bottom) state.cy+=y-bottom;
+  }
+  state.cx=clamp(state.cx,0,state.w-320); state.cy=clamp(state.cy,0,state.h-200);
+}
+function tank(x,y) {return `<g transform="translate(${x},${y})"><rect width="4" height="18" fill="#173548"/><rect x="14" width="4" height="18" fill="#173548"/><rect x="4" y="3" width="10" height="13" fill="#d5a13d"/><rect x="8" width="2" height="10" fill="#d5a13d"/></g>`;}
+function grid() {
+  let s=`<rect width="${state.w}" height="${state.h}" fill="#e4ede7"/>`;
+  for(let x=0;x<=state.w;x+=40) s+=`<path d="M${x} 0V${state.h}" stroke="#b8cfc5" stroke-width=".7"/>`;
+  for(let y=0;y<=state.h;y+=40) s+=`<path d="M0 ${y}H${state.w}" stroke="#b8cfc5" stroke-width=".7"/>`;
+  for(let y=0;y<state.h;y+=80) for(let x=0;x<state.w;x+=80) s+=`<text x="${x+3}" y="${y+11}" font-family="sans-serif" font-size="8" fill="#57746a">${x},${y}</text>`;
+  return s;
+}
+function render() {
+  solve();
+  const sx=state.tx-state.cx,sy=state.ty-state.cy;
+  const pixelsWide=Math.max(0,Math.min(18,320-sx)-Math.max(0,-sx));
+  const pixelsHigh=Math.max(0,Math.min(18,200-sy)-Math.max(0,-sy));
+  $('world').setAttribute('viewBox',`0 0 ${state.w} ${state.h}`);
+  $('world').innerHTML=grid()+`<rect x="${state.cx}" y="${state.cy}" width="320" height="200" fill="#148f82" fill-opacity=".08" stroke="#148f82" stroke-width="2"/>`+tank(state.tx,state.ty);
+  $('screen').innerHTML=`<defs><clipPath id="viewport"><rect width="320" height="200"/></clipPath></defs><g clip-path="url(#viewport)"><g transform="translate(${-state.cx},${-state.cy})">${grid()}</g><rect x="${state.mx}" y="${state.my}" width="${320-2*state.mx}" height="${200-2*state.my}" fill="#148f82" fill-opacity=".10" stroke="#148f82" stroke-dasharray="3 2" stroke-width=".8"/>${tank(sx,sy)}</g>`;
+  $('tx').max=state.w-18;$('ty').max=state.h-18;$('cx').max=state.w-320;$('cy').max=state.h-200;
+  for(const key of ['tx','ty','cx','cy','mx','my']) {$(key).value=state[key];$(key+'-out').value=state[key];}
+  $('mode').value=state.mode;$('size').value=state.w;
+  $('cx').disabled=state.mode!=='manual';$('cy').disabled=state.mode!=='manual';
+  $('world-value').textContent=`(${state.tx}, ${state.ty})`;
+  $('camera-value').textContent=`(${state.cx}, ${state.cy})`;
+  $('screen-value').textContent=`(${sx}, ${sy})`;
+  const first=state.cy*state.w+state.cx,last=(state.cy+199)*state.w+state.cx+319;
+  $('formula').textContent=`pantalla = mundo − cámara\nX: ${state.tx} − ${state.cx} = ${sx}\nY: ${state.ty} − ${state.cy} = ${sy}\n\nVentana: primer byte ${first}; último byte ${last}\nStride del mundo: ${state.w}; stride de pantalla: 320\nEsquina en zona: X ${state.mx}..${302-state.mx}; Y ${state.my}..${182-state.my}\nRecorte geométrico del tanque: ${pixelsWide} × ${pixelsHigh} píxeles`;
+  const inside=sx>=state.mx&&sx<=302-state.mx&&sy>=state.my&&sy<=182-state.my;
+  $('status').textContent=inside?'El tanque cabe dentro de la zona interior.':state.mode==='manual'?'En manual puedes sacar el tanque de la ventana. Su posición en el mundo se conserva.':'Un límite del mundo impide centrar o mantener el tanque dentro de la zona.';
+}
+for(const key of ['tx','ty','cx','cy','mx','my']) $(key).addEventListener('input',()=>{state[key]=Number($(key).value);render();});
+$('mode').addEventListener('change',()=>{state.mode=$('mode').value;render();});
+$('size').addEventListener('change',()=>{state.w=Number($('size').value);state.h=state.w===640?400:200;render();});
+function move(dx,dy){state.tx+=dx;state.ty+=dy;render();}
+document.querySelectorAll('[data-dx],[data-dy]').forEach(b=>b.addEventListener('click',()=>move(Number(b.dataset.dx||0),Number(b.dataset.dy||0))));
+document.addEventListener('keydown',e=>{if(e.target.closest('input,select,textarea')) return;const dirs={ArrowLeft:[-2,0],ArrowRight:[2,0],ArrowUp:[0,-2],ArrowDown:[0,2]};if(dirs[e.key]){e.preventDefault();move(...dirs[e.key]);}});
+function spawn(x,y){state.w=640;state.h=400;state.tx=x;state.ty=y;state.cx=clamp(x+9-160,0,320);state.cy=clamp(y+9-100,0,200);state.mode='follow';render();}
+$('spawn1').addEventListener('click',()=>spawn(166,299));$('spawn2').addEventListener('click',()=>spawn(483,106));
+$('edge').addEventListener('click',()=>spawn(622,382));
+$('clip').addEventListener('click',()=>{Object.assign(state,{w:640,h:400,tx:111,ty:76,cx:120,cy:80,mode:'manual'});render();});
+$('reset').addEventListener('click',()=>{Object.assign(state,{w:640,h:400,tx:300,ty:160,cx:100,cy:50,mx:100,my:70,mode:'follow'});render();});
+render();
+</script></body></html>

@@ -58,6 +58,27 @@ for a reason that is the lesson of the second half of the walkthrough:
   `voxel`, `rotozoom` and `tunnel` — are the three that touch all 64000 without
   being able to use a `memcpy`.
 
+## And an epilogue, which is not an effect
+
+After the last picture comes [**outro** — the goodbye
+card](outro/doc/README-EN.md): a card that breathes gently and waits for you to
+press a key.
+
+It is not in the table and not part of the walkthrough, because **it does not
+end by itself**: the twenty effects are handed an `end_tick` and stop; this one
+waits. In the table it would hang the slideshow on whichever picture it landed
+on.
+
+It is there so the intro does not end with a jolt. The last picture used to fade
+out and the game started in the same instant; in front of an audience that is a
+jump. The card turns the cut into a stop.
+
+The picture is `res/demo/fin.bmp` and changes like any other — 320x200, 256
+colours, 65078 bytes — with one condition: **the text has to fit in the middle
+91%**, because the card zooms in to 1.09. The exact numbers are in [its own
+document](outro/doc/README-EN.md). If the file is not there it is skipped and
+nothing happens.
+
 ## How the folder is put together
 
 ```

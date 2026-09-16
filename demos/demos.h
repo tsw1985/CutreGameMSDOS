@@ -68,6 +68,22 @@
 // Nothing here can undo clipping that was baked in before the file arrived.
 #define DEMO_SONG_VOLUME 		16
 
+// THE GOODBYE CARD, shown after the last picture and before the game.
+//
+// Without it the intro fades out and the match starts in the same instant,
+// which in front of an audience is a jolt: no time to say "right, and this is
+// the game". This turns that cut into a stop, and the game starts when
+// somebody presses a key.
+//
+// Hardcoded here and not passed in by the caller, for the same reason
+// DEMO_SONG is: it belongs to the intro, not to whoever asked for it. A file
+// that is not there is simply skipped and the game starts as it always did.
+//
+// It has to be a 320x200 256 colour BMP like all the others, and its text has
+// to sit inside the middle 91% of the picture, because the outro breathes up
+// to 1.09 magnifications. See demos\outro\doc.
+#define DEMO_ENDING_IMAGE 		"..\\res\\demo\\fin.bmp"
+
 // How long the fade between two pictures takes. Every picture brings its
 // OWN palette and the VGA only has one, so two of them can never be on
 // screen together: the way from one to the next HAS to go through black.
@@ -112,8 +128,9 @@ void demo_set_idle(demo_idle_fn callback);
 // the show carries on.
 //
 // Each picture gets a DIFFERENT effect, taken in turn from the table in
-// demos.c. With more pictures than effects the list starts again, which is
-// on purpose: fifteen pictures through ten effects is fine.
+// demos.c. There are twenty of them, so twenty pictures show them all with
+// none repeated; with fewer, the tail of the table simply never comes up, and
+// with more the list starts again, which is on purpose.
 //
 // Returns 1 if it played to the end, 0 if ESC was pressed. Either way
 // everything is back the way it was found: the memory, the sound card, and

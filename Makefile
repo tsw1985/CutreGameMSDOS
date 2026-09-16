@@ -147,6 +147,10 @@ bin\voxel.obj: demos\voxel\voxel.c
 	@if not exist bin mkdir bin
 	$(CC) -c $(CFLAGS) -obin\voxel.obj demos\voxel\voxel.c
 
+bin\outro.obj: demos\outro\outro.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\outro.obj demos\outro\outro.c
+
 
 ################################################	
 #                                 ASM FILES                                             # 	
@@ -196,7 +200,8 @@ $(TARGET): \
 	bin\water.obj \
 	bin\lens.obj \
 	bin\sphere.obj \
-	bin\voxel.obj
+	bin\voxel.obj \
+	bin\outro.obj
 	@echo bin\main.obj bin\util.obj bin\video.obj > bin\link.rsp
 	@echo bin\bmp.obj bin\players.obj bin\gameloop.obj >> bin\link.rsp
 	@echo bin\sound.obj bin\net.obj bin\lockstep.obj >> bin\link.rsp
@@ -207,6 +212,7 @@ $(TARGET): \
 	@echo bin\carpet.obj bin\texcube.obj bin\tunnel.obj >> bin\link.rsp
 	@echo bin\twister.obj bin\melt.obj bin\water.obj >> bin\link.rsp
 	@echo bin\lens.obj bin\sphere.obj bin\voxel.obj >> bin\link.rsp
+	@echo bin\outro.obj >> bin\link.rsp
 	$(LD) $(LDFLAGS) -ebin\game.exe @bin\link.rsp
 
 clean:

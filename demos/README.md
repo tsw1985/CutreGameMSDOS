@@ -58,6 +58,26 @@ que es la lección de la segunda mitad del recorrido:
   caros — `voxel`, `rotozoom` y `tunnel` — son los tres que tocan los 64.000
   sin poder usar un `memcpy`.
 
+## Y un epílogo, que no es un efecto
+
+Después de la última foto aparece [**outro** — la pantalla de
+despedida](outro/doc/README.md): un cartel que respira suavemente y espera a que
+pulses una tecla.
+
+No está en la tabla y no entra en el recorrido, porque **no termina sola**: los
+veinte efectos reciben un `end_tick` y se paran; este espera. Metido en la tabla
+colgaría la presentación en la foto que le tocara.
+
+Está para que la intro no acabe de golpe. Antes se apagaba la última foto y el
+juego arrancaba en el mismo instante; delante de gente eso es un salto. El
+cartel convierte el corte en una parada.
+
+La imagen es `res/demo/fin.bmp` y se cambia como cualquier otra — 320x200, 256
+colores, 65.078 bytes — con una condición: **el texto tiene que caber en el 91%
+central**, porque el cartel se acerca hasta 1,09 aumentos. Está explicado con
+los números exactos en [su documento](outro/doc/README.md). Si el fichero no
+está, se salta y no pasa nada.
+
 ## Cómo está montada la carpeta
 
 ```
@@ -69,6 +89,7 @@ demos/
       <efecto>.c    el efecto
       <efecto>.h    su unica declaracion
       doc/          esta explicacion, en los dos idiomas
+   outro/           el epilogo: el cartel de despedida, fuera de la tabla
 ```
 
 Todos los efectos tienen **la misma forma**, y eso es lo que permite que

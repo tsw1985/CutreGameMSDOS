@@ -38,6 +38,7 @@
 #include "demos\lens\lens.h"
 #include "demos\sphere\sphere.h"
 #include "demos\voxel\voxel.h"
+#include "demos\outro\outro.h"
 
 
 //-----------------------------------------------------------
@@ -320,6 +321,33 @@ int demo_escape_pressed(void){
 	}
 
 	return 0;
+
+}
+
+
+//===========================================================
+// 1 si se ha pulsado CUALQUIER tecla, y se la come.
+//
+// demo_escape_pressed() tambien lee y tira las teclas, pero solo dice que
+// si al ESC. El epilogo necesita lo contrario: que valga cualquiera.
+//
+// Y mira demo_aborted por lo mismo que aquella: en red, el que esta
+// esperando al otro solo tiene el ESC para decir "tira ya", y ese ESC
+// llega hasta aqui por el callback de demo_sound().
+//===========================================================
+int demo_any_key_pressed(void){
+
+	if (demo_aborted == 1){
+		return 1;
+	}
+
+	if (bioskey(1) == 0){
+		return 0;
+	}
+
+	bioskey(0);		// sacarla del buffer de la BIOS, o volveria cada frame
+
+	return 1;
 
 }
 
@@ -632,6 +660,35 @@ int demo_run(char **image_paths, int image_count, unsigned int seconds_each){
 		effect++;
 		if ((unsigned int)effect >= DEMO_EFFECT_COUNT){
 			effect = 0;		// mas imagenes que efectos: se vuelve a empezar
+		}
+
+	}
+
+	//-------------------------------------------------------
+	// EL EPILOGO, y solo si la presentacion llego hasta el final.
+	//
+	// Si se salio con ESC es porque alguien quiere jugar YA, y plantarle
+	// entonces un cartel que pide otra tecla seria justo lo contrario de
+	// lo que ha pedido.
+	//
+	// Va aqui dentro, antes de soltar la memoria y antes de volver al modo
+	// texto, porque reutiliza los mismos tres bloques que ya estan
+	// pedidos: ni un byte mas que los 128.768 de siempre.
+	//
+	// Y si fin.bmp no esta, no pasa nada: se salta y el juego arranca como
+	// arrancaba antes.
+	//-------------------------------------------------------
+	if (finished == 1){
+
+		if (demo_load_image(DEMO_ENDING_IMAGE, image, palette) == 1){
+
+			memcpy(screen, image, DEMO_SCREEN);
+			bmp_paint_image_data_to_vga(screen);
+
+			demo_fade_in(palette);
+			demo_outro(image, screen, palette);
+			demo_fade_out(palette);
+
 		}
 
 	}

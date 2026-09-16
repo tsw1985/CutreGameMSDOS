@@ -179,6 +179,14 @@ void demo_show(unsigned char *screen);
 // the single funnel cannot be forgotten by the eleventh effect.
 void demo_sound(void);
 
+// 1 if ANY key has been pressed, and it EATS it. What the outro waits on.
+//
+// It answers 1 to the caller's "cut it short" too, exactly like
+// demo_escape_pressed() does: over a network the other machine has to be able
+// to get the match going, and it only has ESC to say so with.
+int demo_any_key_pressed(void);
+
+
 // 1 if ESC is down. Read through the BIOS and not through an INT 9 handler
 // of our own, on purpose: an interrupt vector is exactly the kind of thing
 // that makes a module impossible to lift into another program. It also

@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 8 de 10 del recorrido.** Coste medido: **19,6 microsegundos por frame**, y antes de optimizarlo eran 78.
+**Efecto 10 de 20 del recorrido.** Coste medido: **19,6 microsegundos por frame**, y antes de optimizarlo eran 78.
 
 El código está en [`../mosaic.c`](../mosaic.c).
 
@@ -103,5 +103,5 @@ cambia siguen costando lo mismo; lo que ha desaparecido son los otros 520.
 ---
 
 **Anterior:** [La gota en el estanque](../../ripple/doc/README.md) ·
-**Siguiente:** [Acercarse y alejarse](../../zoom/doc/README.md) ·
-**Índice:** [Los diez efectos](../../README.md)
+**Siguiente:** [La columna retorcida](../../twister/doc/README.md) ·
+**Índice:** [Los veinte efectos](../../README.md)

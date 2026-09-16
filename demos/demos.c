@@ -28,6 +28,16 @@
 #include "demos\bounce\bounce.h"
 #include "demos\cycle\cycle.h"
 #include "demos\stripes\stripes.h"
+#include "demos\cube\cube.h"
+#include "demos\carpet\carpet.h"
+#include "demos\texcube\texcube.h"
+#include "demos\tunnel\tunnel.h"
+#include "demos\twister\twister.h"
+#include "demos\melt\melt.h"
+#include "demos\water\water.h"
+#include "demos\lens\lens.h"
+#include "demos\sphere\sphere.h"
+#include "demos\voxel\voxel.h"
 
 
 //-----------------------------------------------------------
@@ -123,6 +133,106 @@ void demo_tables_init(void){
 	// para no necesitar math.h ni un solo float en todo el modulo.
 	for (y = 0; y < DEMO_HEIGHT; y++){
 		demo_row[y] = (unsigned int)y * DEMO_WIDTH;
+	}
+
+}
+
+
+//===========================================================
+// LA LISTA DE IMAGENES
+//
+// Ver demolib.h. Se guarda lo que llega a demo_run() para que un efecto
+// pueda pedir OTRAS fotos ademas de la suya. Solo texcube lo usa: un cubo
+// tiene seis caras y la firma de un efecto trae una imagen.
+//
+// Son punteros a lo que dio el que llamo, no copias: la lista vive en
+// main.c y es estatica, asi que aqui no hay nada que reservar ni que
+// soltar.
+//===========================================================
+static char **demo_paths       = NULL;
+static int    demo_path_count  = 0;
+static int    demo_path_index  = 0;
+
+
+int demo_image_count(void){
+
+	return demo_path_count;
+
+}
+
+
+char *demo_image_path(int index){
+
+	if (demo_paths == NULL || demo_path_count <= 0){
+		return NULL;
+	}
+
+	// Se envuelve en vez de fallar: quien pida seis fotos de una lista de
+	// tres se lleva las tres y repite, que es mejor que una cara negra.
+	index = index % demo_path_count;
+
+	if (index < 0){
+		index += demo_path_count;
+	}
+
+	return demo_paths[index];
+
+}
+
+
+int demo_image_current(void){
+
+	return demo_path_index;
+
+}
+
+
+//===========================================================
+// ENCOGER LA FOTO A UNA TEXTURA DE 128x128
+//
+// Muestreo directo: se recorren los 128x128 de destino y para cada uno se
+// coge UN pixel de la foto. No se promedian los cuatro vecinos, y no es
+// por pereza: promediar en una imagen de 256 colores no es promediar
+// numeros, es promediar INDICES de una paleta, y la media entre el indice
+// 3 y el 200 no tiene por que parecerse a ninguno de los dos. En color
+// indexado, el unico promedio honrado es no promediar.
+//
+// Los pasos van en 8.8 para no dividir dentro del bucle:
+//
+//     320 / 128 = 2,5   ->  640 en 8.8
+//     200 / 128 = 1,5625 -> 400 en 8.8
+//===========================================================
+void demo_shrink_to_texture(unsigned char *image, unsigned char *texture){
+
+	long step_x;
+	long step_y;
+	long source_y;
+	long source_x;
+	int x, y;
+	unsigned int destination;
+	unsigned int row;
+
+	step_x = ((long)DEMO_WIDTH  << DEMO_SHIFT) / DEMO_TEXTURE_SIZE;
+	step_y = ((long)DEMO_HEIGHT << DEMO_SHIFT) / DEMO_TEXTURE_SIZE;
+
+	destination = 0;
+	source_y    = 0;
+
+	for (y = 0; y < DEMO_TEXTURE_SIZE; y++){
+
+		row      = demo_row[(int)(source_y >> DEMO_SHIFT)];
+		source_x = 0;
+
+		for (x = 0; x < DEMO_TEXTURE_SIZE; x++){
+
+			texture[destination + x] = image[row + (unsigned int)(source_x >> DEMO_SHIFT)];
+			source_x += step_x;
+
+		}
+
+		destination += DEMO_TEXTURE_SIZE;
+		source_y    += step_y;
+
 	}
 
 }
@@ -322,19 +432,46 @@ static int demo_load_image(char *path, unsigned char *image, unsigned char *pale
 // poner una linea aqui. No hay nada mas que tocar en ningun sitio.
 //
 // El orden importa poco, pero conviene no dejar juntos dos que se parezcan
-// (wobble y ripple, scroll y stripes), para que la presentacion no parezca
-// que se repite.
+// (wobble, ripple y water; scroll y stripes; rotozoom y carpet; cube y
+// texcube; tunnel y sphere), para que la presentacion no parezca que se
+// repite.
+//
+// Son VEINTE, y AQUI EL ORDEN SI IMPORTA, por un motivo que no es estetico.
+//
+// demo_run() reparte un efecto por foto EN ESTE ORDEN, asi que con quince
+// fotos se ven los quince primeros de la lista y los cinco ultimos no
+// salen en toda la intro. Ordenada como estaba, el texcube caia en el
+// puesto 16 y el cubo con fotos no aparecia nunca.
+//
+// Asi que los diez efectos nuevos y los mas vistosos van DELANTE, y los
+// que ya se habian visto mil veces detras. Con las quince fotos de
+// res\demo\ se ven los diez nuevos enteros; con veinte, salen todos y
+// ninguno repite. Con mas de veinte la lista vuelve a empezar, que es lo
+// que hacia cuando eran diez.
+//
+// Una foto que falta se salta ANTES de gastar su efecto, asi que dejar
+// huecos en la lista de main.c no descoloca nada de esto.
 //===========================================================
 static demo_effect_fn demo_effects[] = {
 	demo_rotozoom,
 	demo_wobble,
+	demo_texcube,
 	demo_blinds,
+	demo_sphere,
 	demo_zoom,
+	demo_twister,
 	demo_stripes,
+	demo_carpet,
+	demo_melt,
 	demo_cycle,
-	demo_scroll,
-	demo_ripple,
+	demo_tunnel,
+	demo_lens,
+	demo_voxel,
+	demo_cube,
+	demo_water,
 	demo_mosaic,
+	demo_ripple,
+	demo_scroll,
 	demo_bounce
 };
 
@@ -359,6 +496,12 @@ int demo_run(char **image_paths, int image_count, unsigned int seconds_each){
 	if (image_paths == NULL || image_count <= 0){
 		return 1;
 	}
+
+	// Para demo_image_path(): ver arriba. Se guarda antes de nada porque un
+	// efecto puede preguntar en su primera linea.
+	demo_paths      = image_paths;
+	demo_path_count = image_count;
+	demo_path_index = 0;
 
 	if (seconds_each == 0){
 		seconds_each = DEMO_DEFAULT_SECONDS;
@@ -436,6 +579,8 @@ int demo_run(char **image_paths, int image_count, unsigned int seconds_each){
 	effect   = 0;
 
 	for (index = 0; index < image_count; index++){
+
+		demo_path_index = index;
 
 		//---------------------------------------------------
 		// Alimentar la tarjeta a los dos lados de la carga.

@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 9 de 10 del recorrido.** Coste medido: **110 microsegundos por frame**, y antes de optimizarlo eran 144.
+**Efecto 12 de 20 del recorrido.** Coste medido: **110 microsegundos por frame**, y antes de optimizarlo eran 144.
 
 El código está en [`../zoom.c`](../zoom.c).
 
@@ -117,6 +117,6 @@ los diez: es inevitable, porque de verdad toca los 64.000 píxeles.
 
 ---
 
-**Anterior:** [El pixelado que respira](../../mosaic/doc/README.md) ·
-**Siguiente:** [Girar y hacer zoom a la vez](../../rotozoom/doc/README.md) ·
-**Índice:** [Los diez efectos](../../README.md)
+**Anterior:** [La columna retorcida](../../twister/doc/README.md) ·
+**Siguiente:** [La lupa que se pasea por la foto](../../lens/doc/README.md) ·
+**Índice:** [Los veinte efectos](../../README.md)

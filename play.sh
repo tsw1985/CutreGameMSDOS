@@ -551,9 +551,16 @@ if [ "$MODE" = "both" ]; then
     # is the clearest way to see that the theme is decoration. Both windows
     # show the same fight, frame for frame, in two different paint jobs, and
     # neither desyncs because the walls come from the same place.
+    #
+    # The swap is done on CLIENT_ARGS and not on GAME_ARGS, which is a
+    # distinction worth a line: rebuilding it from GAME_ARGS drops the
+    # /client that was just appended, and window 2 comes up with no role at
+    # all. Nothing breaks today, because the role is only read to decide who
+    # shows the intro and window 2 never has -demo anyway, but it is true by
+    # accident, and that is the kind of thing that stops being true later.
     CLIENT_ARGS="$GAME_ARGS /client"
     if [ -n "$THEME_CLIENT" ] && [ "$THEME_CLIENT" != "$THEME" ]; then
-        CLIENT_ARGS="$(echo "$GAME_ARGS" | sed "s/ -$THEME/ -$THEME_CLIENT/")"
+        CLIENT_ARGS="$(echo "$CLIENT_ARGS" | sed "s/ -$THEME/ -$THEME_CLIENT/")"
     fi
 
     # ------------------------------------------------------------
@@ -668,12 +675,24 @@ if [ "$MODE" = "server" ]; then
     # The command to hand to the other machine, translated back from the
     # game's own flags into play.sh's.
     #
-    # -demo is deliberately NOT passed on. The two ends agree who shows the
-    # intro, and with it on both of them the tie is broken by player 1, which
-    # is a coin toss between two random ids: you would get the intro on this
-    # machine some nights and on the other one the rest. Leaving it here only
-    # means the client waits, which is the point.
-    OTHER="$(echo "$GAME_ARGS" | sed 's|/net||; s|-demo||; s|/bigmap|-b|; s|-sky|-t sky|; s|-war|-t war|; s|-neon|-t neon|; s|-level\([1-5]\)|-l \1|')"
+    # -demo is deliberately NOT passed on: the server is the end that shows
+    # the intro and the client is the end that waits for it. Leaving it off
+    # here is the whole point, and the client refuses it anyway.
+    #
+    # /server HAS to come out, and it is not cosmetic. getopts stops dead at
+    # the first word that does not start with a dash, so a line reading
+    # "client <ip> -p 5213 /server -b -t neon -l 3" parses the -p and then
+    # silently throws away the -b, the -t and the -l. No error, no warning:
+    # that end would load the 320x200 original while this one sat on a
+    # 640x400 level, which is two different games.
+    #
+    # The squeeze and trim at the end are so the printed line has single
+    # spaces and no tail, because this line exists to be copied.
+    OTHER="$(echo "$GAME_ARGS" \
+        | sed 's|/net||; s|/server||; s|/client||; s|-demo||' \
+        | sed 's|/bigmap|-b|; s|-sky|-t sky|; s|-war|-t war|; s|-neon|-t neon|; s|-level\([1-5]\)|-l \1|' \
+        | sed 's|  *| |g; s|^ *||; s| *$||')"
+    [ -n "$OTHER" ] && OTHER=" $OTHER"
 
     green ""
     green "  SERVER ready. On the OTHER machine:"

@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 7 de 10 del recorrido.** Coste medido: **9,0 microsegundos por frame**.
+**Efecto 9 de 20 del recorrido.** Coste medido: **9,0 microsegundos por frame**.
 
 El código está en [`../ripple.c`](../ripple.c).
 
@@ -84,4 +84,4 @@ amplitud son 200 por frame, nada.
 
 **Anterior:** [La foto que se pasea](../../bounce/doc/README.md) ·
 **Siguiente:** [El pixelado que respira](../../mosaic/doc/README.md) ·
-**Índice:** [Los diez efectos](../../README.md)
+**Índice:** [Los veinte efectos](../../README.md)

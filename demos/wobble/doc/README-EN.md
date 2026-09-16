@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 5 of 10 of the walkthrough.** Measured cost: **8.0 microseconds per frame**.
+**Effect 6 of 20 of the walkthrough.** Measured cost: **8.0 microseconds per frame**.
 
 The code is in [`../wobble.c`](../wobble.c).
 
@@ -81,6 +81,6 @@ they cost.
 
 ---
 
-**Previous:** [Bands at different speeds](../../stripes/doc/README-EN.md) ·
-**Next:** [The picture that wanders](../../bounce/doc/README-EN.md) ·
-**Index:** [The ten effects](../../README-EN.md)
+**Previous:** [The screen that melts away](../../melt/doc/README-EN.md) ·
+**Next:** [The picture reflected in the water](../../water/doc/README-EN.md) ·
+**Index:** [The twenty effects](../../README-EN.md)

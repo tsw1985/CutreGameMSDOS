@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 1 of 10 of the walkthrough.** Measured cost: **1.6 microseconds per frame**.
+**Effect 1 of 20 of the walkthrough.** Measured cost: **1.6 microseconds per frame**.
 
 The code is in [`../cycle.c`](../cycle.c).
 
@@ -121,4 +121,4 @@ writes to the DAC, and not even on every frame.
 ---
 
 **Next:** [The endless scroll](../../scroll/doc/README-EN.md) ·
-**Index:** [The ten effects](../../README-EN.md)
+**Index:** [The twenty effects](../../README-EN.md)

@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 10 of 10 of the walkthrough.** Measured cost: **179 microseconds per frame**, and 257 before it was optimised.
+**Effect 14 of 20 of the walkthrough.** Measured cost: **179 microseconds per frame**, and 257 before it was optimised.
 
 The code is in [`../rotozoom.c`](../rotozoom.c).
 
@@ -142,5 +142,6 @@ the machine is struggling, this is the one you notice.
 
 ---
 
-**Previous:** [Zooming in and out](../../zoom/doc/README-EN.md) ·
-**Index:** [The ten effects](../../README-EN.md)
+**Previous:** [The magnifying glass wandering over the picture](../../lens/doc/README-EN.md) ·
+**Next:** [The rotozoom that never ends](../../carpet/doc/README-EN.md) ·
+**Index:** [The twenty effects](../../README-EN.md)

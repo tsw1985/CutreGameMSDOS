@@ -107,6 +107,46 @@ bin\stripes.obj: demos\stripes\stripes.c
 	@if not exist bin mkdir bin
 	$(CC) -c $(CFLAGS) -obin\stripes.obj demos\stripes\stripes.c
 
+bin\cube.obj: demos\cube\cube.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\cube.obj demos\cube\cube.c
+
+bin\carpet.obj: demos\carpet\carpet.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\carpet.obj demos\carpet\carpet.c
+
+bin\texcube.obj: demos\texcube\texcube.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\texcube.obj demos\texcube\texcube.c
+
+bin\tunnel.obj: demos\tunnel\tunnel.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\tunnel.obj demos\tunnel\tunnel.c
+
+bin\twister.obj: demos\twister\twister.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\twister.obj demos\twister\twister.c
+
+bin\melt.obj: demos\melt\melt.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\melt.obj demos\melt\melt.c
+
+bin\water.obj: demos\water\water.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\water.obj demos\water\water.c
+
+bin\lens.obj: demos\lens\lens.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\lens.obj demos\lens\lens.c
+
+bin\sphere.obj: demos\sphere\sphere.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\sphere.obj demos\sphere\sphere.c
+
+bin\voxel.obj: demos\voxel\voxel.c
+	@if not exist bin mkdir bin
+	$(CC) -c $(CFLAGS) -obin\voxel.obj demos\voxel\voxel.c
+
 
 ################################################	
 #                                 ASM FILES                                             # 	
@@ -146,14 +186,27 @@ $(TARGET): \
 	bin\ripple.obj \
 	bin\bounce.obj \
 	bin\cycle.obj \
-	bin\stripes.obj
+	bin\stripes.obj \
+	bin\cube.obj \
+	bin\carpet.obj \
+	bin\texcube.obj \
+	bin\tunnel.obj \
+	bin\twister.obj \
+	bin\melt.obj \
+	bin\water.obj \
+	bin\lens.obj \
+	bin\sphere.obj \
+	bin\voxel.obj
 	@echo bin\main.obj bin\util.obj bin\video.obj > bin\link.rsp
 	@echo bin\bmp.obj bin\players.obj bin\gameloop.obj >> bin\link.rsp
 	@echo bin\sound.obj bin\net.obj bin\lockstep.obj >> bin\link.rsp
 	@echo bin\demos.obj bin\rotozoom.obj bin\wobble.obj >> bin\link.rsp
 	@echo bin\zoom.obj bin\scroll.obj bin\mosaic.obj >> bin\link.rsp
 	@echo bin\blinds.obj bin\ripple.obj bin\bounce.obj >> bin\link.rsp
-	@echo bin\cycle.obj bin\stripes.obj >> bin\link.rsp
+	@echo bin\cycle.obj bin\stripes.obj bin\cube.obj >> bin\link.rsp
+	@echo bin\carpet.obj bin\texcube.obj bin\tunnel.obj >> bin\link.rsp
+	@echo bin\twister.obj bin\melt.obj bin\water.obj >> bin\link.rsp
+	@echo bin\lens.obj bin\sphere.obj bin\voxel.obj >> bin\link.rsp
 	$(LD) $(LDFLAGS) -ebin\game.exe @bin\link.rsp
 
 clean:

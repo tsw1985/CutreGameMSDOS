@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 6 de 10 del recorrido.** Coste medido: **8,1 microsegundos por frame**.
+**Efecto 8 de 20 del recorrido.** Coste medido: **8,1 microsegundos por frame**.
 
 El código está en [`../bounce.c`](../bounce.c).
 
@@ -100,6 +100,6 @@ Un `memset` grande y hasta 200 `memcpy`. Prácticamente lo mismo que `scroll`.
 
 ---
 
-**Anterior:** [La imagen que ondula](../../wobble/doc/README.md) ·
+**Anterior:** [La foto reflejada en el agua](../../water/doc/README.md) ·
 **Siguiente:** [La gota en el estanque](../../ripple/doc/README.md) ·
-**Índice:** [Los diez efectos](../../README.md)
+**Índice:** [Los veinte efectos](../../README.md)

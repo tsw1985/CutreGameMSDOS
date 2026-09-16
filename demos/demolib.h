@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <string.h>		// memcpy y memset: los usan casi todos los efectos
+#include <stdlib.h>		// malloc y free: los efectos que se montan una textura
 
 // The screen. Mode 13h and nothing else, for ever.
 #define DEMO_WIDTH 		320
@@ -84,6 +85,50 @@ extern unsigned int demo_row[DEMO_HEIGHT];
 
 // Fills both tables. demos.c calls it once, before any effect runs.
 void demo_tables_init(void);
+
+
+//-----------------------------------------------------------
+// THE POWER OF TWO TEXTURE
+//
+// Three effects (carpet, tunnel, texcube) wrap a texture round and round
+// instead of stopping at its edge, and wrapping is a mask ONLY if the size
+// is a power of two. The pictures are 320x200 and neither number is one, so
+// those effects shrink what they need into 128x128 first.
+//
+// 128 and not 256: 256x256 is 65536 bytes and malloc() tops out at 65535,
+// so it would need farmalloc and a normalised huge pointer for no gain. At
+// 128 a row is a shift by 7 and the whole thing is 16K.
+//-----------------------------------------------------------
+#define DEMO_TEXTURE_SIZE 	128
+#define DEMO_TEXTURE_MASK 	127
+#define DEMO_TEXTURE_SHIFT 	7
+#define DEMO_TEXTURE_BYTES 	16384
+
+// Point samples a 320x200 picture down into a 128x128 texture. No averaging
+// and no smoothing: one pixel in, one pixel out. Averaging four pixels would
+// be prettier and would cost four reads and a divide per texel, and at 128x128
+// nobody can tell on a 320x200 screen.
+void demo_shrink_to_texture(unsigned char *image, unsigned char *texture);
+
+
+//-----------------------------------------------------------
+// THE PICTURE LIST
+//
+// demo_run() is handed the list of BMP paths and keeps it, so an effect can
+// ask for pictures OTHER than the one it was given. Only texcube does: a cube
+// has six faces and the effect signature hands over exactly one image.
+//
+// It is two functions and not a global array on purpose: the effect never
+// gets to change the list, and a project that lifts this folder and calls
+// demo_run() gets them working for free.
+//
+// demo_image_current() is the index of the picture being shown, so the cube
+// can start its six faces from there and show different photographs each time
+// it comes round.
+//-----------------------------------------------------------
+int   demo_image_count(void);
+char *demo_image_path(int index);
+int   demo_image_current(void);
 
 
 //-----------------------------------------------------------

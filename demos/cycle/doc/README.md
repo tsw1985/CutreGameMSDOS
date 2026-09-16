@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 1 de 10 del recorrido.** Coste medido: **1,6 microsegundos por frame**.
+**Efecto 1 de 20 del recorrido.** Coste medido: **1,6 microsegundos por frame**.
 
 El código está en [`../cycle.c`](../cycle.c).
 
@@ -123,4 +123,4 @@ no con la que cargó.
 ---
 
 **Siguiente:** [El desplazamiento infinito](../../scroll/doc/README.md) ·
-**Índice:** [Los diez efectos](../../README.md)
+**Índice:** [Los veinte efectos](../../README.md)

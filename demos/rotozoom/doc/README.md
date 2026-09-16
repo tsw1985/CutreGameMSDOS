@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 10 de 10 del recorrido.** Coste medido: **179 microsegundos por frame**, y antes de optimizarlo eran 257.
+**Efecto 14 de 20 del recorrido.** Coste medido: **179 microsegundos por frame**, y antes de optimizarlo eran 257.
 
 El código está en [`../rotozoom.c`](../rotozoom.c).
 
@@ -143,5 +143,6 @@ de efectos: cuando la máquina va justa, es el que se nota.
 
 ---
 
-**Anterior:** [Acercarse y alejarse](../../zoom/doc/README.md) ·
-**Índice:** [Los diez efectos](../../README.md)
+**Anterior:** [La lupa que se pasea por la foto](../../lens/doc/README.md) ·
+**Siguiente:** [El rotozoom que no se acaba nunca](../../carpet/doc/README.md) ·
+**Índice:** [Los veinte efectos](../../README.md)

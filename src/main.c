@@ -196,6 +196,14 @@ int demo_mode;
 //
 // Names are 8.3 because DOS mangles anything longer: demo01.bmp is 6.3 and
 // the folder demo is 4 characters.
+//
+// There are TWENTY slots because demos\ has twenty effects and demo_run()
+// hands out one per picture in turn. With fifteen files five effects never
+// come up; drop demo16.bmp .. demo20.bmp in and they all do.
+//
+// The five that are not there yet cost nothing at all. A missing file is
+// skipped BEFORE the effect counter advances, so it does not burn its
+// effect either: the show is exactly what it was, one slide shorter.
 char *demo_images[] = {
 	"..\\res\\demo\\demo01.bmp",
 	"..\\res\\demo\\demo02.bmp",
@@ -211,7 +219,12 @@ char *demo_images[] = {
 	"..\\res\\demo\\demo12.bmp",
 	"..\\res\\demo\\demo13.bmp",
 	"..\\res\\demo\\demo14.bmp",
-	"..\\res\\demo\\demo15.bmp"
+	"..\\res\\demo\\demo15.bmp",
+	"..\\res\\demo\\demo16.bmp",
+	"..\\res\\demo\\demo17.bmp",
+	"..\\res\\demo\\demo18.bmp",
+	"..\\res\\demo\\demo19.bmp",
+	"..\\res\\demo\\demo20.bmp"
 };
 
 #define DEMO_IMAGE_COUNT 	(sizeof(demo_images) / sizeof(demo_images[0]))

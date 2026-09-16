@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 7 of 10 of the walkthrough.** Measured cost: **9.0 microseconds per frame**.
+**Effect 9 of 20 of the walkthrough.** Measured cost: **9.0 microseconds per frame**.
 
 The code is in [`../ripple.c`](../ripple.c).
 
@@ -83,4 +83,4 @@ Same as `wobble`: one sine per row. The two extra multiplies for the amplitude a
 
 **Previous:** [The picture that wanders](../../bounce/doc/README-EN.md) ·
 **Next:** [The pixelation that breathes](../../mosaic/doc/README-EN.md) ·
-**Index:** [The ten effects](../../README-EN.md)
+**Index:** [The twenty effects](../../README-EN.md)

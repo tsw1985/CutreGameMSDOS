@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 3 of 20 of the walkthrough.** Measured cost: **7.6 microseconds per frame**.
+**Effect 2 of 19 of the walkthrough.** Measured cost: **7.6 microseconds per frame**.
 
 The code is in [`../blinds.c`](../blinds.c).
 
@@ -88,4 +88,4 @@ Cheap: 200 lines × (2 `memset` + 1 `memcpy`). The sine is worked out once per
 
 **Previous:** [The endless scroll](../../scroll/doc/README-EN.md) ·
 **Next:** [Bands at different speeds](../../stripes/doc/README-EN.md) ·
-**Index:** [The twenty effects](../../README-EN.md)
+**Index:** [The nineteen effects](../../README-EN.md)

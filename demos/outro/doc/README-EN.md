@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**It is not one of the twenty effects.** It is the epilogue: it plays once, at
+**It is not one of the nineteen effects.** It is the epilogue: it plays once, at
 the end, and it is not part of the walkthrough.
 
 The code is in [`../outro.c`](../outro.c). The picture is
@@ -124,4 +124,4 @@ lives in there.
 
 ---
 
-**Index:** [The twenty effects](../../README-EN.md)
+**Index:** [The nineteen effects](../../README-EN.md)

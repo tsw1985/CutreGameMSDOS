@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 19 of 20 of the walkthrough.** Measured cost: **4.7 microseconds per frame**.
+**Effect 18 of 19 of the walkthrough.** Measured cost: **4.7 microseconds per frame**.
 
 The code is in [`../cube.c`](../cube.c).
 
@@ -125,4 +125,4 @@ lines to remember and walk again, and it does not beat a 64000 byte `memcpy`.
 
 **Previous:** [Flying over the picture](../../voxel/doc/README-EN.md) ·
 **Next:** [The cube with a photograph on every face](../../texcube/doc/README-EN.md) ·
-**Index:** [The twenty effects](../../README-EN.md)
+**Index:** [The nineteen effects](../../README-EN.md)

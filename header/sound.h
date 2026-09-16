@@ -210,4 +210,22 @@ void stop_all_sounds(void);
 void sound_set_log(void (*log_function)(char *message));
 
 
+// Stops the DMA and starts it again from the top of the buffer, so that from
+// this instant on its half boundaries are counted from HERE.
+//
+// It exists for one job: two machines in a network game start their cards at
+// different moments, so their DMAs run at different phases, and a song that
+// only becomes audible on the next half boundary starts up to 46 ms apart on
+// the two of them -- for the whole song, because nothing ever puts them back
+// together. Call this right after the two machines have met, and before
+// play_song(), and both DMAs line up.
+//
+// It is silent: it is meant to be called at the one moment when the buffer
+// holds nothing but silence. Calling it with music or an effect playing would
+// cut them with a click.
+//
+// Harmless on a machine playing alone, and pointless there too.
+void sound_align_start(void);
+
+
 #endif

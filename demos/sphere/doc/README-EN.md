@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 17 of 20 of the walkthrough.** Measured cost: **22 microseconds per frame**.
+**Effect 16 of 19 of the walkthrough.** Measured cost: **22 microseconds per frame**.
 
 The code is in [`../sphere.c`](../sphere.c).
 
@@ -108,4 +108,4 @@ under [zoom](../../zoom/doc/README-EN.md), which has no third dimension at all.
 
 **Previous:** [The endless tunnel](../../tunnel/doc/README-EN.md) ·
 **Next:** [Flying over the picture](../../voxel/doc/README-EN.md) ·
-**Index:** [The twenty effects](../../README-EN.md)
+**Index:** [The nineteen effects](../../README-EN.md)

@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 4 de 20 del recorrido.** Coste medido: **7,6 microsegundos por frame**.
+**Efecto 3 de 19 del recorrido.** Coste medido: **7,6 microsegundos por frame**.
 
 El código está en [`../stripes.c`](../stripes.c).
 
@@ -81,4 +81,4 @@ banda, 25 por frame.
 
 **Anterior:** [La persiana veneciana](../../blinds/doc/README.md) ·
 **Siguiente:** [La pantalla que se derrite](../../melt/doc/README.md) ·
-**Índice:** [Los veinte efectos](../../README.md)
+**Índice:** [Los diecinueve efectos](../../README.md)

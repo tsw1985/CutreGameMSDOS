@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**No es uno de los veinte efectos.** Es el epílogo: se ve una sola vez, al
+**No es uno de los diecinueve efectos.** Es el epílogo: se ve una sola vez, al
 final, y no entra en el recorrido.
 
 El código está en [`../outro.c`](../outro.c). La imagen es
@@ -123,4 +123,4 @@ está el latido de red.
 
 ---
 
-**Índice:** [Los veinte efectos](../../README.md)
+**Índice:** [Los diecinueve efectos](../../README.md)

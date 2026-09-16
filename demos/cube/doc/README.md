@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 19 de 20 del recorrido.** Coste medido: **4,7 microsegundos por frame**.
+**Efecto 18 de 19 del recorrido.** Coste medido: **4,7 microsegundos por frame**.
 
 El código está en [`../cube.c`](../cube.c).
 
@@ -126,4 +126,4 @@ bytes no le gana.
 
 **Anterior:** [Volar sobre la foto](../../voxel/doc/README.md) ·
 **Siguiente:** [El cubo con una foto en cada cara](../../texcube/doc/README.md) ·
-**Índice:** [Los veinte efectos](../../README.md)
+**Índice:** [Los diecinueve efectos](../../README.md)

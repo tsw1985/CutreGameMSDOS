@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 18 of 20 of the walkthrough.** Measured cost: **135 microseconds per
+**Effect 17 of 19 of the walkthrough.** Measured cost: **135 microseconds per
 frame**, the dearest of the twenty.
 
 The code is in [`../voxel.c`](../voxel.c).
@@ -132,4 +132,4 @@ and all you lose is the furthest band, which is already squeezed into eight rows
 
 **Previous:** [The picture wrapped round a spinning ball](../../sphere/doc/README-EN.md) ·
 **Next:** [The wireframe cube](../../cube/doc/README-EN.md) ·
-**Index:** [The twenty effects](../../README-EN.md)
+**Index:** [The nineteen effects](../../README-EN.md)

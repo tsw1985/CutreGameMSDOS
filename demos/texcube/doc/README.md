@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 20 de 20 del recorrido.** Coste medido: **50 microsegundos por frame**,
+**Efecto 19 de 19 del recorrido.** Coste medido: **50 microsegundos por frame**,
 más el tiempo de cargar seis BMP y construir cinco tablas de color al entrar.
 
 El código está en [`../texcube.c`](../texcube.c).
@@ -181,4 +181,4 @@ propósito: el efecto nunca puede cambiar la lista.
 ---
 
 **Anterior:** [El cubo de alambre](../../cube/doc/README.md) ·
-**Índice:** [Los veinte efectos](../../README.md)
+**Índice:** [Los diecinueve efectos](../../README.md)

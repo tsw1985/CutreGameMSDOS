@@ -234,13 +234,13 @@ on top of it.
 
 | | |
 |---|---|
-| Memory | **16 KB**, however long the song is |
+| Memory | **8 KB**, however long the song is |
 | Disk reads | ~5 a second, about 8 KB each |
 | Disk speed needed | 44 KB/s |
 | Margin before it is heard to break up | ~0.37 seconds |
 
 The length makes **no difference**: one minute, five, or half an hour cost the
-same 16 KB, because only a third of a second of music is ever in memory.
+same 8 KB, because only a fifth of a second of music is ever in memory.
 
 ### The loop has no seam
 
@@ -293,7 +293,7 @@ If the buffer empties because the game stalled for more than half a second,
 **silence is inserted** and the music carries on from where it was as soon as
 there is data again. It does not jump or skip ahead: a gap, not a lurch.
 
-If it happens often, raise `SONG_BUFFER_SIZE` in `sound.c` from 16384 to 32768
+If it happens often, raise `SONG_BUFFER_SIZE` in `sound.c` from 8192 to 16384
 or 65536. It costs memory but buys twice or four times the margin.
 
 ### One song at a time
@@ -498,6 +498,17 @@ Notice that `sound_update()` is outside the `if (kbhit())`. It has to run on
 | `stop_song()` | Stops the music and closes the file |
 | `set_song_volume(vol)` | Music volume. Starts at 16 |
 | `sound_set_log(function)` | Where to report problems. Optional |
+| `sound_align_start()` | Restarts the DMA. **Only for two machines on a network** |
+
+About that last one: the DMA starts in `sound_start()` and free runs from
+there, wrapping every 2048 samples, which at 44100 Hz is **46.44 ms**.
+`play_song()` does not touch it, so the music is not heard until the next half
+boundary. On a machine playing alone that does not matter; on two over a
+network it does, because each called `sound_start()` at a different moment and
+the song starts up to 46 ms apart on one of them, for the whole song.
+
+It is silent **only if the buffer holds silence**. With music or an effect
+playing it cuts them off with a click.
 
 Constants you may change in `sound.h`:
 
@@ -513,7 +524,7 @@ And inside `sound.c`, if you ever need them:
 | --- | --- | --- |
 | `SOUND_SAMPLE_RATE` | 44100 | The rate everything comes out at |
 | `SOUND_HALF_SIZE` | 2048 | How long the card takes to ask for more (46 ms) |
-| `SONG_BUFFER_SIZE` | 16384 | How much music is kept ahead (0.37 s) |
+| `SONG_BUFFER_SIZE` | 8192 | How much music is kept ahead (0.19 s) |
 | `SONG_REFILL_LEVEL` | 8192 | When it goes to the disk for more |
 
 Lowering `SOUND_HALF_SIZE` makes shots heard sooner, but leaves less margin if

@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 8 of 20 of the walkthrough.** Measured cost: **8.1 microseconds per frame**.
+**Effect 7 of 19 of the walkthrough.** Measured cost: **8.1 microseconds per frame**.
 
 The code is in [`../bounce.c`](../bounce.c).
 
@@ -102,4 +102,4 @@ One big `memset` and up to 200 `memcpy`. Practically the same as `scroll`.
 
 **Previous:** [The picture reflected in the water](../../water/doc/README-EN.md) ·
 **Next:** [The drop in the pond](../../ripple/doc/README-EN.md) ·
-**Index:** [The twenty effects](../../README-EN.md)
+**Index:** [The nineteen effects](../../README-EN.md)

@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 3 de 20 del recorrido.** Coste medido: **7,6 microsegundos por frame**.
+**Efecto 2 de 19 del recorrido.** Coste medido: **7,6 microsegundos por frame**.
 
 El código está en [`../blinds.c`](../blinds.c).
 
@@ -88,4 +88,4 @@ vez por **tira**, no por línea: 20 senos por frame.
 
 **Anterior:** [El desplazamiento infinito](../../scroll/doc/README.md) ·
 **Siguiente:** [Bandas a distinta velocidad](../../stripes/doc/README.md) ·
-**Índice:** [Los veinte efectos](../../README.md)
+**Índice:** [Los diecinueve efectos](../../README.md)

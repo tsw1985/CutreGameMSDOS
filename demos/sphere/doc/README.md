@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 17 de 20 del recorrido.** Coste medido: **22 microsegundos por frame**.
+**Efecto 16 de 19 del recorrido.** Coste medido: **22 microsegundos por frame**.
 
 El código está en [`../sphere.c`](../sphere.c).
 
@@ -109,4 +109,4 @@ dimensiones.
 
 **Anterior:** [El túnel infinito](../../tunnel/doc/README.md) ·
 **Siguiente:** [Volar sobre la foto](../../voxel/doc/README.md) ·
-**Índice:** [Los veinte efectos](../../README.md)
+**Índice:** [Los diecinueve efectos](../../README.md)

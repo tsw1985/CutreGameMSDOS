@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 13 de 20 del recorrido.** Coste medido: **9,4 microsegundos por frame**.
+**Efecto 12 de 19 del recorrido.** Coste medido: **9,4 microsegundos por frame**.
 
 El código está en [`../lens.c`](../lens.c).
 
@@ -121,4 +121,4 @@ caro: la lupa en sí cuesta la décima parte.
 
 **Anterior:** [Acercarse y alejarse](../../zoom/doc/README.md) ·
 **Siguiente:** [Girar y hacer zoom a la vez](../../rotozoom/doc/README.md) ·
-**Índice:** [Los veinte efectos](../../README.md)
+**Índice:** [Los diecinueve efectos](../../README.md)

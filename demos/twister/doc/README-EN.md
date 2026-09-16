@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 11 of 20 of the walkthrough.** Measured cost: **35 microseconds per frame**.
+**Effect 10 of 19 of the walkthrough.** Measured cost: **35 microseconds per frame**.
 
 The code is in [`../twister.c`](../twister.c).
 
@@ -139,4 +139,4 @@ black nearly always, and that is what makes it cheap: a
 
 **Previous:** [The pixelation that breathes](../../mosaic/doc/README-EN.md) ·
 **Next:** [Zooming in and out](../../zoom/doc/README-EN.md) ·
-**Index:** [The twenty effects](../../README-EN.md)
+**Index:** [The nineteen effects](../../README-EN.md)

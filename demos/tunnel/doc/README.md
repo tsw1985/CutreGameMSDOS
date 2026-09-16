@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 16 de 20 del recorrido.** Coste medido: **77 microsegundos por frame**,
+**Efecto 15 de 19 del recorrido.** Coste medido: **77 microsegundos por frame**,
 más **2 milisegundos** de montar las tablas al entrar.
 
 El código está en [`../tunnel.c`](../tunnel.c).
@@ -131,4 +131,4 @@ de la carpeta — toda la dificultad está en el montaje.
 
 **Anterior:** [El rotozoom que no se acaba nunca](../../carpet/doc/README.md) ·
 **Siguiente:** [La foto envuelta en una bola que gira](../../sphere/doc/README.md) ·
-**Índice:** [Los veinte efectos](../../README.md)
+**Índice:** [Los diecinueve efectos](../../README.md)

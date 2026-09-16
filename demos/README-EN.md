@@ -1,4 +1,4 @@
-# The twenty effects
+# The nineteen effects
 
 *[Versión en español](README.md)*
 
@@ -12,51 +12,56 @@ need everything the earlier ones taught.
 
 | | Effect | The idea | us/frame |
 |---|---|---|---|
-| 1 | [**cycle** — The palette turning](cycle/doc/README-EN.md) | The screen is never touched: the PALETTE turns | 1.6 |
-| 2 | [**scroll** — The endless scroll](scroll/doc/README-EN.md) | Two `memcpy` per row and it wraps by itself | 7.6 |
-| 3 | [**blinds** — The venetian blind](blinds/doc/README-EN.md) | Slats opening from the centre, staggered | 7.6 |
-| 4 | [**stripes** — Bands at different speeds](stripes/doc/README-EN.md) | Parallax in reverse, speeds taken from a sine | 7.6 |
-| 5 | [**melt** — The screen that melts away](melt/doc/README-EN.md) | Doom's wipe: 320 numbers that grow | 27 † |
-| 6 | [**wobble** — The image that ripples like a flag](wobble/doc/README-EN.md) | One sine per ROW: a flag in the wind | 8.0 |
-| 7 | [**water** — The picture reflected in the water](water/doc/README-EN.md) | Wobble, mirrored, with the amplitude growing | 2.2 † |
-| 8 | [**bounce** — The picture that wanders](bounce/doc/README-EN.md) | Lissajous, and SIGNED clipping | 8.1 |
-| 9 | [**ripple** — The drop in the pond](ripple/doc/README-EN.md) | Like wobble, but the wave dies with distance | 9.0 |
-| 10 | [**mosaic** — The pixelation that breathes](mosaic/doc/README-EN.md) | Blocks, and not repainting what has not changed | 19.6 |
-| 11 | [**twister** — The twisted column](twister/doc/README-EN.md) | 3D with no 3D in it: it all falls to one dimension | 35 † |
-| 12 | [**zoom** — Zooming in and out](zoom/doc/README-EN.md) | The column table: 320 calculations, not 64000 | 110 |
-| 13 | [**lens** — The magnifying glass](lens/doc/README-EN.md) | Precompute a table, but only 6100 points of it | 9.4 † |
-| 14 | [**rotozoom** — Rotate and zoom at once](rotozoom/doc/README-EN.md) | 2 adds per pixel, and the visible span per row | 179 |
-| 15 | [**carpet** — The rotozoom that never ends](carpet/doc/README-EN.md) | The same one masked: it repeats for ever | 73 † |
-| 16 | [**tunnel** — The endless tunnel](tunnel/doc/README-EN.md) | Two 64000 byte tables and the frame is just adds | 77 † |
-| 17 | [**sphere** — The picture on a spinning ball](sphere/doc/README-EN.md) | The same with ONE table: latitude is per row | 22 † |
-| 18 | [**voxel** — Flying over the picture](voxel/doc/README-EN.md) | The Comanche engine: one ray per column | 135 † |
-| 19 | [**cube** — The wireframe cube](cube/doc/README-EN.md) | Real 3D, and among the cheapest: it fills nothing | 4.7 † |
-| 20 | [**texcube** — The cube with a photograph on every face](texcube/doc/README-EN.md) | The same one filled, for ten times the price | 50 † |
+| 1 | [**scroll** — The endless scroll](scroll/doc/README-EN.md) | Two `memcpy` per row and it wraps by itself | 7.6 |
+| 2 | [**blinds** — The venetian blind](blinds/doc/README-EN.md) | Slats opening from the centre, staggered | 7.6 |
+| 3 | [**stripes** — Bands at different speeds](stripes/doc/README-EN.md) | Parallax in reverse, speeds taken from a sine | 7.6 |
+| 4 | [**melt** — The screen that melts away](melt/doc/README-EN.md) | Doom's wipe: 320 numbers that grow | 36 † |
+| 5 | [**wobble** — The image that ripples like a flag](wobble/doc/README-EN.md) | One sine per ROW: a flag in the wind | 8.0 |
+| 6 | [**water** — The picture reflected in the water](water/doc/README-EN.md) | Wobble, mirrored, with the amplitude growing | 3.1 † |
+| 7 | [**bounce** — The picture that wanders](bounce/doc/README-EN.md) | Lissajous, and SIGNED clipping | 8.1 |
+| 8 | [**ripple** — The drop in the pond](ripple/doc/README-EN.md) | Like wobble, but the wave dies with distance | 9.0 |
+| 9 | [**mosaic** — The pixelation that breathes](mosaic/doc/README-EN.md) | Blocks, and not repainting what has not changed | 19.6 |
+| 10 | [**twister** — The twisted column](twister/doc/README-EN.md) | 3D with no 3D in it: it all falls to one dimension | 41 † |
+| 11 | [**zoom** — Zooming in and out](zoom/doc/README-EN.md) | The column table: 320 calculations, not 64000 | 110 |
+| 12 | [**lens** — The magnifying glass](lens/doc/README-EN.md) | Precompute a table, but only 6100 points of it | 12 † |
+| 13 | [**rotozoom** — Rotate and zoom at once](rotozoom/doc/README-EN.md) | 2 adds per pixel, and the visible span per row | 179 |
+| 14 | [**carpet** — The rotozoom that never ends](carpet/doc/README-EN.md) | The same one masked: it repeats for ever | 79 † |
+| 15 | [**tunnel** — The endless tunnel](tunnel/doc/README-EN.md) | Two 64000 byte tables and the frame is just adds | 97 † |
+| 16 | [**sphere** — The picture on a spinning ball](sphere/doc/README-EN.md) | The same with ONE table: latitude is per row | 27 † |
+| 17 | [**voxel** — Flying over the picture](voxel/doc/README-EN.md) | The Comanche engine: one ray per column | 117 † |
+| 18 | [**cube** — The wireframe cube](cube/doc/README-EN.md) | Real 3D, and among the cheapest: it fills nothing | 6.5 † |
+| 19 | [**texcube** — The cube with a photograph on every face](texcube/doc/README-EN.md) | The same one filled, for thirteen times the price | 88 † |
 
 Costs measured by running the real code over `res/demo/`, in microseconds of host
 CPU per frame. They are relative: what matters is that `rotozoom` costs twenty
 times a `wobble`, not the absolute number.
 
 † **The ten marked ones were measured on a different machine**, so they cannot be
-compared head on with the other ten. Two anchors for scaling them: on that bench
-`rotozoom` comes out at **55** rather than 179 and `zoom` at **35** rather than
-110. It is not even a constant factor — a machine weighs memory and arithmetic
-differently — so the column is good for ordering within each group and not much
-else.
+compared head on with the other nine. Two anchors for scaling them: on that bench
+`rotozoom` comes out at **49** rather than 179 and `zoom` at **24** rather than
+110.
 
-**And cost stopped tracking difficulty a while back.** The first ten went
+**And cost stopped tracking difficulty a while back.** The first ones went
 together: the hard one was the expensive one. From `lens` on it no longer does,
 for a reason that is the lesson of the second half of the walkthrough:
 
 - **precomputing is free in time and paid for in memory.** `sphere` does
-  spherical trigonometry for 22 microseconds because it settled the arcsines on
+  spherical trigonometry for 27 microseconds because it settled the arcsines on
   the way in.
 - **the expensive part of 3D is not the maths, it is the filling.** `cube` sits
-  at number 19 and is among the cheapest on the list: it fills nothing. `texcube`
-  does exactly the same geometry for ten times the price.
-- **and what really costs is writing pixels one at a time.** The three dearest —
-  `voxel`, `rotozoom` and `tunnel` — are the three that touch all 64000 without
-  being able to use a `memcpy`.
+  at number 18 and is among the cheapest on the list: it fills nothing.
+  `texcube` does exactly the same geometry for thirteen times the price.
+- **and what really costs is writing pixels one at a time.** The dearest ones —
+  `rotozoom`, `voxel`, `tunnel` and `texcube` — are the ones that touch the
+  whole screen without being able to use a `memcpy`.
+
+## There was a twentieth, and it was dropped
+
+`cycle` turned the palette without touching a single pixel: the cheapest effect
+of all and the most of its era. But it only works on pictures drawn for it, with
+their colours in a ramp. On a **photograph** it does not give an effect, it
+gives a mush of colour with nothing recognisable in it, and this is a slideshow
+of photographs. Gone.
 
 ## And an epilogue, which is not an effect
 
@@ -106,9 +111,9 @@ Adding one is: write the `.c` in its folder, include its `.h` in `demos.c`, add
 one line to `demo_effects[]` and a rule to the `Makefile`. Nothing else
 anywhere: `main.c` never finds out.
 
-There are **twenty**. `res/demo/` holds fifteen pictures, so one pass shows
-fifteen effects and five never come up. With twenty pictures they all appear and
-none repeats; past twenty, the list starts again.
+There are **nineteen**. `res/demo/` holds fifteen pictures, so one pass shows
+fifteen effects and four never come up. With nineteen pictures they all appear
+and none repeats; past nineteen, the list starts again.
 
 ## The rules they all follow
 

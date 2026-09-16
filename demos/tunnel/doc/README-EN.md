@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 16 of 20 of the walkthrough.** Measured cost: **77 microseconds per
+**Effect 15 of 19 of the walkthrough.** Measured cost: **77 microseconds per
 frame**, plus **2 milliseconds** of building the tables on the way in.
 
 The code is in [`../tunnel.c`](../tunnel.c).
@@ -131,4 +131,4 @@ simplest in the folder — all the difficulty is in the build.
 
 **Previous:** [The rotozoom that never ends](../../carpet/doc/README-EN.md) ·
 **Next:** [The picture wrapped round a spinning ball](../../sphere/doc/README-EN.md) ·
-**Index:** [The twenty effects](../../README-EN.md)
+**Index:** [The nineteen effects](../../README-EN.md)

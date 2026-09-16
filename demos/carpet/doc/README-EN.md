@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 15 of 20 of the walkthrough.** Measured cost: **73 microseconds per frame**.
+**Effect 14 of 19 of the walkthrough.** Measured cost: **73 microseconds per frame**.
 
 The code is in [`../carpet.c`](../carpet.c).
 
@@ -136,4 +136,4 @@ doubled the rows. You lose half the vertical detail and gain half the time.
 
 **Previous:** [Rotate and zoom at once](../../rotozoom/doc/README-EN.md) ·
 **Next:** [The endless tunnel](../../tunnel/doc/README-EN.md) ·
-**Index:** [The twenty effects](../../README-EN.md)
+**Index:** [The nineteen effects](../../README-EN.md)

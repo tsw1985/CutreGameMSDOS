@@ -99,10 +99,6 @@ bin\bounce.obj: demos\bounce\bounce.c
 	@if not exist bin mkdir bin
 	$(CC) -c $(CFLAGS) -obin\bounce.obj demos\bounce\bounce.c
 
-bin\cycle.obj: demos\cycle\cycle.c
-	@if not exist bin mkdir bin
-	$(CC) -c $(CFLAGS) -obin\cycle.obj demos\cycle\cycle.c
-
 bin\stripes.obj: demos\stripes\stripes.c
 	@if not exist bin mkdir bin
 	$(CC) -c $(CFLAGS) -obin\stripes.obj demos\stripes\stripes.c
@@ -189,7 +185,6 @@ $(TARGET): \
 	bin\blinds.obj \
 	bin\ripple.obj \
 	bin\bounce.obj \
-	bin\cycle.obj \
 	bin\stripes.obj \
 	bin\cube.obj \
 	bin\carpet.obj \
@@ -208,7 +203,7 @@ $(TARGET): \
 	@echo bin\demos.obj bin\rotozoom.obj bin\wobble.obj >> bin\link.rsp
 	@echo bin\zoom.obj bin\scroll.obj bin\mosaic.obj >> bin\link.rsp
 	@echo bin\blinds.obj bin\ripple.obj bin\bounce.obj >> bin\link.rsp
-	@echo bin\cycle.obj bin\stripes.obj bin\cube.obj >> bin\link.rsp
+	@echo bin\stripes.obj bin\cube.obj >> bin\link.rsp
 	@echo bin\carpet.obj bin\texcube.obj bin\tunnel.obj >> bin\link.rsp
 	@echo bin\twister.obj bin\melt.obj bin\water.obj >> bin\link.rsp
 	@echo bin\lens.obj bin\sphere.obj bin\voxel.obj >> bin\link.rsp

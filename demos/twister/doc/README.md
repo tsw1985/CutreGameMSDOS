@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 11 de 20 del recorrido.** Coste medido: **35 microsegundos por frame**.
+**Efecto 10 de 19 del recorrido.** Coste medido: **35 microsegundos por frame**.
 
 El código está en [`../twister.c`](../twister.c).
 
@@ -143,4 +143,4 @@ pantalla queda en negro casi siempre, y eso es lo que lo hace barato: un
 
 **Anterior:** [El pixelado que respira](../../mosaic/doc/README.md) ·
 **Siguiente:** [Acercarse y alejarse](../../zoom/doc/README.md) ·
-**Índice:** [Los veinte efectos](../../README.md)
+**Índice:** [Los diecinueve efectos](../../README.md)

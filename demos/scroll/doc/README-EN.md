@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 2 of 20 of the walkthrough.** Measured cost: **7.6 microseconds per frame**.
+**Effect 1 of 19 of the walkthrough.** Measured cost: **7.6 microseconds per frame**.
 
 The code is in [`../scroll.c`](../scroll.c).
 
@@ -88,6 +88,5 @@ operation.
 
 ---
 
-**Previous:** [The palette turning](../../cycle/doc/README-EN.md) ·
 **Next:** [The venetian blind](../../blinds/doc/README-EN.md) ·
-**Index:** [The twenty effects](../../README-EN.md)
+**Index:** [The nineteen effects](../../README-EN.md)

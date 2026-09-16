@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 12 of 20 of the walkthrough.** Measured cost: **110 microseconds per frame**, and 144 before it was optimised.
+**Effect 11 of 19 of the walkthrough.** Measured cost: **110 microseconds per frame**, and 144 before it was optimised.
 
 The code is in [`../zoom.c`](../zoom.c).
 
@@ -116,4 +116,4 @@ ten: unavoidable, because it really does touch all 64000 pixels.
 
 **Previous:** [The twisted column](../../twister/doc/README-EN.md) ·
 **Next:** [The magnifying glass wandering over the picture](../../lens/doc/README-EN.md) ·
-**Index:** [The twenty effects](../../README-EN.md)
+**Index:** [The nineteen effects](../../README-EN.md)

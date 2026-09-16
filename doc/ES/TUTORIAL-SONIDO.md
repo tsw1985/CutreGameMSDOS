@@ -233,13 +233,14 @@ por encima.
 
 | | |
 |---|---|
-| Memoria | **16 KB**, dure lo que dure la canción |
-| Lecturas de disco | ~5 por segundo, de unos 8 KB |
+| Memoria | **8 KB**, dure lo que dure la canción |
+| Lecturas de disco | ~10 por segundo, de unos 4 KB |
 | Velocidad de disco necesaria | 44 KB/s |
-| Margen antes de que se oiga un corte | ~0,37 segundos |
+| Margen antes de que se oiga un corte | ~0,19 segundos |
 
 La duración **da igual**: un minuto, cinco o media hora cuestan los mismos
-16 KB, porque en memoria solo hay un tercio de segundo de música por delante.
+8 KB, porque en memoria solo hay una quinta parte de segundo de música por
+delante.
 
 ### El bucle no tiene costura
 
@@ -291,8 +292,10 @@ Si el buffer se vacía porque el juego se quedó parado más de medio segundo,
 **se mete silencio** y la música continúa desde donde iba en cuanto haya
 datos otra vez. No salta ni se adelanta: es un hueco, no un tirón.
 
-Si pasa a menudo, sube `SONG_BUFFER_SIZE` en `sound.c` de 16384 a 32768 o
-65536. Cuesta memoria, pero te da el doble o el cuádruple de margen.
+Si pasa a menudo, sube `SONG_BUFFER_SIZE` en `sound.c` de 8192 a 16384 o
+32768. Cuesta memoria, pero te da el doble o el cuádruple de margen. En ESTE
+juego no sobra: los 8192 salieron de hacer sitio para el cuarto efecto, y la
+cuenta está en `sound.c`.
 
 ### Solo una canción a la vez
 
@@ -496,6 +499,17 @@ ejecutarse en **todas** las vueltas del bucle, se pulse una tecla o no.
 | `stop_song()` | Para la música y cierra el fichero |
 | `set_song_volume(vol)` | Volumen de la música. Empieza en 16 |
 | `sound_set_log(función)` | Dónde contar los problemas. Opcional |
+| `sound_align_start()` | Rearranca el DMA. **Solo para dos máquinas en red** |
+
+Sobre la última: el DMA arranca en `sound_start()` y a partir de ahí corre
+solo, dando la vuelta cada 2048 muestras, que a 44.100 Hz son **46,44 ms**.
+`play_song()` no lo toca, así que la música no se oye hasta el siguiente
+cambio de mitad. A una máquina sola le da igual; a dos en red no, porque cada
+una llamó a `sound_start()` en un momento distinto y la canción arranca hasta
+46 ms desplazada en una respecto a la otra, para toda la canción.
+
+Es silenciosa **solo si el buffer lleva silencio**. Con música o un efecto
+sonando, los corta con un chasquido.
 
 Constantes que puedes tocar en `sound.h`:
 
@@ -511,7 +525,7 @@ Y dentro de `sound.c`, si alguna vez lo necesitas:
 | --- | --- | --- |
 | `SOUND_SAMPLE_RATE` | 44100 | La frecuencia a la que sale todo |
 | `SOUND_HALF_SIZE` | 2048 | Cuánto tarda la tarjeta en pedir más (46 ms) |
-| `SONG_BUFFER_SIZE` | 16384 | Cuánta música se lleva por delante (0,37 s) |
+| `SONG_BUFFER_SIZE` | 8192 | Cuánta música se lleva por delante (0,19 s) |
 | `SONG_REFILL_LEVEL` | 8192 | Cuándo se va al disco a por más |
 
 Bajar `SOUND_HALF_SIZE` hace que los disparos se oigan antes, pero deja menos

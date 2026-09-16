@@ -72,14 +72,39 @@
 // plays, and this is how far ahead we stay. The song can therefore be as long
 // as you like: only this buffer is ever in memory.
 //
-// 16384 bytes is 0.37 seconds of music at 44100. That is the margin before
-// the music is heard to break up if the game stalls, and it means the disk is
-// touched about five times a second instead of on every frame.
-#define SONG_BUFFER_SIZE 	16384
+// 8192 bytes is 0.19 seconds of music at 44100, and the disk is touched about
+// ten times a second instead of on every frame.
+//
+// It was 16384, and it came down to make room. This array is STATIC, so its
+// bytes are spent from the moment the program loads whether anything is
+// playing or not, and the four sound effects only just fit. Measured on the
+// big map, level 5:
+//
+//     free after the map and the sprites .... 193792
+//     the DMA buffer sound_start() takes .... - 8192
+//     left for the four effects ............. 185600
+//     fire + engip1 + engip2 + died ......... 176247
+//     to spare .............................. + 9353
+//
+// and the nineteen effects of demos\ take 15872 of those 9353, which is why
+// this had to give 8192 back. died.wav had its tail trimmed for the rest.
+// Without both, died.wav is the last of the four to load and so the one that
+// does not, and the game runs with no explosion.
+//
+// The margin it costs is margin there was plenty of. song_refill() runs
+// inside sound_update(), right after mixing a half, and a half is 2048 bytes
+// of music. So the buffer only has to outlast ONE turn of that loop, and at
+// 8192 with a refill level of 4096 it still guarantees two.
+//
+// SOUND_HALF_SIZE was NOT touched to find these bytes, and deliberately so:
+// the comment above it already weighed 1024 against 2048 and called 1024
+// tight. Halving it would leave one frame of room instead of three.
+#define SONG_BUFFER_SIZE 	8192
 
 // When less than this is left, go and read more. Half the buffer, so every
-// read is worth doing and there is always a fifth of a second in hand.
-#define SONG_REFILL_LEVEL 	8192
+// read is worth doing and there are always 4096 bytes -- 93 milliseconds,
+// two turns of the mixer -- in hand.
+#define SONG_REFILL_LEVEL 	4096
 
 // In unsigned 8 bit audio the middle of the wave, ie. silence, is 128 and
 // not 0. Samples are turned into signed values by subtracting it before
@@ -779,10 +804,10 @@ static void sound_mix_half(unsigned char far *destination)
 // Tops the song buffer back up from the file.
 //
 // Called from sound_update() every time a half has been mixed, which is about
-// 31 times a second, but it only touches the disk when less than
-// SONG_REFILL_LEVEL bytes are left. That works out at roughly four reads a
-// second, of about 4 KB each: 16 KB a second, which any disk can manage
-// without the game noticing.
+// 21 times a second, but it only touches the disk when less than
+// SONG_REFILL_LEVEL bytes are left. That works out at roughly ten reads a
+// second, of about 4 KB each: 44 KB a second, which is simply the rate the
+// music plays at and which any hard disk manages without the game noticing.
 //
 // Going round at the end of the song happens right here, in the middle of a
 // read, so the last byte of the song and the first byte of the next lap end
@@ -1052,6 +1077,91 @@ int sound_start(void)
 	sound_log("Sound: ready");
 
 	return 1;
+}
+
+
+//===========================================================
+// REALINEAR EL DMA, y esto es lo unico que hay aqui por la red.
+//
+// EL PROBLEMA
+//
+// El DMA arranca en sound_start() y a partir de ahi corre SOLO, dando la
+// vuelta al buffer cada dos mitades de 2048 muestras. A 44100 Hz una mitad
+// son 46,4 milisegundos.
+//
+// play_song() no toca el DMA: abre el fichero, llena el buffer de la
+// cancion y levanta una bandera. La musica no se empieza a OIR hasta el
+// siguiente cambio de mitad.
+//
+// Y ahi esta el desfase. Las dos maquinas de una partida en red llaman a
+// sound_start() en momentos distintos -- cargan a velocidades distintas, que
+// es precisamente la razon de que exista la barrera de net_wait_together().
+// Asi que sus dos DMA corren con FASES DISTINTAS, y por muy juntas que salgan
+// de la barrera, cada una empieza a oir la cancion en su propio cambio de
+// mitad:
+//
+//     maquina A   |----+----|----+----|----+----|     mitades del DMA
+//     maquina B      |----+----|----+----|----+--|
+//                    ^ barrera: las dos salen aqui
+//                        A oye la cancion aqui  ^
+//                     B la oye aqui  ^
+//
+// El desfase es la diferencia de carga MODULO 46,44 ms: un resto de division
+// que salta de un valor a otro sin avisar, asi que sale distinto en cada
+// partida. Unas veces no se nota y otras suena a eco.
+//
+//
+// LA SOLUCION
+//
+// Dos relojes que van libres no se pueden poner de acuerdo mirandose: hay
+// que parar uno. Esto para el DMA y lo vuelve a arrancar desde el byte 0 del
+// buffer, asi que la fase pasa a contar desde el instante en que se llama.
+//
+// Llamandola justo despues de la barrera, las dos maquinas la ejecutan con
+// la diferencia que tenga la barrera -- medida en el banco de red, 0,1 ms --
+// y desde ahi sus dos DMA van en fase.
+//
+// No suena a nada. En ese momento el buffer solo lleva silencio: la cancion
+// no ha empezado y los efectos tampoco. Es el unico instante de la partida
+// en el que se puede reiniciar el DMA sin un chasquido.
+//
+// Hace exactamente lo que hacen sound_end() para parar y sound_start() para
+// arrancar, ni una cosa mas. No toca el ISR ni la memoria: el buffer sigue
+// siendo el mismo y los efectos cargados siguen donde estaban.
+//===========================================================
+void sound_align_start(void)
+{
+	int i;
+
+	if (sound_is_ready == 0){
+		return;
+	}
+
+	// Parar, en el mismo orden que sound_end(): primero se saca al DSP del
+	// modo auto-init y despues se enmascara el canal, o el DMA seguiria
+	// leyendo el buffer mientras lo estamos rellenando.
+	sound_dsp_write(sound_base_port, 0xDA);		/* leave 8 bit auto-init */
+	sound_dma_stop(sound_dma);
+
+	// Silencio otra vez, y la contabilidad como la dejaba sound_start()
+	for (i = 0; i < SOUND_BUFFER_SIZE; i++){
+		sound_buffer[i] = SOUND_SILENCE;
+	}
+
+	sound_half_to_fill = 0;
+	sound_buffer_ready = 0;
+
+	// Y arrancar, igual que sound_start(). El ISR ya esta puesto y el buffer
+	// es el mismo, asi que no hay nada que instalar ni que reservar.
+	sound_dsp_set_sample_rate(sound_base_port, SOUND_SAMPLE_RATE);
+
+	sound_dma_setup(sound_dma,
+	                ((unsigned long)FP_SEG(sound_buffer) << 4) + FP_OFF(sound_buffer),
+	                SOUND_BUFFER_SIZE);
+
+	sound_dsp_start_playback(sound_base_port, SOUND_HALF_SIZE);
+
+	sound_log("Sound: DMA realigned");
 }
 
 

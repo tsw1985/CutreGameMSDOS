@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 15 de 20 del recorrido.** Coste medido: **73 microsegundos por frame**.
+**Efecto 14 de 19 del recorrido.** Coste medido: **73 microsegundos por frame**.
 
 El código está en [`../carpet.c`](../carpet.c).
 
@@ -138,4 +138,4 @@ del tiempo.
 
 **Anterior:** [Girar y hacer zoom a la vez](../../rotozoom/doc/README.md) ·
 **Siguiente:** [El túnel infinito](../../tunnel/doc/README.md) ·
-**Índice:** [Los veinte efectos](../../README.md)
+**Índice:** [Los diecinueve efectos](../../README.md)

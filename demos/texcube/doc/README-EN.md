@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 20 of 20 of the walkthrough.** Measured cost: **50 microseconds per
+**Effect 19 of 19 of the walkthrough.** Measured cost: **50 microseconds per
 frame**, plus the time to load six BMPs and build five colour tables on the way
 in.
 
@@ -183,4 +183,4 @@ global array on purpose: the effect can never change the list.
 ---
 
 **Previous:** [The wireframe cube](../../cube/doc/README-EN.md) ·
-**Index:** [The twenty effects](../../README-EN.md)
+**Index:** [The nineteen effects](../../README-EN.md)

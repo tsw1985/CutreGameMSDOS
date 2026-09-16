@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 18 de 20 del recorrido.** Coste medido: **135 microsegundos por frame**,
+**Efecto 17 de 19 del recorrido.** Coste medido: **135 microsegundos por frame**,
 el más caro de los veinte.
 
 El código está en [`../voxel.c`](../voxel.c).
@@ -135,4 +135,4 @@ filas.
 
 **Anterior:** [La foto envuelta en una bola que gira](../../sphere/doc/README.md) ·
 **Siguiente:** [El cubo de alambre](../../cube/doc/README.md) ·
-**Índice:** [Los veinte efectos](../../README.md)
+**Índice:** [Los diecinueve efectos](../../README.md)

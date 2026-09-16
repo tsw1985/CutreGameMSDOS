@@ -26,7 +26,6 @@
 #include "demos\blinds\blinds.h"
 #include "demos\ripple\ripple.h"
 #include "demos\bounce\bounce.h"
-#include "demos\cycle\cycle.h"
 #include "demos\stripes\stripes.h"
 #include "demos\cube\cube.h"
 #include "demos\carpet\carpet.h"
@@ -464,7 +463,7 @@ static int demo_load_image(char *path, unsigned char *image, unsigned char *pale
 // texcube; tunnel y sphere), para que la presentacion no parezca que se
 // repite.
 //
-// Son VEINTE, y AQUI EL ORDEN SI IMPORTA, por un motivo que no es estetico.
+// Son DIECINUEVE, y AQUI EL ORDEN SI IMPORTA, por un motivo que no es estetico.
 //
 // demo_run() reparte un efecto por foto EN ESTE ORDEN, asi que con quince
 // fotos se ven los quince primeros de la lista y los cinco ultimos no
@@ -473,9 +472,13 @@ static int demo_load_image(char *path, unsigned char *image, unsigned char *pale
 //
 // Asi que los diez efectos nuevos y los mas vistosos van DELANTE, y los
 // que ya se habian visto mil veces detras. Con las quince fotos de
-// res\demo\ se ven los diez nuevos enteros; con veinte, salen todos y
-// ninguno repite. Con mas de veinte la lista vuelve a empezar, que es lo
-// que hacia cuando eran diez.
+// res\demo\ se ven los diez nuevos enteros; con diecinueve, salen todos y
+// ninguno repite. Con mas de diecinueve la lista vuelve a empezar, que es
+// lo que hacia cuando eran diez.
+//
+// cycle se quito a peticion del usuario: giraba la paleta y sobre una foto
+// normal no daba un efecto, daba una papilla de colores en la que no se
+// distinguia nada. Su carpeta ya no esta.
 //
 // Una foto que falta se salta ANTES de gastar su efecto, asi que dejar
 // huecos en la lista de main.c no descoloca nada de esto.
@@ -491,7 +494,6 @@ static demo_effect_fn demo_effects[] = {
 	demo_stripes,
 	demo_carpet,
 	demo_melt,
-	demo_cycle,
 	demo_tunnel,
 	demo_lens,
 	demo_voxel,
@@ -649,7 +651,7 @@ int demo_run(char **image_paths, int image_count, unsigned int seconds_each){
 
 		//---------------------------------------------------
 		// Y se apaga con la paleta que haya AHORA, que no tiene por que
-		// ser la que se cargo: demo_cycle() la deja girada.
+		// ser la que se cargo: un efecto puede dejarla tocada.
 		//---------------------------------------------------
 		demo_fade_out(palette);
 

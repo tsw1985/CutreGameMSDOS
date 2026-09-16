@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 2 de 20 del recorrido.** Coste medido: **7,6 microsegundos por frame**.
+**Efecto 1 de 19 del recorrido.** Coste medido: **7,6 microsegundos por frame**.
 
 El código está en [`../scroll.c`](../scroll.c).
 
@@ -86,6 +86,5 @@ píxel.
 
 ---
 
-**Anterior:** [La paleta girando](../../cycle/doc/README.md) ·
 **Siguiente:** [La persiana veneciana](../../blinds/doc/README.md) ·
-**Índice:** [Los veinte efectos](../../README.md)
+**Índice:** [Los diecinueve efectos](../../README.md)

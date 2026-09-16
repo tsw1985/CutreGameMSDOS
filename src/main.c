@@ -197,11 +197,11 @@ int demo_mode;
 // Names are 8.3 because DOS mangles anything longer: demo01.bmp is 6.3 and
 // the folder demo is 4 characters.
 //
-// There are TWENTY slots because demos\ has twenty effects and demo_run()
-// hands out one per picture in turn. With fifteen files five effects never
-// come up; drop demo16.bmp .. demo20.bmp in and they all do.
+// There are NINETEEN slots because demos\ has nineteen effects and demo_run()
+// hands out one per picture in turn. With fifteen files four effects never
+// come up; drop demo16.bmp .. demo19.bmp in and they all do.
 //
-// The five that are not there yet cost nothing at all. A missing file is
+// The four that are not there yet cost nothing at all. A missing file is
 // skipped BEFORE the effect counter advances, so it does not burn its
 // effect either: the show is exactly what it was, one slide shorter.
 char *demo_images[] = {
@@ -223,8 +223,7 @@ char *demo_images[] = {
 	"..\\res\\demo\\demo16.bmp",
 	"..\\res\\demo\\demo17.bmp",
 	"..\\res\\demo\\demo18.bmp",
-	"..\\res\\demo\\demo19.bmp",
-	"..\\res\\demo\\demo20.bmp"
+	"..\\res\\demo\\demo19.bmp"
 };
 
 #define DEMO_IMAGE_COUNT 	(sizeof(demo_images) / sizeof(demo_images[0]))
@@ -802,6 +801,18 @@ int main(int argc, char *argv[]){
 			tanks_log("Sound: could not load died.wav");
 		}
 
+		// What is left after the four, and it is here because the four only
+		// just fit and a fifth would not.
+		//
+		// The budget is tight enough to be worth watching: the map and the
+		// sprites take most of the machine, sound_start() has already taken
+		// the DMA buffer, and every effect added to demos\ makes game.exe
+		// bigger and this number smaller. When a WAV stops loading, this is
+		// the line that says how short it was.
+		sprintf(log_message_text, "Sound: effects loaded, memory free %lu",
+		        (unsigned long)farcoreleft());
+		tanks_log(log_message_text);
+
 		set_sound_volume(sound_fire,     SOUND_VOLUME_FIRE);
 		set_sound_volume(sound_engine_1, SOUND_VOLUME_ENGINE);
 		set_sound_volume(sound_engine_2, SOUND_VOLUME_ENGINE);
@@ -848,6 +859,35 @@ int main(int argc, char *argv[]){
 	// difference landed straight in the song and stayed there.
 	//---------------------------------------------------
 	if (sound_ready == 1){
+
+		// THE DMA HAS TO BE RESTARTED HERE, and it is not tidiness.
+		//
+		// The card has been running since sound_start(), which happened
+		// before the barrier and therefore at a different moment on each
+		// machine. play_song() does not touch the DMA: it fills the song
+		// buffer and raises a flag, and the music is not HEARD until the
+		// next half boundary comes round, 46 ms apart at the worst.
+		//
+		// So two machines that leave the barrier together still start the
+		// song up to 46 ms apart, and it stays that way for the whole song.
+		// It changes every match, because it depends on how long each one
+		// took to load: some nights it is inaudible and some it is an echo.
+		//
+		// Two free running clocks cannot agree by looking at each other.
+		// One of them has to be restarted, and this is the only moment in
+		// the match when that costs nothing: the buffer holds silence, so
+		// there is nothing to cut. See sound.c for the drawing.
+		//
+		// ONLY on a network game, and that is deliberate caution rather
+		// than thrift. On one machine there is nothing to line up with, so
+		// the call would do nothing but restart the card for no reason --
+		// and if some Sound Blaster clone ever dislikes the stop-and-start
+		// sequence, this way it can only spoil a network match and never
+		// the single machine one.
+		if (network_mode == 1){
+			sound_align_start();
+		}
+
 		play_song("..\\res\\prody8.wav");
 	}
 

@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 6 de 20 del recorrido.** Coste medido: **8,0 microsegundos por frame**.
+**Efecto 5 de 19 del recorrido.** Coste medido: **8,0 microsegundos por frame**.
 
 El código está en [`../wobble.c`](../wobble.c).
 
@@ -84,4 +84,4 @@ lo poco que cuestan.
 
 **Anterior:** [La pantalla que se derrite](../../melt/doc/README.md) ·
 **Siguiente:** [La foto reflejada en el agua](../../water/doc/README.md) ·
-**Índice:** [Los veinte efectos](../../README.md)
+**Índice:** [Los diecinueve efectos](../../README.md)

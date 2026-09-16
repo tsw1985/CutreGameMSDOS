@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 5 de 20 del recorrido.** Coste medido: **27 microsegundos por frame**.
+**Efecto 4 de 19 del recorrido.** Coste medido: **27 microsegundos por frame**.
 
 El código está en [`../melt.c`](../melt.c).
 
@@ -117,4 +117,4 @@ derecha.
 
 **Anterior:** [Bandas a distinta velocidad](../../stripes/doc/README.md) ·
 **Siguiente:** [La imagen que ondula](../../wobble/doc/README.md) ·
-**Índice:** [Los veinte efectos](../../README.md)
+**Índice:** [Los diecinueve efectos](../../README.md)

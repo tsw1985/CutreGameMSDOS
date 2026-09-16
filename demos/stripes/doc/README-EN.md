@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 4 of 20 of the walkthrough.** Measured cost: **7.6 microseconds per frame**.
+**Effect 3 of 19 of the walkthrough.** Measured cost: **7.6 microseconds per frame**.
 
 The code is in [`../stripes.c`](../stripes.c).
 
@@ -81,4 +81,4 @@ The same as `scroll`: two `memcpy` per line. The sine is worked out once per ban
 
 **Previous:** [The venetian blind](../../blinds/doc/README-EN.md) ·
 **Next:** [The screen that melts away](../../melt/doc/README-EN.md) ·
-**Index:** [The twenty effects](../../README-EN.md)
+**Index:** [The nineteen effects](../../README-EN.md)

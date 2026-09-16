@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 10 of 20 of the walkthrough.** Measured cost: **19.6 microseconds per frame**, and 78 before it was optimised.
+**Effect 9 of 19 of the walkthrough.** Measured cost: **19.6 microseconds per frame**, and 78 before it was optimised.
 
 The code is in [`../mosaic.c`](../mosaic.c).
 
@@ -103,4 +103,4 @@ still cost the same; what disappeared are the other 520.
 
 **Previous:** [The drop in the pond](../../ripple/doc/README-EN.md) ·
 **Next:** [The twisted column](../../twister/doc/README-EN.md) ·
-**Index:** [The twenty effects](../../README-EN.md)
+**Index:** [The nineteen effects](../../README-EN.md)

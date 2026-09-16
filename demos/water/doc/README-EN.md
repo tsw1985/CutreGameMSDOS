@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 7 of 20 of the walkthrough.** Measured cost: **2.2 microseconds per
+**Effect 6 of 19 of the walkthrough.** Measured cost: **2.2 microseconds per
 frame**, the cheapest of the twenty.
 
 The code is in [`../water.c`](../water.c).
@@ -99,4 +99,4 @@ written on its own.
 
 **Previous:** [The image that ripples like a flag](../../wobble/doc/README-EN.md) ·
 **Next:** [The picture that wanders](../../bounce/doc/README-EN.md) ·
-**Index:** [The twenty effects](../../README-EN.md)
+**Index:** [The nineteen effects](../../README-EN.md)

@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 5 of 20 of the walkthrough.** Measured cost: **27 microseconds per frame**.
+**Effect 4 of 19 of the walkthrough.** Measured cost: **27 microseconds per frame**.
 
 The code is in [`../melt.c`](../melt.c).
 
@@ -116,4 +116,4 @@ ones on the right.
 
 **Previous:** [Bands at different speeds](../../stripes/doc/README-EN.md) ·
 **Next:** [The image that ripples like a flag](../../wobble/doc/README-EN.md) ·
-**Index:** [The twenty effects](../../README-EN.md)
+**Index:** [The nineteen effects](../../README-EN.md)

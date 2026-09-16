@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 7 de 20 del recorrido.** Coste medido: **2,2 microsegundos por frame**,
+**Efecto 6 de 19 del recorrido.** Coste medido: **2,2 microsegundos por frame**,
 el más barato de los veinte.
 
 El código está en [`../water.c`](../water.c).
@@ -98,4 +98,4 @@ escribe de uno en uno.
 
 **Anterior:** [La imagen que ondula](../../wobble/doc/README.md) ·
 **Siguiente:** [La foto que se pasea](../../bounce/doc/README.md) ·
-**Índice:** [Los veinte efectos](../../README.md)
+**Índice:** [Los diecinueve efectos](../../README.md)

@@ -2,7 +2,7 @@
 
 *[English version](README-EN.md)*
 
-**Efecto 12 de 20 del recorrido.** Coste medido: **110 microsegundos por frame**, y antes de optimizarlo eran 144.
+**Efecto 11 de 19 del recorrido.** Coste medido: **110 microsegundos por frame**, y antes de optimizarlo eran 144.
 
 El código está en [`../zoom.c`](../zoom.c).
 
@@ -119,4 +119,4 @@ los diez: es inevitable, porque de verdad toca los 64.000 píxeles.
 
 **Anterior:** [La columna retorcida](../../twister/doc/README.md) ·
 **Siguiente:** [La lupa que se pasea por la foto](../../lens/doc/README.md) ·
-**Índice:** [Los veinte efectos](../../README.md)
+**Índice:** [Los diecinueve efectos](../../README.md)

@@ -2,7 +2,7 @@
 
 *[Versión en español](README.md)*
 
-**Effect 13 of 20 of the walkthrough.** Measured cost: **9.4 microseconds per frame**.
+**Effect 12 of 19 of the walkthrough.** Measured cost: **9.4 microseconds per frame**.
 
 The code is in [`../lens.c`](../lens.c).
 
@@ -123,4 +123,4 @@ the expensive part: the lens itself costs a tenth of it.
 
 **Previous:** [Zooming in and out](../../zoom/doc/README-EN.md) ·
 **Next:** [Rotate and zoom at once](../../rotozoom/doc/README-EN.md) ·
-**Index:** [The twenty effects](../../README-EN.md)
+**Index:** [The nineteen effects](../../README-EN.md)
